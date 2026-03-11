@@ -1,0 +1,28 @@
+aws_region                         = "us-east-1"
+project_name                       = "parqara"
+deployment_environment             = "prod"
+elastic_beanstalk_application_name = "parqara-web"
+elastic_beanstalk_environment_name = "parqara-web-env-1"
+elastic_beanstalk_cname_prefix     = "parqara-web-env-1"
+
+db_identifier         = "parqara-db-prod"
+db_name               = "parqara"
+db_username           = "parqara_admin"
+preview_gate_password = "yard"
+
+# Optional. If omitted, Terraform generates both values and stores them in state.
+# db_password    = "replace-me"
+# session_secret = "replace-me"
+
+# Optional. Leave null for the first deploy, then update it to the EBS CNAME from terraform output.
+# app_url = "https://parqara.com"`r`n# next_public_app_url = "https://parqara.com"
+
+# Add integrations as you turn them on.
+application_environment = {
+  OPENAI_MODEL = "gpt-5-mini"
+}
+
+# Optional. Uncomment only if you want SSH access to the EBS instance.
+# ec2_key_name      = "your-ec2-keypair"
+# ssh_ingress_cidrs = ["YOUR.PUBLIC.IP.ADDRESS/32"]
+

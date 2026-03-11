@@ -1,0 +1,2 @@
+ALTER TABLE "User"
+ADD COLUMN "maraPreviewRepliesUsed" INTEGER NOT NULL DEFAULT 0;

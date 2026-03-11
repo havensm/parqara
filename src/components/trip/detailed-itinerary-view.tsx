@@ -1,0 +1,261 @@
+import type { ReactNode } from "react";
+import Link from "next/link";
+import { format } from "date-fns";
+import {
+  CalendarDays,
+  Clock3,
+  Footprints,
+  MapPinned,
+  Route,
+  Sparkles,
+} from "lucide-react";
+
+import type { TripDetailDto } from "@/lib/contracts";
+import { formatTripPlannerStatusLabel } from "@/lib/trip-planner-agent";
+
+import { Badge } from "@/components/ui/badge";
+import { buttonStyles } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+
+function getOverviewCopy(trip: TripDetailDto) {
+  if (trip.latestPlanSummary) {
+    return trip.latestPlanSummary;
+  }
+
+  if (trip.status === "LIVE") {
+    return "This trip is already in motion. Review the ordered route, timing, and stop logic here while the live dashboard handles real-time changes.";
+  }
+
+  if (trip.status === "COMPLETED") {
+    return "This outing is complete. Use the itinerary to review what the route was designed to do before comparing it with the final summary.";
+  }
+
+  return "This is the detailed version of the trip plan, with the full route, timing, and decision context attached to each stop.";
+}
+
+function getPrimaryAction(trip: TripDetailDto) {
+  if (trip.status === "LIVE") {
+    return {
+      href: `/trips/${trip.id}/live`,
+      label: "Open live dashboard",
+      title: "Keep this trip moving in live mode.",
+      description: "Use the live dashboard when current waits and conditions matter more than the static route.",
+    };
+  }
+
+  if (trip.status === "COMPLETED") {
+    return {
+      href: `/trips/${trip.id}/summary`,
+      label: "View summary",
+      title: "Review the finished day.",
+      description: "Open the summary to compare the route with what actually happened.",
+    };
+  }
+
+  return {
+    href: `/trips/${trip.id}/live`,
+    label: "Enter live mode",
+    title: "Move this trip into live mode when you arrive.",
+    description: "The itinerary is already built. Use live mode when the park day starts so the plan can adapt in real time.",
+  };
+}
+
+export function DetailedItineraryView({ trip }: { trip: TripDetailDto }) {
+  const averageWait = Math.round(
+    trip.itinerary.reduce((total, item) => total + item.predictedWaitMinutes, 0) / Math.max(trip.itinerary.length, 1)
+  );
+  const totalWalking = trip.itinerary.reduce((total, item) => total + item.walkingMinutes, 0);
+  const diningStops = trip.itinerary.filter((item) => item.type === "DINING").length;
+  const kidFriendlyStops = trip.itinerary.filter((item) => item.kidFriendly).length;
+  const primaryAction = getPrimaryAction(trip);
+
+  return (
+    <div className="space-y-6">
+      <Card className="p-6 sm:p-8 lg:p-10">
+        <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr] xl:items-start">
+          <div>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="info">Detailed itinerary</Badge>
+              <Badge variant={trip.status === "COMPLETED" ? "success" : trip.status === "LIVE" ? "warning" : "info"}>
+                {formatTripPlannerStatusLabel(trip.status)}
+              </Badge>
+            </div>
+            <h1 className="mt-5 font-[family-name:var(--font-space-grotesk)] text-3xl font-semibold text-slate-950 sm:text-4xl lg:text-5xl">
+              {trip.name}
+            </h1>
+            <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">{getOverviewCopy(trip)}</p>
+            <div className="mt-6 flex flex-wrap gap-3 text-sm text-slate-500">
+              <span>{trip.park.name}</span>
+              <span>{format(new Date(trip.visitDate), "EEEE, MMM d")}</span>
+              <span>{trip.partyProfile.partySize} guests</span>
+              <span>{trip.itinerary.length} planned stops</span>
+            </div>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link href={`/trips/${trip.id}`} className={buttonStyles({ variant: "secondary", size: "default" })}>
+                Back to planner
+              </Link>
+              <Link href={primaryAction.href} className={buttonStyles({ variant: "primary", size: "default" })}>
+                {primaryAction.label}
+              </Link>
+            </div>
+          </div>
+
+          <div className="rounded-[30px] border border-sky-100 bg-cyan-50 p-5">
+            <p className="text-xs uppercase tracking-[0.28em] text-teal-700/80">Route overview</p>
+            <h2 className="mt-3 text-2xl font-semibold text-slate-950">{primaryAction.title}</h2>
+            <p className="mt-3 text-sm leading-7 text-slate-600">{primaryAction.description}</p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <MetricTile label="Avg predicted wait" value={`${averageWait}m`} icon={<Clock3 className="h-4 w-4" />} />
+              <MetricTile label="Estimated walking" value={`${totalWalking}m`} icon={<Footprints className="h-4 w-4" />} />
+              <MetricTile label="Dining stops" value={String(diningStops)} icon={<CalendarDays className="h-4 w-4" />} />
+              <MetricTile label="Kid-friendly slots" value={String(kidFriendlyStops)} icon={<Sparkles className="h-4 w-4" />} />
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <div className="grid gap-6 xl:grid-cols-[1.02fr_0.98fr]">
+        <Card className="p-6 sm:p-7">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.28em] text-teal-700/80">Itinerary timeline</p>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-950">Ordered route for the day</h2>
+            </div>
+            <p className="text-sm text-slate-500">Arrival windows, expected waits, and route context are attached to each stop.</p>
+          </div>
+
+          <div className="mt-6 space-y-5">
+            {trip.itinerary.map((item, index) => (
+              <div key={item.id} className="relative pl-10">
+                {index < trip.itinerary.length - 1 ? (
+                  <div className="absolute left-[15px] top-12 h-[calc(100%+1.5rem)] w-px bg-[#d7ddd4]" />
+                ) : null}
+                <div className="absolute left-0 top-5 flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-950">
+                  {index + 1}
+                </div>
+                <div className="rounded-[28px] border border-slate-200 bg-white p-5 sm:p-6">
+                  <div className="grid gap-5 xl:grid-cols-[150px_minmax(0,1fr)_220px]">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Timing</p>
+                      <p className="mt-3 text-xl font-semibold text-slate-950">{format(new Date(item.startTime), "h:mm a")}</p>
+                      <p className="mt-1 text-sm text-slate-500">to {format(new Date(item.endTime), "h:mm a")}</p>
+                      <p className="mt-4 text-xs uppercase tracking-[0.22em] text-slate-400">Arrive by {format(new Date(item.arrivalWindowStart), "h:mm a")}</p>
+                    </div>
+
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-xl font-semibold text-slate-950">{item.title}</h3>
+                        <Badge variant={item.type === "DINING" ? "success" : item.type === "BREAK" ? "warning" : "neutral"}>
+                          {item.type}
+                        </Badge>
+                        {item.kidFriendly ? <Badge variant="info">Kid-friendly</Badge> : null}
+                      </div>
+                      <p className="mt-3 text-sm leading-7 text-slate-600">{item.explanation}</p>
+                      <div className="mt-4 flex flex-wrap gap-3 text-sm text-slate-500">
+                        <span>{item.predictedWaitMinutes} min wait</span>
+                        <span>{item.walkingMinutes} min walk</span>
+                        {item.zone ? <span>{item.zone}</span> : null}
+                        {item.category ? <span>{item.category}</span> : null}
+                      </div>
+                    </div>
+
+                    <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Why this stop</p>
+                      <p className="mt-3 text-sm leading-7 text-slate-600">{item.reason}</p>
+                      <p className="mt-4 text-xs uppercase tracking-[0.22em] text-teal-700/80">Confidence {item.confidence}%</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <div className="space-y-6 xl:sticky xl:top-28 xl:self-start">
+          <Card className="p-6">
+            <p className="text-xs uppercase tracking-[0.28em] text-teal-700/80">Strategy notes</p>
+            <div className="mt-5 space-y-3 text-sm leading-7 text-slate-600">
+              <InsightRow title="Queue timing" detail="Morning headliners and lower-friction routing get prioritized before mid-day waits harden." />
+              <InsightRow title="Family fit" detail="Attractions that clash with kid ages or thrill tolerance are downgraded or omitted." />
+              <InsightRow title="Break protection" detail="Meal and recovery windows are treated as real constraints so the plan stays sustainable." />
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <p className="text-xs uppercase tracking-[0.28em] text-teal-700/80">Preference snapshot</p>
+            <div className="mt-5 space-y-4">
+              <PreferenceBlock label="Preferred ride types" values={trip.partyProfile.preferredRideTypes} emptyLabel="No ride types selected" />
+              <PreferenceBlock label="Dining preferences" values={trip.partyProfile.diningPreferences} emptyLabel="No dining preferences selected" />
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <p className="text-xs uppercase tracking-[0.28em] text-teal-700/80">Day context</p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+              <ContextTile icon={<CalendarDays className="h-4 w-4" />} label="Visit date" value={format(new Date(trip.visitDate), "EEEE, MMM d")} />
+              <ContextTile icon={<MapPinned className="h-4 w-4" />} label="Park" value={trip.park.name} />
+              <ContextTile icon={<Route className="h-4 w-4" />} label="Planned stops" value={String(trip.itinerary.length)} />
+            </div>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ContextTile({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return (
+    <div className="rounded-[24px] border border-slate-200 bg-white p-4">
+      <div className="flex items-center gap-3 text-slate-950">
+        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-50 text-teal-700">{icon}</div>
+        <div>
+          <p className="text-xs uppercase tracking-[0.22em] text-slate-400">{label}</p>
+          <p className="mt-1 text-sm font-semibold text-slate-950">{value}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InsightRow({ title, detail }: { title: string; detail: string }) {
+  return (
+    <div className="rounded-[24px] border border-slate-200 bg-white p-4">
+      <p className="font-semibold text-slate-950">{title}</p>
+      <p className="mt-2 text-sm leading-7 text-slate-600">{detail}</p>
+    </div>
+  );
+}
+
+function MetricTile({ label, value, icon }: { label: string; value: string; icon: ReactNode }) {
+  return (
+    <div className="rounded-[26px] border border-slate-200 bg-white p-5">
+      <div className="flex items-center gap-3 text-slate-950">
+        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-50 text-teal-700">{icon}</div>
+        <div>
+          <p className="text-xs uppercase tracking-[0.22em] text-slate-400">{label}</p>
+          <p className="mt-1 text-2xl font-semibold text-slate-950">{value}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PreferenceBlock({ label, values, emptyLabel }: { label: string; values: string[]; emptyLabel: string }) {
+  return (
+    <div className="rounded-[24px] border border-slate-200 bg-white p-4">
+      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">{label}</p>
+      {values.length ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {values.map((value) => (
+            <Badge key={value} variant="neutral">
+              {value.replaceAll("-", " ")}
+            </Badge>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-3 text-sm text-slate-500">{emptyLabel}</p>
+      )}
+    </div>
+  );
+}

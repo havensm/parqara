@@ -1,0 +1,97 @@
+<svg width="1440" height="1080" viewBox="0 0 1440 1080" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1440" height="1080" rx="40" fill="#071220"/>
+  <rect width="1440" height="1080" rx="40" fill="url(#bg)"/>
+  <g opacity="0.55">
+    <circle cx="227" cy="190" r="208" fill="url(#tealGlow)"/>
+    <circle cx="1190" cy="192" r="250" fill="url(#amberGlow)"/>
+    <circle cx="1116" cy="802" r="224" fill="url(#blueGlow)"/>
+  </g>
+  <g opacity="0.28" stroke="#D7E8FF" stroke-width="1.4">
+    <path d="M95 176H1345"/>
+    <path d="M95 266H1345"/>
+    <path d="M95 356H1345"/>
+    <path d="M95 446H1345"/>
+    <path d="M95 536H1345"/>
+    <path d="M95 626H1345"/>
+    <path d="M95 716H1345"/>
+    <path d="M95 806H1345"/>
+    <path d="M182 94V986"/>
+    <path d="M332 94V986"/>
+    <path d="M482 94V986"/>
+    <path d="M632 94V986"/>
+    <path d="M782 94V986"/>
+    <path d="M932 94V986"/>
+    <path d="M1082 94V986"/>
+    <path d="M1232 94V986"/>
+  </g>
+  <rect x="96" y="88" width="1248" height="904" rx="34" fill="#091524" fill-opacity="0.72" stroke="#FFFFFF" stroke-opacity="0.12"/>
+  <rect x="136" y="130" width="498" height="320" rx="30" fill="url(#panelDark)" stroke="#FFFFFF" stroke-opacity="0.1"/>
+  <rect x="664" y="130" width="640" height="320" rx="30" fill="url(#panelWarm)" stroke="#FFFFFF" stroke-opacity="0.12"/>
+  <rect x="136" y="482" width="368" height="200" rx="28" fill="#0F1D31" stroke="#FFFFFF" stroke-opacity="0.1"/>
+  <rect x="528" y="482" width="388" height="200" rx="28" fill="#102339" stroke="#FFFFFF" stroke-opacity="0.1"/>
+  <rect x="940" y="482" width="364" height="200" rx="28" fill="#0F1D31" stroke="#FFFFFF" stroke-opacity="0.1"/>
+  <rect x="136" y="712" width="548" height="232" rx="28" fill="#102339" stroke="#FFFFFF" stroke-opacity="0.1"/>
+  <rect x="708" y="712" width="596" height="232" rx="28" fill="#0F1D31" stroke="#FFFFFF" stroke-opacity="0.1"/>
+
+  <g opacity="0.9">
+    <path d="M752 236C799 191 850 168 915 174C983 181 1049 221 1119 210C1164 203 1202 179 1246 170" stroke="#7CF3E1" stroke-width="14" stroke-linecap="round"/>
+    <path d="M760 286C815 324 873 350 953 348C1031 346 1106 313 1167 273" stroke="#FFD596" stroke-width="10" stroke-linecap="round"/>
+    <path d="M798 382C860 397 919 399 990 385C1058 372 1110 343 1160 304" stroke="#FF9C67" stroke-width="8" stroke-linecap="round"/>
+  </g>
+
+  <g>
+    <rect x="180" y="172" width="214" height="98" rx="22" fill="#F4F1E8" fill-opacity="0.08"/>
+    <rect x="414" y="172" width="178" height="98" rx="22" fill="#F4F1E8" fill-opacity="0.06"/>
+    <rect x="180" y="292" width="412" height="36" rx="18" fill="#F4F1E8" fill-opacity="0.09"/>
+    <rect x="180" y="348" width="298" height="22" rx="11" fill="#F4F1E8" fill-opacity="0.07"/>
+    <rect x="180" y="388" width="236" height="22" rx="11" fill="#F4F1E8" fill-opacity="0.05"/>
+  </g>
+
+  <g>
+    <circle cx="260" cy="552" r="28" fill="#79EED9" fill-opacity="0.18"/>
+    <circle cx="278" cy="778" r="22" fill="#FFD596" fill-opacity="0.18"/>
+    <circle cx="742" cy="792" r="24" fill="#7CB7FF" fill-opacity="0.18"/>
+    <circle cx="1116" cy="566" r="26" fill="#FF9C67" fill-opacity="0.18"/>
+    <path d="M260 552C346 579 405 622 458 689" stroke="#79EED9" stroke-width="8" stroke-linecap="round" stroke-dasharray="14 14"/>
+    <path d="M278 778C374 771 472 775 556 801" stroke="#FFD596" stroke-width="8" stroke-linecap="round" stroke-dasharray="14 14"/>
+    <path d="M742 792C814 744 882 664 1116 566" stroke="#7CB7FF" stroke-width="8" stroke-linecap="round" stroke-dasharray="14 14"/>
+  </g>
+
+  <g fill="#F4F1E8">
+    <text x="182" y="210" font-family="Arial, sans-serif" font-size="20" font-weight="700" letter-spacing="4">PARQARA MVP</text>
+    <text x="182" y="238" font-family="Arial, sans-serif" font-size="38" font-weight="700">Adaptive park-day planning</text>
+    <text x="182" y="324" font-family="Arial, sans-serif" font-size="18" fill-opacity="0.72">A placeholder branded visual showing routing, wait optimization, and live</text>
+    <text x="182" y="350" font-family="Arial, sans-serif" font-size="18" fill-opacity="0.72">dashboard overlays. Replace later with generated hero art.</text>
+    <text x="704" y="190" font-family="Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="3">LIVE ROUTING</text>
+    <text x="704" y="228" font-family="Arial, sans-serif" font-size="32" font-weight="700">Next-best attraction recommendations</text>
+  </g>
+
+  <defs>
+    <linearGradient id="bg" x1="196" y1="96" x2="1248" y2="982" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#091726"/>
+      <stop offset="1" stop-color="#040913"/>
+    </linearGradient>
+    <radialGradient id="tealGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(227 190) rotate(90) scale(208)">
+      <stop stop-color="#79EED9" stop-opacity="0.56"/>
+      <stop offset="1" stop-color="#79EED9" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="amberGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1190 192) rotate(90) scale(250)">
+      <stop stop-color="#FFB36E" stop-opacity="0.52"/>
+      <stop offset="1" stop-color="#FFB36E" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="blueGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1116 802) rotate(90) scale(224)">
+      <stop stop-color="#6B8CFF" stop-opacity="0.46"/>
+      <stop offset="1" stop-color="#6B8CFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="panelDark" x1="136" y1="130" x2="634" y2="450" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F1D31"/>
+      <stop offset="1" stop-color="#0A1525"/>
+    </linearGradient>
+    <linearGradient id="panelWarm" x1="664" y1="130" x2="1304" y2="450" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#14253B"/>
+      <stop offset="0.55" stop-color="#122139"/>
+      <stop offset="1" stop-color="#10233C"/>
+    </linearGradient>
+  </defs>
+</svg>
+

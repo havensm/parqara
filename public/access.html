@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Parqara Access</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #edf4fb;
+        --ink: #102033;
+        --muted: #5c6c80;
+        --border: rgba(148, 163, 184, 0.24);
+        --card: rgba(255, 255, 255, 0.9);
+        --accent: #0f766e;
+        --accent-strong: #115e59;
+        --danger: #b42318;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background:
+          radial-gradient(circle at top left, rgba(34, 211, 238, 0.14), transparent 24%),
+          radial-gradient(circle at 85% 10%, rgba(15, 118, 110, 0.1), transparent 20%),
+          linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
+        color: var(--ink);
+        font-family: "Manrope", ui-sans-serif, system-ui, sans-serif;
+      }
+
+      .shell {
+        width: min(100%, 440px);
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        background: var(--card);
+        padding: 28px;
+        box-shadow: 0 24px 80px rgba(15, 23, 42, 0.12);
+        backdrop-filter: blur(18px);
+      }
+
+      .eyebrow {
+        margin: 0 0 10px;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      h1 {
+        margin: 0;
+        font-family: "Space Grotesk", "Manrope", ui-sans-serif, system-ui, sans-serif;
+        font-size: clamp(2rem, 5vw, 2.6rem);
+        line-height: 0.96;
+      }
+
+      p {
+        margin: 14px 0 0;
+        color: var(--muted);
+        font-size: 0.98rem;
+        line-height: 1.65;
+      }
+
+      form {
+        margin-top: 24px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 10px;
+        font-size: 0.92rem;
+        font-weight: 700;
+      }
+
+      input {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 14px 16px;
+        font-size: 1rem;
+        color: var(--ink);
+        background: rgba(255, 255, 255, 0.96);
+      }
+
+      input:focus {
+        outline: 2px solid rgba(15, 118, 110, 0.18);
+        border-color: rgba(15, 118, 110, 0.4);
+      }
+
+      button {
+        width: 100%;
+        margin-top: 14px;
+        border: 0;
+        border-radius: 999px;
+        padding: 14px 18px;
+        font-size: 0.98rem;
+        font-weight: 800;
+        color: white;
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+        cursor: pointer;
+      }
+
+      button:disabled {
+        opacity: 0.7;
+        cursor: wait;
+      }
+
+      .meta {
+        margin-top: 18px;
+        border-top: 1px solid rgba(148, 163, 184, 0.18);
+        padding-top: 16px;
+        font-size: 0.86rem;
+        color: var(--muted);
+      }
+
+      .error {
+        min-height: 1.4em;
+        margin-top: 12px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--danger);
+      }
+
+      .hint {
+        color: var(--ink);
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="shell" aria-labelledby="access-title">
+      <p class="eyebrow">Temporary Access Gate</p>
+      <h1 id="access-title">Parqara is still being wired up.</h1>
+      <p>Enter the current access word to continue into the app while production setup is still in progress.</p>
+
+      <form id="gate-form">
+        <label for="password">Access word</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required />
+        <button id="submit-button" type="submit">Enter app</button>
+        <div id="error" class="error" role="alert" aria-live="polite"></div>
+      </form>
+
+      <div class="meta">
+        <div class="hint">Destination after unlock: <span id="destination">the app</span></div>
+      </div>
+    </section>
+
+    <script>
+      const form = document.getElementById("gate-form");
+      const passwordInput = document.getElementById("password");
+      const submitButton = document.getElementById("submit-button");
+      const errorNode = document.getElementById("error");
+      const destinationNode = document.getElementById("destination");
+      const nextPath = new URLSearchParams(window.location.search).get("next") || "/";
+
+      destinationNode.textContent = nextPath === "/" ? "the app" : nextPath;
+      passwordInput.focus();
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        errorNode.textContent = "";
+        submitButton.disabled = true;
+        submitButton.textContent = "Checking...";
+
+        try {
+          const response = await fetch("/api/preview-access", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ password: passwordInput.value }),
+          });
+
+          const result = await response.json();
+          if (!response.ok) {
+            throw new Error(result.error || "Unable to unlock the app.");
+          }
+
+          window.location.assign(nextPath);
+        } catch (error) {
+          errorNode.textContent = error instanceof Error ? error.message : "Unable to unlock the app.";
+          submitButton.disabled = false;
+          submitButton.textContent = "Enter app";
+          passwordInput.select();
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,150 @@
+name: Deploy To Elastic Beanstalk
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: parqara-eb-prod
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+  EB_APPLICATION_NAME: ${{ vars.EB_APPLICATION_NAME || 'parqara-web' }}
+  EB_ENVIRONMENT_NAME: ${{ vars.EB_ENVIRONMENT_NAME || 'parqara-web-env-1' }}
+  EB_DEPLOY_BUCKET: ${{ vars.EB_DEPLOY_BUCKET }}
+  EB_HEALTHCHECK_URL: ${{ vars.EB_HEALTHCHECK_URL }}
+  NODE_VERSION: '22'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://parqara.com
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          cache: npm
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Validate deploy configuration
+        shell: bash
+        run: |
+          : "${EB_DEPLOY_BUCKET:?Set the GitHub repository variable EB_DEPLOY_BUCKET before using this workflow.}"
+
+      - name: Configure AWS credentials with OIDC
+        if: ${{ secrets.AWS_GITHUB_ACTIONS_ROLE_ARN != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_GITHUB_ACTIONS_ROLE_ARN }}
+
+      - name: Configure AWS credentials with access keys
+        if: ${{ secrets.AWS_GITHUB_ACTIONS_ROLE_ARN == '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-region: ${{ env.AWS_REGION }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build Elastic Beanstalk bundle
+        shell: pwsh
+        run: npm run bundle:eb
+
+      - name: Compute release metadata
+        id: metadata
+        shell: bash
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          VERSION_LABEL="web-${GITHUB_RUN_NUMBER}-${SHORT_SHA}"
+          S3_KEY="releases/${VERSION_LABEL}.zip"
+          echo "version_label=${VERSION_LABEL}" >> "$GITHUB_OUTPUT"
+          echo "s3_key=${S3_KEY}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload deployment artifact to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          if-no-files-found: error
+          name: ${{ steps.metadata.outputs.version_label }}
+          path: dist/parqara-web-eb.zip
+
+      - name: Upload bundle to S3
+        shell: bash
+        run: |
+          aws s3 cp dist/parqara-web-eb.zip "s3://${EB_DEPLOY_BUCKET}/${{ steps.metadata.outputs.s3_key }}"
+
+      - name: Create Elastic Beanstalk application version
+        shell: bash
+        run: |
+          aws elasticbeanstalk create-application-version \
+            --application-name "${EB_APPLICATION_NAME}" \
+            --version-label "${{ steps.metadata.outputs.version_label }}" \
+            --source-bundle S3Bucket="${EB_DEPLOY_BUCKET}",S3Key="${{ steps.metadata.outputs.s3_key }}" \
+            --process
+
+      - name: Deploy application version
+        shell: bash
+        run: |
+          aws elasticbeanstalk update-environment \
+            --environment-name "${EB_ENVIRONMENT_NAME}" \
+            --version-label "${{ steps.metadata.outputs.version_label }}"
+
+      - name: Wait for Elastic Beanstalk environment to become ready
+        shell: bash
+        run: |
+          for attempt in {1..60}; do
+            STATUS=$(aws elasticbeanstalk describe-environments \
+              --environment-names "${EB_ENVIRONMENT_NAME}" \
+              --query 'Environments[0].Status' \
+              --output text)
+
+            HEALTH=$(aws elasticbeanstalk describe-environments \
+              --environment-names "${EB_ENVIRONMENT_NAME}" \
+              --query 'Environments[0].Health' \
+              --output text)
+
+            echo "Attempt ${attempt}: status=${STATUS} health=${HEALTH}"
+
+            if [ "${STATUS}" = "Ready" ]; then
+              exit 0
+            fi
+
+            sleep 30
+          done
+
+          echo "Timed out waiting for Elastic Beanstalk to finish updating."
+          exit 1
+
+      - name: Check deployed health endpoint
+        shell: bash
+        run: |
+          if [ -n "${EB_HEALTHCHECK_URL}" ]; then
+            HEALTHCHECK_URL="${EB_HEALTHCHECK_URL}"
+          else
+            EBS_CNAME=$(aws elasticbeanstalk describe-environments \
+              --environment-names "${EB_ENVIRONMENT_NAME}" \
+              --query 'Environments[0].CNAME' \
+              --output text)
+            HEALTHCHECK_URL="http://${EBS_CNAME}/api/health"
+          fi
+
+          echo "Checking ${HEALTHCHECK_URL}"
+          curl --fail --silent --show-error --retry 12 --retry-all-errors --retry-delay 10 "${HEALTHCHECK_URL}"

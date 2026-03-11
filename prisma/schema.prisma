@@ -1,0 +1,295 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+}
+
+enum OnboardingStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum SubscriptionTier {
+  FREE
+  PLUS
+  PRO
+}
+
+enum SubscriptionStatus {
+  INACTIVE
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+}
+
+enum AttractionCategory {
+  RIDE
+  SHOW
+  DINING
+  PLAY
+}
+
+enum AttractionOperationalStatus {
+  OPEN
+  TEMPORARILY_CLOSED
+  WEATHER_DELAY
+}
+
+enum TripStatus {
+  DRAFT
+  PLANNED
+  LIVE
+  COMPLETED
+}
+
+enum ThrillTolerance {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum WalkingTolerance {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ItineraryItemType {
+  RIDE
+  SHOW
+  DINING
+  BREAK
+}
+
+enum ItineraryItemStatus {
+  PLANNED
+  COMPLETED
+  SKIPPED
+  CANCELLED
+}
+
+model User {
+  id                          String              @id @default(cuid())
+  email                       String              @unique
+  googleId                    String?             @unique
+  emailVerifiedAt             DateTime?
+  firstName                   String?
+  lastName                    String?
+  name                        String?
+  authProvider                AuthProvider        @default(LOCAL)
+  onboardingStatus            OnboardingStatus    @default(NOT_STARTED)
+  onboardingCurrentStep       Int                 @default(0)
+  onboardingStartedAt         DateTime?
+  onboardingCompletedAt       DateTime?
+  subscriptionTier            SubscriptionTier    @default(FREE)
+  subscriptionStatus          SubscriptionStatus  @default(INACTIVE)
+  stripeCustomerId            String?             @unique
+  stripeSubscriptionId        String?             @unique
+  stripePriceId               String?
+  subscriptionCurrentPeriodEnd DateTime?
+  subscriptionCancelAtPeriodEnd Boolean           @default(false)
+  passwordHash                String
+  maraPreviewRepliesUsed      Int                 @default(0)
+  createdAt                   DateTime            @default(now())
+  updatedAt                   DateTime            @updatedAt
+  preference                  UserPreference?
+  sessions                    Session[]
+  trips                       Trip[]
+  tripCollaborations          TripCollaborator[]
+}
+
+model UserPreference {
+  id                       String   @id @default(cuid())
+  userId                   String   @unique
+  preferredAdventureTypes  String[]
+  typicalGroupSize         String?
+  childrenAgeProfile       String?
+  dietaryPreferences       String[]
+  dietaryNotes             String?
+  accessibilityNeeds       String[]
+  accessibilityNotes       String?
+  planningPriorities       String[]
+  planningStyle            String?
+  budgetPreference         String?
+  travelDistancePreference String?
+  planningHelpLevel        String?
+  additionalNotes          String?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+  user                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Park {
+  id          String              @id @default(cuid())
+  slug        String              @unique
+  name        String
+  resort      String
+  description String?
+  timezone    String              @default("America/New_York")
+  opensAt     String
+  closesAt    String
+  attractions Attraction[]
+  trips       Trip[]
+  snapshots   ParkStateSnapshot[]
+}
+
+model Attraction {
+  id                   String                      @id @default(cuid())
+  parkId               String
+  slug                 String
+  name                 String
+  category             AttractionCategory
+  zone                 String
+  description          String?
+  thrillLevel          Int
+  minHeight            Int?
+  kidFriendly          Boolean                     @default(false)
+  indoor               Boolean                     @default(false)
+  familyFriendly       Boolean                     @default(false)
+  durationMinutes      Int
+  xCoord               Int
+  yCoord               Int
+  tags                 String[]
+  typicalWaitProfile   Json
+  status               AttractionOperationalStatus @default(OPEN)
+  createdAt            DateTime                    @default(now())
+  updatedAt            DateTime                    @updatedAt
+  itineraryItems       ItineraryItem[]
+  currentLocationTrips Trip[]                      @relation("TripCurrentLocation")
+  park                 Park                        @relation(fields: [parkId], references: [id], onDelete: Cascade)
+
+  @@unique([parkId, slug])
+  @@index([parkId, category])
+}
+
+model Trip {
+  id                          String               @id @default(cuid())
+  userId                      String
+  parkId                      String
+  name                        String
+  visitDate                   DateTime
+  status                      TripStatus           @default(DRAFT)
+  currentStep                 Int                  @default(0)
+  simulatedTime               DateTime?
+  currentLocationAttractionId String?
+  latestPlanSummary           String?
+  summary                     Json?
+  createdAt                   DateTime             @default(now())
+  updatedAt                   DateTime             @updatedAt
+  currentLocation             Attraction?          @relation("TripCurrentLocation", fields: [currentLocationAttractionId], references: [id], onDelete: SetNull)
+  park                        Park                 @relation(fields: [parkId], references: [id], onDelete: Cascade)
+  partyProfile                PartyProfile?
+  itineraryItems              ItineraryItem[]
+  snapshots                   ParkStateSnapshot[]
+  collaborators               TripCollaborator[]
+  user                        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, visitDate])
+  @@index([parkId, status])
+}
+
+model PartyProfile {
+  id                 String           @id @default(cuid())
+  tripId             String           @unique
+  partySize          Int
+  kidsAges           Int[]
+  thrillTolerance    ThrillTolerance
+  walkingTolerance   WalkingTolerance
+  preferredRideTypes String[]
+  mustDoRideIds      String[]
+  diningPreferences  String[]
+  startTime          String
+  breakStart         String?
+  breakEnd           String?
+  trip               Trip             @relation(fields: [tripId], references: [id], onDelete: Cascade)
+}
+
+model TripCollaborator {
+  id        String   @id @default(cuid())
+  tripId    String
+  userId    String
+  createdAt DateTime @default(now())
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, userId])
+  @@index([userId])
+}
+
+model ItineraryItem {
+  id                   String              @id @default(cuid())
+  tripId               String
+  attractionId         String?
+  title                String
+  type                 ItineraryItemType
+  order                Int
+  startTime            DateTime
+  endTime              DateTime
+  arrivalWindowStart   DateTime
+  arrivalWindowEnd     DateTime
+  predictedWaitMinutes Int
+  walkingMinutes       Int
+  score                Float?
+  reason               String
+  explanation          String
+  status               ItineraryItemStatus @default(PLANNED)
+  completedAt          DateTime?
+  metadata             Json?
+  attraction           Attraction?         @relation(fields: [attractionId], references: [id], onDelete: SetNull)
+  trip                 Trip                @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, order])
+  @@index([tripId, status])
+}
+
+model ParkStateSnapshot {
+  id            String   @id @default(cuid())
+  tripId        String?
+  parkId        String
+  capturedAt    DateTime @default(now())
+  effectiveTime DateTime
+  weather       Json
+  alerts        Json
+  waitTimes     Json
+  scenarioKey   String?
+  park          Park     @relation(fields: [parkId], references: [id], onDelete: Cascade)
+  trip          Trip?    @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId, effectiveTime])
+  @@index([parkId, effectiveTime])
+}
+
+
+
