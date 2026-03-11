@@ -27,9 +27,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       AWS_GITHUB_ACTIONS_ROLE_ARN: ${{ secrets.AWS_GITHUB_ACTIONS_ROLE_ARN }}
-    environment:
-      name: production
-      url: https://parqara.com
 
     steps:
       - name: Check out repository
