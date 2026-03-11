@@ -21,6 +21,13 @@ $itemsToInclude = @(
   "tsconfig.json"
 )
 
+$requiredArchiveEntries = @(
+  ".next/BUILD_ID",
+  ".platform/hooks/predeploy/01_bootstrap.sh",
+  ".ebextensions/01-healthcheck.config",
+  "package.json"
+)
+
 Push-Location $root
 try {
   if (Test-Path ".next") {
@@ -47,7 +54,51 @@ try {
     Copy-Item -Path $item -Destination $stageRoot -Recurse -Force
   }
 
-  Compress-Archive -Path (Join-Path $stageRoot "*") -DestinationPath $zipPath -Force
+  Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+  if ($IsLinux -or $IsMacOS) {
+    $zipCommand = Get-Command zip -ErrorAction SilentlyContinue
+
+    if (-not $zipCommand) {
+      throw "The 'zip' command is required to build the Elastic Beanstalk archive on Unix runners."
+    }
+
+    Push-Location $stageRoot
+    try {
+      & $zipCommand.Source -qr $zipPath .
+
+      if ($LASTEXITCODE -ne 0) {
+        throw "zip exited with code $LASTEXITCODE"
+      }
+    }
+    finally {
+      Pop-Location
+    }
+  }
+  else {
+    [System.IO.Compression.ZipFile]::CreateFromDirectory(
+      $stageRoot,
+      $zipPath,
+      [System.IO.Compression.CompressionLevel]::Optimal,
+      $false
+    )
+  }
+
+  $archive = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
+
+  try {
+    $entryNames = $archive.Entries | ForEach-Object { $_.FullName.Replace('\\', '/') }
+
+    foreach ($requiredEntry in $requiredArchiveEntries) {
+      if ($entryNames -notcontains $requiredEntry) {
+        throw "Bundle archive missing required entry: $requiredEntry"
+      }
+    }
+  }
+  finally {
+    $archive.Dispose()
+  }
+
   Write-Output "Created EBS bundle: $zipPath"
 }
 finally {

@@ -68,6 +68,10 @@ jobs:
         shell: pwsh
         run: npm run bundle:eb
 
+      - name: Inspect bundle manifest
+        shell: bash
+        run: unzip -l dist/parqara-web-eb.zip | sed -n '1,120p'
+
       - name: Compute release metadata
         id: metadata
         shell: bash
@@ -146,4 +150,10 @@ jobs:
           fi
 
           echo "Checking ${HEALTHCHECK_URL}"
-          curl --fail --silent --show-error --retry 12 --retry-all-errors --retry-delay 10 "${HEALTHCHECK_URL}"
+          curl --fail --silent --show-error \
+            --connect-timeout 10 \
+            --max-time 20 \
+            --retry 12 \
+            --retry-all-errors \
+            --retry-delay 10 \
+            "${HEALTHCHECK_URL}"
