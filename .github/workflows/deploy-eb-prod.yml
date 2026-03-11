@@ -25,6 +25,8 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      AWS_GITHUB_ACTIONS_ROLE_ARN: ${{ secrets.AWS_GITHUB_ACTIONS_ROLE_ARN }}
     environment:
       name: production
       url: https://parqara.com
@@ -45,14 +47,14 @@ jobs:
           : "${EB_DEPLOY_BUCKET:?Set the GitHub repository variable EB_DEPLOY_BUCKET before using this workflow.}"
 
       - name: Configure AWS credentials with OIDC
-        if: ${{ secrets.AWS_GITHUB_ACTIONS_ROLE_ARN != '' }}
+        if: ${{ env.AWS_GITHUB_ACTIONS_ROLE_ARN != '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: ${{ env.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_GITHUB_ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ env.AWS_GITHUB_ACTIONS_ROLE_ARN }}
 
       - name: Configure AWS credentials with access keys
-        if: ${{ secrets.AWS_GITHUB_ACTIONS_ROLE_ARN == '' }}
+        if: ${{ env.AWS_GITHUB_ACTIONS_ROLE_ARN == '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
