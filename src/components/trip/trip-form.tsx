@@ -252,6 +252,37 @@ function buildPersistableDraftPayload(values: TripFormValues): PersistableDraftP
   return payload;
 }
 
+function buildDraftClearingPayload(
+  values: TripFormValues,
+  previousPayload: PersistableDraftPayload
+): PersistableDraftPayload | null {
+  const hadSavedCollectionSelections =
+    (previousPayload.mustDoRideIds?.length ?? 0) > 0 ||
+    (previousPayload.preferredRideTypes?.length ?? 0) > 0 ||
+    (previousPayload.diningPreferences?.length ?? 0) > 0;
+  const shouldClearBreakWindow =
+    !values.breakStart && !values.breakEnd && Boolean(previousPayload.breakStart || previousPayload.breakEnd);
+
+  if (!hadSavedCollectionSelections && !shouldClearBreakWindow) {
+    return null;
+  }
+
+  return {
+    mustDoRideIds: values.mustDoRideIds,
+    preferredRideTypes: values.preferredRideTypes,
+    diningPreferences: values.diningPreferences,
+    ...(shouldClearBreakWindow ? { breakStart: "", breakEnd: "" } : {}),
+    currentStep: 1,
+  };
+}
+
+function getPersistableDraftPayload(values: TripFormValues, previousPayload?: PersistableDraftPayload) {
+  return (
+    buildPersistableDraftPayload(values) ??
+    (previousPayload ? buildDraftClearingPayload(values, previousPayload) : null)
+  );
+}
+
 function getMissingRequiredFields(values: TripFormValues) {
   const missingFields: string[] = [];
 
@@ -298,12 +329,13 @@ export function TripForm({ catalog, initialTrip }: { catalog: ParkCatalogDto; in
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const hasHydrated = useRef(false);
   const valuesRef = useRef(initialValues);
-  const lastSavedPayload = useRef(JSON.stringify(buildPersistableDraftPayload(initialValues) ?? {}));
+  const lastSavedPayload = useRef(JSON.stringify(getPersistableDraftPayload(initialValues) ?? {}));
   const inFlightSnapshot = useRef<string | null>(null);
 
   const persistDraft = useCallback(
     async (draftValues: TripFormValues = valuesRef.current, options: PersistDraftOptions = {}) => {
-      const payload = buildPersistableDraftPayload(draftValues);
+      const previousPayload = JSON.parse(lastSavedPayload.current) as PersistableDraftPayload;
+      const payload = getPersistableDraftPayload(draftValues, previousPayload);
       const snapshot = JSON.stringify(payload ?? {});
 
       if (snapshot === lastSavedPayload.current || snapshot === inFlightSnapshot.current) {
@@ -473,12 +505,16 @@ export function TripForm({ catalog, initialTrip }: { catalog: ParkCatalogDto; in
   }
 
   async function handleSave() {
+    const payload = getPersistableDraftPayload(
+      values,
+      JSON.parse(lastSavedPayload.current) as PersistableDraftPayload
+    );
     const saved = await persistDraft();
     if (!saved) {
       return;
     }
 
-    if (!buildPersistableDraftPayload(values)) {
+    if (!payload) {
       setSaveState("error");
       setSaveError("Start with at least one trip detail before saving.");
     }
@@ -816,18 +852,4 @@ function SnapshotCard({
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
