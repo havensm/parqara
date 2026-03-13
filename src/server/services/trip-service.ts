@@ -1086,7 +1086,7 @@ export async function addTripCollaborator(
       throw new HttpError(400, "An invite has already been sent to that email.");
     }
 
-    await db.tripCollaboratorInvite.create({
+    const invite = await db.tripCollaboratorInvite.create({
       data: {
         tripId: trip.id,
         invitedByUserId: userId,
@@ -1094,16 +1094,28 @@ export async function addTripCollaborator(
       },
     });
 
-    await sendTripInviteEmail({
-      appOrigin,
-      email: normalizedEmail,
-      inviterName: buildUserDisplayName(trip.user),
-      parkName: trip.park.name,
-      tripName: trip.name,
-      tripStatus: trip.status,
-      tripId: trip.id,
-      requiresAccount: true,
-    });
+    try {
+      await sendTripInviteEmail({
+        appOrigin,
+        email: normalizedEmail,
+        inviterName: buildUserDisplayName(trip.user),
+        parkName: trip.park.name,
+        tripName: trip.name,
+        tripStatus: trip.status,
+        tripId: trip.id,
+        requiresAccount: true,
+      });
+    } catch (error) {
+      await db.tripCollaboratorInvite
+        .delete({
+          where: {
+            id: invite.id,
+          },
+        })
+        .catch(() => undefined);
+
+      throw error;
+    }
 
     await createTripMemberNotifications({
       tripId: trip.id,
@@ -1406,33 +1418,4 @@ export async function getTripSummary(userId: string, tripId: string): Promise<Su
     latestPlanSummary: trip.latestPlanSummary,
   };
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

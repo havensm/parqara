@@ -6,7 +6,7 @@
     "node": ">=20.9 <23"
   },
   "scripts": {
-    "dev": "pwsh -NoProfile -File scripts/run-dev.ps1",
+    "dev": "node scripts/run-dev.mjs",
     "build": "next build",
     "bundle:eb": "pwsh -NoProfile -File scripts/bundle-eb-web.ps1",
     "bundle:eb:web": "pwsh -NoProfile -File scripts/bundle-eb-web.ps1",
@@ -66,6 +66,4 @@
     "vitest": "^2.1.9"
   }
 }
-
-
 
