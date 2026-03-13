@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useState, useTransition } from "react";
 import { CheckCheck, ImageIcon, MessageSquareMore, Route } from "lucide-react";
-import { FeedbackStatus } from "@prisma/client/index";
+import { FeedbackStatus } from "@prisma/client";
 
 import type { AdminFeedbackSnapshot } from "@/server/services/feedback-service";
 
@@ -141,3 +141,4 @@ function FeedbackMetricCard({ label, value, helper }: { label: string; value: st
     </Card>
   );
 }
+

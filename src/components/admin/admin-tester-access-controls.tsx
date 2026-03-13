@@ -1,6 +1,6 @@
 "use client";
 
-import { SubscriptionStatus, SubscriptionTier } from "@prisma/client/index";
+import { SubscriptionStatus, SubscriptionTier } from "@prisma/client";
 import { LoaderCircle, Sparkles, UserRoundPlus } from "lucide-react";
 import { useMemo, useState, useTransition } from "react";
 
@@ -153,3 +153,4 @@ export function AdminTesterAccessControls({ recentUsers }: AdminTesterAccessCont
     </div>
   );
 }
+

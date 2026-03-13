@@ -12,7 +12,7 @@ import {
   Users2,
   type LucideIcon,
 } from "lucide-react";
-import { AuthProvider, OnboardingStatus, SubscriptionTier, TripStatus } from "@prisma/client/index";
+import { AuthProvider, OnboardingStatus, SubscriptionTier, TripStatus } from "@prisma/client";
 
 import type { AdminDashboardMetrics } from "@/server/services/admin-service";
 import type { AdminFeedbackSnapshot } from "@/server/services/feedback-service";
@@ -799,6 +799,7 @@ function BreakdownRow({ label, value, badge }: { label: string; value: number; b
     </div>
   );
 }
+
 
 
 
