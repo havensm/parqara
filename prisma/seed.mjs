@@ -1,4 +1,5 @@
-import { PrismaClient } from "@prisma/client";
+import { hash } from "bcryptjs";
+import { PrismaClient } from "@prisma/client/index";
 
 const prisma = new PrismaClient();
 
@@ -356,6 +357,46 @@ const attractions = [
   },
 ];
 
+const localTestUser = {
+  email: "test@test.com",
+  password: "test",
+  firstName: "Test",
+  lastName: "User",
+};
+
+function shouldSeedLocalTestUser() {
+  return (process.env.SEED_LOCAL_TEST_USER ?? "").toLowerCase() === "true";
+}
+
+async function seedLocalTestUser() {
+  const passwordHash = await hash(localTestUser.password, 10);
+  const name = `${localTestUser.firstName} ${localTestUser.lastName}`;
+
+  await prisma.user.upsert({
+    where: { email: localTestUser.email },
+    update: {
+      firstName: localTestUser.firstName,
+      lastName: localTestUser.lastName,
+      name,
+      emailVerifiedAt: new Date(),
+      authProvider: "LOCAL",
+      passwordHash,
+      isFirstTime: true,
+    },
+    create: {
+      email: localTestUser.email,
+      firstName: localTestUser.firstName,
+      lastName: localTestUser.lastName,
+      name,
+      emailVerifiedAt: new Date(),
+      authProvider: "LOCAL",
+      passwordHash,
+    },
+  });
+
+  console.log(`Seeded local test user ${localTestUser.email} with password ${localTestUser.password}.`);
+}
+
 async function seedParkCatalog() {
   const seededPark = await prisma.park.upsert({
     where: { slug: park.slug },
@@ -420,13 +461,25 @@ async function seedParkCatalog() {
   console.log(`Seeded park catalog for ${seededPark.name} with ${attractions.length} attractions.`);
 }
 
-seedParkCatalog()
+async function main() {
+  await seedParkCatalog();
+
+  if (shouldSeedLocalTestUser()) {
+    await seedLocalTestUser();
+  }
+}
+
+main()
   .catch((error) => {
-    console.error("Failed to seed the park catalog.");
+    console.error("Failed to seed bootstrap data.");
     console.error(error);
     process.exitCode = 1;
   })
   .finally(async () => {
     await prisma.$disconnect();
   });
+
+
+
+
 

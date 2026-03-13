@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { apiError, requireApiUser } from "@/app/api/_utils";
-import { getPlanByTier, getUserBillingState } from "@/lib/billing";
+import { getUserBillingState } from "@/lib/billing";
 import { tripPlannerChatRequestSchema } from "@/lib/trip-planner-agent";
+import { reserveMaraUsage, rollbackMaraUsageReservation } from "@/server/services/mara-rate-limit-service";
 import { generateTripPlannerReply } from "@/server/services/trip-planner-agent";
-import { recordMaraStarterReply } from "@/server/services/user-service";
 
 export async function POST(request: Request) {
   try {
@@ -16,42 +16,43 @@ export async function POST(request: Request) {
     const body = tripPlannerChatRequestSchema.parse(await request.json());
     const billing = getUserBillingState(user);
     const hasFullAccess = billing.featureAccess.aiConcierge;
+    const reservation = await reserveMaraUsage({
+      userId: user.id,
+      currentTier: billing.currentTier,
+      hasFullAccess,
+    });
 
-    if (!hasFullAccess && !billing.maraStarterPreview.canSend) {
-      return NextResponse.json(
-        {
-          error: `You have used the ${billing.maraStarterPreview.replyLimit} Mara starter replies included on ${getPlanByTier(billing.currentTier).name}. Upgrade to Pro to keep planning with Mara.`,
-          usedStarterReplies: billing.maraStarterPreview.usedReplies,
-          remainingStarterReplies: billing.maraStarterPreview.remainingReplies,
-          starterReplyLimit: billing.maraStarterPreview.replyLimit,
-        },
-        { status: 402 }
-      );
-    }
+    try {
+      const reply = await generateTripPlannerReply(user.id, body.messages, body.tripId);
 
-    const reply = await generateTripPlannerReply(user.id, body.messages, body.tripId);
+      if (hasFullAccess) {
+        return NextResponse.json({
+          reply,
+          fullAccess: true,
+        });
+      }
 
-    if (hasFullAccess) {
+      const updatedBilling = getUserBillingState({
+        subscriptionTier: user.subscriptionTier,
+        subscriptionStatus: user.subscriptionStatus,
+        maraPreviewRepliesUsed: reservation.maraPreviewRepliesUsed,
+      });
+
       return NextResponse.json({
         reply,
-        fullAccess: true,
+        fullAccess: false,
+        usedStarterReplies: updatedBilling.maraStarterPreview.usedReplies,
+        remainingStarterReplies: updatedBilling.maraStarterPreview.remainingReplies,
+        starterReplyLimit: updatedBilling.maraStarterPreview.replyLimit,
       });
+    } catch (error) {
+      // Failed AI calls still count against the rate limit, but free/plus users should not lose starter credits.
+      await rollbackMaraUsageReservation({
+        userId: user.id,
+        hadStarterReplyReservation: reservation.hadStarterReplyReservation,
+      });
+      throw error;
     }
-
-    const updatedUsage = await recordMaraStarterReply(user.id);
-    const updatedBilling = getUserBillingState({
-      subscriptionTier: user.subscriptionTier,
-      subscriptionStatus: user.subscriptionStatus,
-      maraPreviewRepliesUsed: updatedUsage.maraPreviewRepliesUsed,
-    });
-
-    return NextResponse.json({
-      reply,
-      fullAccess: false,
-      usedStarterReplies: updatedBilling.maraStarterPreview.usedReplies,
-      remainingStarterReplies: updatedBilling.maraStarterPreview.remainingReplies,
-      starterReplyLimit: updatedBilling.maraStarterPreview.replyLimit,
-    });
   } catch (error) {
     return apiError(error);
   }

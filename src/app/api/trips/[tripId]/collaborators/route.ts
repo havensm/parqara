@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { apiError, requireApiFeatureAccess, requireApiUser } from "@/app/api/_utils";
+import { getAppOrigin } from "@/lib/auth/google";
 import { tripCollaboratorInviteSchema } from "@/lib/validation/trip-collaborator";
 import { addTripCollaborator, getTripCollaboratorState } from "@/server/services/trip-service";
 
@@ -32,7 +33,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tri
 
     const body = tripCollaboratorInviteSchema.parse(await request.json());
     const { tripId } = await params;
-    const state = await addTripCollaborator(user.id, tripId, body.email);
+    const state = await addTripCollaborator(user.id, tripId, body.email, getAppOrigin(request));
     return NextResponse.json(state, { status: 201 });
   } catch (error) {
     return apiError(error);

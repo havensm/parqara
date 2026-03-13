@@ -30,9 +30,10 @@ export function StaticPageShell({ eyebrow, title, description, children }: Stati
       </section>
 
       <section className="rounded-[32px] border border-white/80 bg-white/80 px-6 py-8 shadow-[0_20px_60px_rgba(15,23,42,0.05)] backdrop-blur-xl sm:px-8">
-        <div className="space-y-6 text-sm leading-7 text-slate-600 sm:text-base">{children}</div>
+        <div className="space-y-8 text-sm leading-7 text-slate-600 sm:text-base [&_a]:font-semibold [&_a]:text-slate-950 [&_a]:underline [&_a]:decoration-slate-300 [&_a]:underline-offset-4 [&_h2]:font-[family-name:var(--font-space-grotesk)] [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:tracking-tight [&_h2]:text-slate-950 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-slate-900 [&_ol]:list-decimal [&_ol]:space-y-2 [&_ol]:pl-5 [&_section]:space-y-4 [&_strong]:font-semibold [&_strong]:text-slate-950 [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-5">
+          {children}
+        </div>
       </section>
     </div>
   );
 }
-

@@ -16,12 +16,12 @@ export default async function LoginPage() {
     <AuthShell
       eyebrow="Login"
       title="Log in to Parqara."
-      description="Use your email and password or continue with Google. If you are new here, create an account and start planning right away."
+      description="Pick up your planner, route, and live updates right where you left them."
       alternateHref="/signup"
       alternateLabel="Create account"
+      variant="minimal"
     >
       <AuthPanel googleEnabled={isGoogleAuthEnabled()} mode="login" />
     </AuthShell>
   );
 }
-

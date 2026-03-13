@@ -33,6 +33,26 @@ enum SubscriptionStatus {
   UNPAID
 }
 
+
+enum NotificationType {
+  SYSTEM
+  TRAVEL
+  WEATHER
+  RIDE_STATUS
+  PLANNER
+  COLLABORATION
+}
+
+enum NotificationSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+enum FeedbackStatus {
+  NEW
+  REVIEWED
+}
+
 enum AttractionCategory {
   RIDE
   SHOW
@@ -80,35 +100,51 @@ enum ItineraryItemStatus {
 }
 
 model User {
-  id                          String              @id @default(cuid())
-  email                       String              @unique
-  googleId                    String?             @unique
-  emailVerifiedAt             DateTime?
-  firstName                   String?
-  lastName                    String?
-  name                        String?
-  authProvider                AuthProvider        @default(LOCAL)
-  onboardingStatus            OnboardingStatus    @default(NOT_STARTED)
-  onboardingCurrentStep       Int                 @default(0)
-  onboardingStartedAt         DateTime?
-  onboardingCompletedAt       DateTime?
-  subscriptionTier            SubscriptionTier    @default(FREE)
-  subscriptionStatus          SubscriptionStatus  @default(INACTIVE)
-  stripeCustomerId            String?             @unique
-  stripeSubscriptionId        String?             @unique
-  stripePriceId               String?
-  subscriptionCurrentPeriodEnd DateTime?
-  subscriptionCancelAtPeriodEnd Boolean           @default(false)
-  passwordHash                String
-  maraPreviewRepliesUsed      Int                 @default(0)
-  createdAt                   DateTime            @default(now())
-  updatedAt                   DateTime            @updatedAt
-  preference                  UserPreference?
-  sessions                    Session[]
-  trips                       Trip[]
-  tripCollaborations          TripCollaborator[]
+  id                            String                   @id @default(cuid())
+  email                         String                   @unique
+  googleId                      String?                  @unique
+  emailVerifiedAt               DateTime?
+  firstName                     String?
+  lastName                      String?
+  name                          String?
+  authProvider                  AuthProvider             @default(LOCAL)
+  onboardingStatus              OnboardingStatus         @default(NOT_STARTED)
+  onboardingCurrentStep         Int                      @default(0)
+  onboardingStartedAt           DateTime?
+  onboardingCompletedAt         DateTime?
+  subscriptionTier              SubscriptionTier         @default(FREE)
+  subscriptionStatus            SubscriptionStatus       @default(INACTIVE)
+  stripeCustomerId              String?                  @unique
+  stripeSubscriptionId          String?                  @unique
+  stripePriceId                 String?
+  subscriptionCurrentPeriodEnd  DateTime?
+  subscriptionCancelAtPeriodEnd Boolean                  @default(false)
+  passwordHash                  String
+  maraPreviewRepliesUsed        Int                      @default(0)
+  isFirstTime                   Boolean                  @default(true)
+  createdAt                     DateTime                 @default(now())
+  updatedAt                     DateTime                 @updatedAt
+  preference                    UserPreference?
+  sessions                      Session[]
+  trips                         Trip[]
+  tripCollaborations            TripCollaborator[]
+  notifications                 Notification[]
+  triggeredNotifications        Notification[]           @relation("NotificationActor")
+  maraRequestLogs               MaraRequestLog[]
+  people                        UserContact[]            @relation("UserContactOwner")
+  listedInPeople                UserContact[]            @relation("UserContactMember")
+  sentTripCollaboratorInvites   TripCollaboratorInvite[] @relation("TripCollaboratorInviteSender")
+  feedbackEntries               Feedback[]
 }
 
+model MaraRequestLog {
+  id        String   @id @default(cuid())
+  userId    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
 model UserPreference {
   id                       String   @id @default(cuid())
   userId                   String   @unique
@@ -195,26 +231,28 @@ model Attraction {
 }
 
 model Trip {
-  id                          String               @id @default(cuid())
+  id                          String                  @id @default(cuid())
   userId                      String
   parkId                      String
   name                        String
   visitDate                   DateTime
-  status                      TripStatus           @default(DRAFT)
-  currentStep                 Int                  @default(0)
+  status                      TripStatus              @default(DRAFT)
+  currentStep                 Int                     @default(0)
   simulatedTime               DateTime?
   currentLocationAttractionId String?
   latestPlanSummary           String?
   summary                     Json?
-  createdAt                   DateTime             @default(now())
-  updatedAt                   DateTime             @updatedAt
-  currentLocation             Attraction?          @relation("TripCurrentLocation", fields: [currentLocationAttractionId], references: [id], onDelete: SetNull)
-  park                        Park                 @relation(fields: [parkId], references: [id], onDelete: Cascade)
+  createdAt                   DateTime                @default(now())
+  updatedAt                   DateTime                @updatedAt
+  currentLocation             Attraction?             @relation("TripCurrentLocation", fields: [currentLocationAttractionId], references: [id], onDelete: SetNull)
+  park                        Park                    @relation(fields: [parkId], references: [id], onDelete: Cascade)
   partyProfile                PartyProfile?
   itineraryItems              ItineraryItem[]
   snapshots                   ParkStateSnapshot[]
   collaborators               TripCollaborator[]
-  user                        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pendingInvites              TripCollaboratorInvite[]
+  notifications               Notification[]
+  user                        User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, visitDate])
   @@index([parkId, status])
@@ -246,6 +284,70 @@ model TripCollaborator {
 
   @@unique([tripId, userId])
   @@index([userId])
+}
+
+
+
+model UserContact {
+  id            String   @id @default(cuid())
+  ownerUserId   String
+  contactUserId String
+  createdAt     DateTime @default(now())
+  contactUser   User     @relation("UserContactMember", fields: [contactUserId], references: [id], onDelete: Cascade)
+  ownerUser     User     @relation("UserContactOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerUserId, contactUserId])
+  @@index([contactUserId])
+}
+
+model TripCollaboratorInvite {
+  id              String   @id @default(cuid())
+  tripId           String
+  invitedByUserId  String
+  email            String
+  createdAt        DateTime @default(now())
+  invitedByUser    User     @relation("TripCollaboratorInviteSender", fields: [invitedByUserId], references: [id], onDelete: Cascade)
+  trip             Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, email])
+  @@index([email])
+}
+model Notification {
+  id         String               @id @default(cuid())
+  userId     String
+  tripId     String?
+  actorUserId String?
+  type       NotificationType
+  severity   NotificationSeverity @default(INFO)
+  title      String
+  detail     String
+  actionHref String?
+  dedupeKey  String?
+  metadata   Json?
+  readAt     DateTime?
+  createdAt  DateTime             @default(now())
+  actorUser  User?                @relation("NotificationActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  trip       Trip?                @relation(fields: [tripId], references: [id], onDelete: SetNull)
+  user       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+  @@index([tripId, createdAt])
+}
+model Feedback {
+  id          String         @id @default(cuid())
+  userId      String
+  message     String
+  pagePath    String?
+  screenshots Json?
+  status      FeedbackStatus @default(NEW)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
 }
 
 model ItineraryItem {
@@ -290,6 +392,15 @@ model ParkStateSnapshot {
   @@index([tripId, effectiveTime])
   @@index([parkId, effectiveTime])
 }
+
+
+
+
+
+
+
+
+
 
 
 

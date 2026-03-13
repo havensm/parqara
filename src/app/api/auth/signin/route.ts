@@ -7,6 +7,8 @@ import { db } from "@/lib/db";
 import { signInSchema } from "@/lib/validation/auth";
 import { apiError } from "@/app/api/_utils";
 
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   try {
     const body = signInSchema.parse(await request.json());

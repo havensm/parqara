@@ -1,9 +1,21 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { AuthProvider, OnboardingStatus, SubscriptionTier, TripStatus } from "@prisma/client";
+import {
+  Activity,
+  BadgeDollarSign,
+  LayoutDashboard,
+  PlugZap,
+  Rocket,
+  ShieldCheck,
+  TestTubeDiagonal,
+  Users2,
+  type LucideIcon,
+} from "lucide-react";
+import { AuthProvider, OnboardingStatus, SubscriptionTier, TripStatus } from "@prisma/client/index";
 
 import type { AdminDashboardMetrics } from "@/server/services/admin-service";
+import type { AdminFeedbackSnapshot } from "@/server/services/feedback-service";
 import type {
   AdminIntegration,
   AdminIntegrationsSnapshot,
@@ -11,6 +23,9 @@ import type {
   AdminIntegrationStatus,
 } from "@/server/services/integration-service";
 
+import { AdminFeedbackPanel } from "@/components/admin/admin-feedback-panel";
+import { AdminFirstTimeControls } from "@/components/admin/admin-first-time-controls";
+import { AdminTesterAccessControls } from "@/components/admin/admin-tester-access-controls";
 import { PlanBadge } from "@/components/billing/plan-badge";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -117,17 +132,24 @@ function getIntegrationStageLabel(stage: AdminIntegrationStage) {
 }
 
 export function AdminDashboard({
+  feedback,
   integrations,
   metrics,
+  firstTimeState,
 }: {
+  feedback: AdminFeedbackSnapshot;
   integrations: AdminIntegrationsSnapshot;
   metrics: AdminDashboardMetrics;
+  firstTimeState: {
+    isFirstTime: boolean;
+    previewHref: string;
+  };
 }) {
   return (
     <div className="space-y-6">
-      <Card className="p-6 sm:p-7">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
+      <Card className="overflow-hidden p-0">
+        <div className="grid gap-0 lg:grid-cols-[1.08fr_0.92fr]">
+          <div className="bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.18),transparent_30%),linear-gradient(180deg,rgba(248,252,255,0.98),rgba(255,255,255,0.98))] px-6 py-6 sm:px-7">
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700/70">Admin only</p>
               <Badge variant="warning">Internal</Badge>
@@ -139,8 +161,10 @@ export function AdminDashboard({
               Metrics are pulled from the database. Integration status is derived from the current environment so you can see what is live, what still needs keys, and what should be added next.
             </p>
           </div>
-          <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-            Refreshed {formatDateTimeLabel(metrics.generatedAt)}
+          <div className="grid gap-3 bg-white px-6 py-6 sm:px-7 md:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+            <AdminHeroChip label="Updated" value={formatDateTimeLabel(metrics.generatedAt)} tone="sky" />
+            <AdminHeroChip label="Configured" value={`${integrations.summary.configured}`} tone="teal" />
+            <AdminHeroChip label="Missing" value={`${integrations.summary.missing}`} tone="amber" />
           </div>
         </div>
       </Card>
@@ -149,7 +173,9 @@ export function AdminDashboard({
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <TabsList>
             <TabsTrigger value="metrics">Metrics</TabsTrigger>
+            <TabsTrigger value="feedback">Feedback</TabsTrigger>
             <TabsTrigger value="integrations">Integrations</TabsTrigger>
+            <TabsTrigger value="testing">Testing</TabsTrigger>
           </TabsList>
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
             <Badge variant="success">{integrations.summary.configured} configured</Badge>
@@ -162,8 +188,16 @@ export function AdminDashboard({
           <MetricsPanel metrics={metrics} />
         </TabsContent>
 
+        <TabsContent value="feedback" className="space-y-6">
+          <AdminFeedbackPanel feedback={feedback} />
+        </TabsContent>
+
         <TabsContent value="integrations" className="space-y-6">
           <IntegrationsPanel integrations={integrations} />
+        </TabsContent>
+
+        <TabsContent value="testing" className="space-y-6">
+          <TestingPanel firstTimeState={firstTimeState} recentUsers={metrics.recentUsers} />
         </TabsContent>
       </Tabs>
     </div>
@@ -174,10 +208,34 @@ function MetricsPanel({ metrics }: { metrics: AdminDashboardMetrics }) {
   return (
     <>
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Total users" value={formatInteger(metrics.overview.totalUsers)} detail={`${metrics.growth.usersLast30Days} signed up in the last 30 days`} />
-        <MetricCard label="Active paid users" value={formatInteger(metrics.subscriptions.activePaidUsers)} detail={`${metrics.ratios.paidConversionRate}% paid conversion`} />
-        <MetricCard label="Total trips" value={formatInteger(metrics.overview.totalTrips)} detail={`${metrics.growth.tripsLast30Days} created in the last 30 days`} />
-        <MetricCard label="Estimated MRR" value={formatCurrency(metrics.subscriptions.estimatedMrr)} detail="Based on active Plus and Pro seats" />
+        <MetricCard
+          label="Total users"
+          value={formatInteger(metrics.overview.totalUsers)}
+          detail={`${metrics.growth.usersLast30Days} signed up in the last 30 days`}
+          icon={Users2}
+          tone="teal"
+        />
+        <MetricCard
+          label="Active paid users"
+          value={formatInteger(metrics.subscriptions.activePaidUsers)}
+          detail={`${metrics.ratios.paidConversionRate}% paid conversion`}
+          icon={BadgeDollarSign}
+          tone="amber"
+        />
+        <MetricCard
+          label="Total trips"
+          value={formatInteger(metrics.overview.totalTrips)}
+          detail={`${metrics.growth.tripsLast30Days} created in the last 30 days`}
+          icon={LayoutDashboard}
+          tone="sky"
+        />
+        <MetricCard
+          label="Estimated MRR"
+          value={formatCurrency(metrics.subscriptions.estimatedMrr)}
+          detail="Based on active Plus and Pro seats"
+          icon={Rocket}
+          tone="violet"
+        />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
@@ -315,48 +373,233 @@ function MetricsPanel({ metrics }: { metrics: AdminDashboardMetrics }) {
   );
 }
 
-function IntegrationsPanel({ integrations }: { integrations: AdminIntegrationsSnapshot }) {
+function TestingPanel({
+  firstTimeState,
+  recentUsers,
+}: {
+  firstTimeState: { isFirstTime: boolean; previewHref: string };
+  recentUsers: AdminDashboardMetrics["recentUsers"];
+}) {
   return (
-    <>
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Configured" value={formatInteger(integrations.summary.configured)} detail="Integrations with the required production settings present" />
-        <MetricCard label="Needs follow-up" value={formatInteger(integrations.summary.partial)} detail="Partially configured integrations that still need cleanup" />
-        <MetricCard label="Live in app" value={formatInteger(integrations.summary.live)} detail="Integrations already supported directly by the codebase" />
-        <MetricCard label="Recommended next" value={formatInteger(integrations.summary.recommended)} detail="High-value additions for observability, analytics, and routing" />
-      </section>
-
-      <Card className="p-6 sm:p-7">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700/70">Integration roadmap</p>
-            <h3 className="mt-3 text-2xl font-semibold text-slate-950">Current providers and next additions</h3>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-              Each card shows two things: how far the codebase is prepared for that provider, and whether the current environment has the right secrets to actually use it.
+    <div className="grid gap-6 xl:grid-cols-2">
+      <Card className="overflow-hidden p-0">
+        <div className="grid gap-0 lg:grid-cols-[1.08fr_0.92fr] xl:grid-cols-1">
+          <div className="bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.16),transparent_28%),linear-gradient(180deg,rgba(248,252,255,0.98),rgba(255,255,255,0.98))] px-6 py-6 sm:px-7">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-sky-100 text-sky-700">
+                <TestTubeDiagonal className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700/70">Walkthrough testing</p>
+                <h3 className="mt-1 text-2xl font-semibold text-slate-950">First-time planner tour</h3>
+              </div>
+            </div>
+            <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">
+              Reset the first-time flag on your own admin account when you want to run the real onboarding walkthrough again, or open the preview mode when you just want to inspect the guided overlay without changing saved state.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2 text-xs text-slate-500">
-            <Badge variant="success">{integrations.summary.live} live</Badge>
-            <Badge variant="warning">{integrations.summary.scaffolded} scaffolded</Badge>
-            <Badge variant="info">{integrations.summary.recommended} recommended</Badge>
+          <div className="flex items-center bg-white px-6 py-6 sm:px-7">
+            <div className="w-full rounded-[24px] border border-slate-200 bg-slate-50 px-5 py-5 text-sm text-slate-500">
+              Current flag: {firstTimeState.isFirstTime ? "first-time" : "completed"}
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-slate-200 bg-white px-6 py-6 sm:px-7">
+          <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+            <AdminFirstTimeControls initialIsFirstTime={firstTimeState.isFirstTime} previewHref={firstTimeState.previewHref} />
           </div>
         </div>
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        {integrations.integrations.map((integration) => (
-          <IntegrationCard key={integration.key} integration={integration} />
-        ))}
+      <Card className="overflow-hidden p-0">
+        <div className="grid gap-0 lg:grid-cols-[1.08fr_0.92fr] xl:grid-cols-1">
+          <div className="bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.12),transparent_28%),linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.98))] px-6 py-6 sm:px-7">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-amber-100 text-amber-700">
+                <Rocket className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-amber-700/80">Tester access</p>
+                <h3 className="mt-1 text-2xl font-semibold text-slate-950">Grant manual upgrades</h3>
+              </div>
+            </div>
+            <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">
+              Upgrade testers to Plus or Pro without sending them through Stripe. Use Free to reset them back to the normal plan.
+            </p>
+          </div>
+          <div className="flex items-center bg-white px-6 py-6 sm:px-7">
+            <div className="w-full rounded-[24px] border border-slate-200 bg-slate-50 px-5 py-5 text-sm text-slate-500">
+              Manual tester access sets the existing billing fields directly and takes effect right away.
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-slate-200 bg-white px-6 py-6 sm:px-7">
+          <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+            <AdminTesterAccessControls recentUsers={recentUsers} />
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function IntegrationsPanel({ integrations }: { integrations: AdminIntegrationsSnapshot }) {
+  const launchIntegrations = integrations.integrations
+    .filter((integration) => integration.stage !== "recommended")
+    .sort(compareIntegrationsForRoadmap);
+  const laterIntegrations = integrations.integrations
+    .filter((integration) => integration.stage === "recommended")
+    .sort(compareIntegrationsForRoadmap);
+  const launchPendingCount = launchIntegrations.filter((integration) => integration.status !== "configured").length;
+  const readyCount = launchIntegrations.filter((integration) => integration.status === "configured").length;
+
+  return (
+    <>
+      <section className="grid gap-4 md:grid-cols-3">
+        <MetricCard
+          label="Set up now"
+          value={formatInteger(launchPendingCount)}
+          detail="Core launch integrations that still need keys or final wiring"
+          icon={PlugZap}
+          tone="amber"
+        />
+        <MetricCard
+          label="Ready now"
+          value={formatInteger(readyCount)}
+          detail="Core integrations that already have the required production settings"
+          icon={ShieldCheck}
+          tone="teal"
+        />
+        <MetricCard
+          label="Add later"
+          value={formatInteger(laterIntegrations.length)}
+          detail="Useful follow-up integrations for observability, analytics, and routing"
+          icon={Activity}
+          tone="sky"
+        />
+      </section>
+
+      <Card className="overflow-hidden p-0">
+        <div className="grid gap-0 lg:grid-cols-[1.08fr_0.92fr]">
+          <div className="bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.16),transparent_28%),linear-gradient(180deg,rgba(248,252,255,0.98),rgba(255,255,255,0.98))] px-6 py-6 sm:px-7">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700/70">Integration roadmap</p>
+            <h3 className="mt-3 text-2xl font-semibold text-slate-950">Follow the setup in this order</h3>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
+              Keep this simple: finish the launch integrations first, then add the recommended tooling once the app is stable in production.
+            </p>
+          </div>
+          <div className="grid gap-3 bg-white px-6 py-6 sm:px-7 md:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+            <RoadmapSummaryCard
+              label="1. Launch"
+              detail="Google OAuth, billing, email, and AI"
+              value={`${launchPendingCount} left`}
+              tone="amber"
+            />
+            <RoadmapSummaryCard
+              label="2. Stable"
+              detail="Anything already configured"
+              value={`${readyCount} ready`}
+              tone="teal"
+            />
+            <RoadmapSummaryCard
+              label="3. Later"
+              detail="Sentry, PostHog, and Mapbox"
+              value={`${laterIntegrations.length} later`}
+              tone="sky"
+            />
+          </div>
+        </div>
+      </Card>
+
+      <div className="space-y-6">
+        <RoadmapSection
+          title="Launch integrations"
+          description="These are the integrations that affect sign-in, payments, messaging, or the core planning experience. Finish these before broad testing."
+          integrations={launchIntegrations}
+        />
+        <RoadmapSection
+          title="Add after launch"
+          description="These are worthwhile next additions, but they are not blocking the first live version."
+          integrations={laterIntegrations}
+        />
       </div>
     </>
   );
 }
 
-function IntegrationCard({ integration }: { integration: AdminIntegration }) {
+function compareIntegrationsForRoadmap(a: AdminIntegration, b: AdminIntegration) {
+  const statusPriority = getIntegrationRoadmapStatusPriority(a.status) - getIntegrationRoadmapStatusPriority(b.status);
+  if (statusPriority !== 0) {
+    return statusPriority;
+  }
+
+  const stagePriority = getIntegrationRoadmapStagePriority(a.stage) - getIntegrationRoadmapStagePriority(b.stage);
+  if (stagePriority !== 0) {
+    return stagePriority;
+  }
+
+  return a.name.localeCompare(b.name);
+}
+
+function getIntegrationRoadmapStatusPriority(status: AdminIntegrationStatus) {
+  switch (status) {
+    case "missing":
+      return 0;
+    case "partial":
+      return 1;
+    default:
+      return 2;
+  }
+}
+
+function getIntegrationRoadmapStagePriority(stage: AdminIntegrationStage) {
+  switch (stage) {
+    case "live":
+      return 0;
+    case "scaffolded":
+      return 1;
+    default:
+      return 2;
+  }
+}
+
+function RoadmapSection({
+  title,
+  description,
+  integrations,
+}: {
+  title: string;
+  description: string;
+  integrations: AdminIntegration[];
+}) {
+  return (
+    <section className="space-y-4">
+      <Card className="p-6 sm:p-7">
+        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700/70">{title}</p>
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">{description}</p>
+      </Card>
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        {integrations.map((integration, index) => (
+          <IntegrationCard key={integration.key} integration={integration} order={index + 1} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function IntegrationCard({ integration, order }: { integration: AdminIntegration; order: number }) {
+  const missingRequiredEnvVars = integration.envVars.filter((item) => item.required && !item.present);
+  const optionalEnvVars = integration.envVars.filter((item) => !item.required);
+
   return (
     <Card className="p-6 sm:p-7">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="neutral">Step {order}</Badge>
             <Badge variant="neutral">{integration.category}</Badge>
             <Badge variant={getIntegrationStageVariant(integration.stage)}>{getIntegrationStageLabel(integration.stage)}</Badge>
             <Badge variant={getIntegrationStatusVariant(integration.status)}>{getIntegrationStatusLabel(integration.status)}</Badge>
@@ -376,40 +619,43 @@ function IntegrationCard({ integration }: { integration: AdminIntegration }) {
         </a>
       </div>
 
-      <div className="mt-6 grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+      <div className="mt-6 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
         <div className="space-y-4">
-          <InfoPanel title="Implementation state" body={integration.stageDetail} />
-          <InfoPanel title="Why it matters" body={integration.benefit} />
+          <SimpleRoadmapPanel title="Current state" body={integration.statusDetail} />
+          <SimpleRoadmapPanel title="Why add it" body={integration.benefit} />
           <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-slate-950">Environment checklist</p>
-              <Badge variant={getIntegrationStatusVariant(integration.status)}>{getIntegrationStatusLabel(integration.status)}</Badge>
+              <p className="text-sm font-semibold text-slate-950">Required env vars</p>
+              <Badge variant={missingRequiredEnvVars.length ? "warning" : "success"}>
+                {missingRequiredEnvVars.length ? `${missingRequiredEnvVars.length} missing` : "All set"}
+              </Badge>
             </div>
-            <p className="mt-2 text-sm leading-7 text-slate-500">{integration.statusDetail}</p>
-            <div className="mt-4 space-y-3">
-              {integration.envVars.map((item) => (
-                <div key={item.name} className="rounded-[20px] border border-slate-200 bg-white px-4 py-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <code className="text-sm font-semibold text-slate-950">{item.name}</code>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant={item.required ? "warning" : "neutral"}>{item.required ? "Required" : "Optional"}</Badge>
-                      <Badge variant={item.present ? "success" : "neutral"}>{item.present ? "Set" : "Missing"}</Badge>
-                    </div>
-                  </div>
-                  <p className="mt-2 text-sm leading-6 text-slate-500">{item.description}</p>
-                </div>
-              ))}
-            </div>
+            {missingRequiredEnvVars.length ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {missingRequiredEnvVars.map((item) => (
+                  <code key={item.name} className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
+                    {item.name}
+                  </code>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-3 text-sm leading-7 text-slate-500">All required keys for this integration are present in the current environment.</p>
+            )}
+            {optionalEnvVars.length ? (
+              <p className="mt-3 text-xs leading-6 text-slate-500">
+                Optional later: {optionalEnvVars.map((item) => item.name).join(", ")}
+              </p>
+            ) : null}
           </div>
         </div>
 
         <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4 sm:p-5">
-          <p className="text-sm font-semibold text-slate-950">Steps to complete</p>
-          <ol className="mt-4 space-y-4">
+          <p className="text-sm font-semibold text-slate-950">Do this next</p>
+          <ol className="mt-4 space-y-3">
             {integration.steps.map((step, index) => (
               <li key={step.title} className="rounded-[20px] border border-slate-200 bg-white px-4 py-4">
                 <div className="flex gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-950 text-sm font-semibold text-white">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-950 text-xs font-semibold text-white">
                     {index + 1}
                   </div>
                   <div>
@@ -426,7 +672,7 @@ function IntegrationCard({ integration }: { integration: AdminIntegration }) {
   );
 }
 
-function InfoPanel({ body, title }: { body: string; title: string }) {
+function SimpleRoadmapPanel({ body, title }: { body: string; title: string }) {
   return (
     <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
       <p className="text-sm font-semibold text-slate-950">{title}</p>
@@ -435,12 +681,88 @@ function InfoPanel({ body, title }: { body: string; title: string }) {
   );
 }
 
-function MetricCard({ label, value, detail }: { label: string; value: string; detail: string }) {
+function RoadmapSummaryCard({
+  label,
+  detail,
+  value,
+  tone,
+}: {
+  label: string;
+  detail: string;
+  value: string;
+  tone: "amber" | "sky" | "teal";
+}) {
+  const toneClassNames = {
+    amber: "bg-[linear-gradient(180deg,#fff8eb_0%,#ffffff_100%)]",
+    sky: "bg-[linear-gradient(180deg,#eef7ff_0%,#ffffff_100%)]",
+    teal: "bg-[linear-gradient(180deg,#eefbf8_0%,#ffffff_100%)]",
+  } as const;
+
   return (
-    <Card className="p-6">
-      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">{label}</p>
-      <p className="mt-4 font-[family-name:var(--font-space-grotesk)] text-4xl font-semibold tracking-tight text-slate-950">{value}</p>
-      <p className="mt-3 text-sm leading-7 text-slate-500">{detail}</p>
+    <div className={`rounded-[24px] border border-slate-200 px-4 py-4 ${toneClassNames[tone]}`}>
+      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">{label}</p>
+      <p className="mt-3 text-sm font-semibold text-slate-950">{value}</p>
+      <p className="mt-2 text-sm leading-6 text-slate-500">{detail}</p>
+    </div>
+  );
+}
+
+function AdminHeroChip({ label, value, tone }: { label: string; value: string; tone: MetricTone }) {
+  const toneClassNames = {
+    amber: "bg-[linear-gradient(180deg,#fff8eb_0%,#ffffff_100%)]",
+    sky: "bg-[linear-gradient(180deg,#eef7ff_0%,#ffffff_100%)]",
+    teal: "bg-[linear-gradient(180deg,#eefbf8_0%,#ffffff_100%)]",
+    violet: "bg-[linear-gradient(180deg,#f6f2ff_0%,#ffffff_100%)]",
+  } as const;
+
+  return (
+    <div className={`rounded-[24px] border border-slate-200 px-4 py-4 ${toneClassNames[tone]}`}>
+      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">{label}</p>
+      <p className="mt-3 text-sm font-semibold text-slate-950">{value}</p>
+    </div>
+  );
+}
+
+type MetricTone = "amber" | "sky" | "teal" | "violet";
+
+function MetricCard({
+  label,
+  value,
+  detail,
+  icon: Icon,
+  tone,
+}: {
+  label: string;
+  value: string;
+  detail: string;
+  icon: LucideIcon;
+  tone: MetricTone;
+}) {
+  const surfaceClassNames = {
+    amber: "bg-[linear-gradient(180deg,rgba(255,248,235,0.98),rgba(255,255,255,0.98))]",
+    sky: "bg-[linear-gradient(180deg,rgba(238,247,255,0.98),rgba(255,255,255,0.98))]",
+    teal: "bg-[linear-gradient(180deg,rgba(238,251,248,0.98),rgba(255,255,255,0.98))]",
+    violet: "bg-[linear-gradient(180deg,rgba(246,242,255,0.98),rgba(255,255,255,0.98))]",
+  } as const;
+  const iconClassNames = {
+    amber: "bg-amber-100 text-amber-700",
+    sky: "bg-sky-100 text-sky-700",
+    teal: "bg-teal-100 text-teal-700",
+    violet: "bg-violet-100 text-violet-700",
+  } as const;
+
+  return (
+    <Card className={`overflow-hidden p-6 ${surfaceClassNames[tone]}`}>
+      <div className="flex items-start gap-4">
+        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] ${iconClassNames[tone]}`}>
+          <Icon className="h-5 w-5" />
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">{label}</p>
+          <p className="mt-4 font-[family-name:var(--font-space-grotesk)] text-4xl font-semibold tracking-tight text-slate-950">{value}</p>
+          <p className="mt-3 text-sm leading-7 text-slate-500">{detail}</p>
+        </div>
+      </div>
     </Card>
   );
 }
@@ -477,3 +799,6 @@ function BreakdownRow({ label, value, badge }: { label: string; value: number; b
     </div>
   );
 }
+
+
+

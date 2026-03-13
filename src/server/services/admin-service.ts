@@ -4,7 +4,7 @@ import {
   SubscriptionStatus,
   SubscriptionTier,
   TripStatus,
-} from "@prisma/client";
+} from "@prisma/client/index";
 import { subDays } from "date-fns";
 
 import { BILLING_PLANS } from "@/lib/billing";

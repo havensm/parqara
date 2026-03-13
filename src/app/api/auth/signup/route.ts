@@ -1,12 +1,15 @@
 import { hash } from "bcryptjs";
-import { AuthProvider, OnboardingStatus } from "@prisma/client";
+import { AuthProvider, OnboardingStatus } from "@prisma/client/index";
 import { NextResponse } from "next/server";
 
-import { createSession } from "@/lib/auth/session";
+import { apiError } from "@/app/api/_utils";
 import { getPostAuthRedirectPath } from "@/lib/auth/guards";
+import { createSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { signUpSchema } from "@/lib/validation/auth";
-import { apiError } from "@/app/api/_utils";
+import { claimPendingTripInvitesForUser } from "@/server/services/trip-service";
+
+export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
@@ -40,6 +43,7 @@ export async function POST(request: Request) {
       },
     });
 
+    await claimPendingTripInvitesForUser(user.id, user.email);
     await createSession(user.id);
     return NextResponse.json({ nextPath: getPostAuthRedirectPath(user), ok: true });
   } catch (error) {

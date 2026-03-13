@@ -32,7 +32,6 @@ export default async function TripPage({ params }: { params: Promise<{ tripId: s
   const tripContext = buildTripPlannerTripContext(trip);
   const questions = buildTripPlannerNeededQuestions(trip);
   const tabs = buildTripWorkspaceTabs(trips);
-  const activeTab = tabs.find((tab) => tab.id === trip.id);
 
   return (
     <div className="space-y-6">
@@ -40,7 +39,8 @@ export default async function TripPage({ params }: { params: Promise<{ tripId: s
         currentTier={billing.currentTier}
         activeTrip={{
           id: trip.id,
-          label: activeTab?.label ?? trip.name,
+          name: trip.name,
+          isOwner: trip.isOwner,
           parkName: trip.park.name,
           visitDate: trip.visitDate,
           status: trip.status,
@@ -68,5 +68,3 @@ export default async function TripPage({ params }: { params: Promise<{ tripId: s
     </div>
   );
 }
-
-

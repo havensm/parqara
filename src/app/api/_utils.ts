@@ -21,8 +21,9 @@ export function apiError(error: unknown) {
     return NextResponse.json(
       {
         error: error.message,
+        ...(error.details ?? {}),
       },
-      { status: error.status }
+      { status: error.status, headers: error.headers }
     );
   }
 

@@ -29,7 +29,6 @@ export default async function TripItineraryPage({ params }: { params: Promise<{ 
   }
 
   const tabs = buildTripWorkspaceTabs(trips);
-  const activeTab = tabs.find((tab) => tab.id === trip.id);
 
   return (
     <div className="space-y-6">
@@ -37,7 +36,8 @@ export default async function TripItineraryPage({ params }: { params: Promise<{ 
         currentTier={billing.currentTier}
         activeTrip={{
           id: trip.id,
-          label: activeTab?.label ?? trip.name,
+          name: trip.name,
+          isOwner: trip.isOwner,
           parkName: trip.park.name,
           visitDate: trip.visitDate,
           status: trip.status,

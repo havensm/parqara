@@ -96,7 +96,7 @@ export function ProfilePreferencesForm({ initialValues }: { initialValues: Onboa
       </Card>
 
       <Card className="p-6 sm:p-7">
-        <SectionHeader title="Group defaults" description="The people, pace, and budget Parqara should usually plan around." />
+        <SectionHeader title="Group defaults" description="Who you usually plan for." />
         <div className="mt-5 grid gap-6 xl:grid-cols-2">
           <div>
             <p className="text-sm font-semibold text-slate-950">Typical group size</p>
@@ -142,7 +142,7 @@ export function ProfilePreferencesForm({ initialValues }: { initialValues: Onboa
       </Card>
 
       <Card className="p-6 sm:p-7">
-        <SectionHeader title="Food and access" description="Default considerations that should follow every plan." />
+        <SectionHeader title="Food and access" description="Notes that should follow each trip." />
         <div className="mt-5 grid gap-6 xl:grid-cols-2">
           <div>
             <p className="text-sm font-semibold text-slate-950">Dietary preferences</p>
@@ -177,7 +177,7 @@ export function ProfilePreferencesForm({ initialValues }: { initialValues: Onboa
       </Card>
 
       <Card className="p-6 sm:p-7">
-        <SectionHeader title="Planning style" description="Tell Parqara what a good plan should optimize for." />
+        <SectionHeader title="Planning style" description="What a good plan should optimize for." />
         <div className="mt-5 space-y-6">
           <div>
             <p className="text-sm font-semibold text-slate-950">Top priorities</p>
@@ -232,7 +232,7 @@ export function ProfilePreferencesForm({ initialValues }: { initialValues: Onboa
       </Card>
 
       <Card className="p-6 sm:p-7">
-        <SectionHeader title="Anything else?" description="Optional notes that do not fit anywhere else." />
+        <SectionHeader title="Anything else?" description="Anything extra to remember." />
         <label className="mt-5 block text-sm text-slate-600">
           Extra notes
           <textarea value={values.additionalNotes} onChange={(event) => updateValues({ additionalNotes: event.currentTarget.value })} className={textareaClassName} />
@@ -261,5 +261,9 @@ function SectionHeader({ title, description }: { title: string; description: str
     </div>
   );
 }
+
+
+
+
 
 

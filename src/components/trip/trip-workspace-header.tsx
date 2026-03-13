@@ -6,7 +6,8 @@ import { formatTripPlannerStatusLabel } from "@/lib/trip-planner-agent";
 import type { TripWorkspaceTab } from "@/lib/trip-workspace";
 import { cn } from "@/lib/utils";
 
-import { TripCollaboratorManager } from "@/components/trip/trip-collaborator-manager";
+import { PlannerSectionKicker } from "@/components/trip/planner-section-kicker";
+import { TripPlannerSettingsDialog } from "@/components/trip/trip-planner-settings-dialog";
 import { Card } from "@/components/ui/card";
 
 const statusClassNames: Record<TripStatusValue, string> = {
@@ -33,13 +34,15 @@ type TripWorkspaceHeaderProps = {
   currentTier: SubscriptionTierValue;
   activeTrip: {
     id: string;
-    label: string;
+    name: string;
+    isOwner: boolean;
     parkName: string;
     visitDate: string;
     status: TripStatusValue;
     statusDetail: string;
   };
   createHref?: string;
+  starterMode?: boolean;
   tabs: Array<TripWorkspaceTab & { isActive?: boolean }>;
 };
 
@@ -47,6 +50,7 @@ export function TripWorkspaceHeader({
   currentTier,
   activeTrip,
   createHref = "/trips/new?fresh=1",
+  starterMode = false,
   tabs,
 }: TripWorkspaceHeaderProps) {
   return (
@@ -91,12 +95,12 @@ export function TripWorkspaceHeader({
 
       <Card className="-mt-px rounded-tl-[26px] p-0">
         <div className="bg-[radial-gradient(circle_at_top_left,rgba(103,232,249,0.14),transparent_34%),linear-gradient(180deg,rgba(248,250,252,0.98),rgba(255,255,255,0.96))] px-6 py-6 sm:px-7 sm:py-7">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700/70">Trip planner</p>
-          <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <PlannerSectionKicker emoji="🧭" label="Trip planner" tone="teal" />
+          <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-3">
                 <h1 className="font-[family-name:var(--font-space-grotesk)] text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-                  {activeTrip.label}
+                  {starterMode ? "My first planner" : activeTrip.name}
                 </h1>
                 <span
                   className={cn(
@@ -107,8 +111,8 @@ export function TripWorkspaceHeader({
                   {formatTripPlannerStatusLabel(activeTrip.status)}
                 </span>
               </div>
-              <p className="mt-3 text-sm text-slate-500">{activeTrip.parkName}</p>
               <div className="mt-4 flex flex-wrap gap-3 text-sm text-slate-500">
+                <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5">{activeTrip.parkName}</span>
                 <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5">
                   <CalendarDays className="h-4 w-4 text-teal-700" />
                   {formatTripDate(activeTrip.visitDate)}
@@ -116,10 +120,17 @@ export function TripWorkspaceHeader({
                 <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5">{activeTrip.statusDetail}</span>
               </div>
             </div>
-            <TripCollaboratorManager currentTier={currentTier} tripId={activeTrip.id} label="Edit collaborators" />
+
+            <TripPlannerSettingsDialog
+              currentTier={currentTier}
+              tripId={activeTrip.id}
+              tripName={activeTrip.name}
+              isOwner={activeTrip.isOwner}
+            />
           </div>
         </div>
       </Card>
     </div>
   );
 }
+

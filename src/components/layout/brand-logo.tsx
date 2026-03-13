@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 type BrandLogoProps = {
   className?: string;
   href?: string;
+  imageClassName?: string;
   priority?: boolean;
   size?: "compact" | "default" | "hero";
   subtitle?: string;
@@ -13,17 +14,17 @@ type BrandLogoProps = {
 
 const sizeClasses = {
   compact: {
-    image: "h-14 w-auto sm:h-16",
+    image: "h-20 w-auto sm:h-24",
     subtitle: "text-xs uppercase tracking-[0.24em] text-slate-400",
     wrapper: "gap-2",
   },
   default: {
-    image: "h-16 w-auto sm:h-20",
+    image: "h-24 w-auto sm:h-28",
     subtitle: "text-sm text-slate-500",
     wrapper: "gap-3",
   },
   hero: {
-    image: "h-20 w-auto sm:h-24",
+    image: "h-28 w-auto sm:h-32",
     subtitle: "text-sm text-slate-500",
     wrapper: "gap-3",
   },
@@ -32,6 +33,7 @@ const sizeClasses = {
 export function BrandLogo({
   className,
   href,
+  imageClassName,
   priority = false,
   size = "default",
   subtitle,
@@ -45,7 +47,7 @@ export function BrandLogo({
         width={2752}
         height={1536}
         priority={priority}
-        className={styles.image}
+        className={cn(styles.image, imageClassName)}
       />
       {subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}
     </div>
@@ -61,6 +63,3 @@ export function BrandLogo({
     </Link>
   );
 }
-
-
-
