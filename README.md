@@ -47,7 +47,7 @@ Parqara is a production-oriented MVP for AI-powered theme park planning and in-p
    ```bash
    npm run db:push
    ```
-5. Bootstrap the default park catalog:
+5. Bootstrap the default park catalog and, if `SEED_LOCAL_TEST_USER=true`, the local test login:
    ```bash
    npm run db:seed
    ```
@@ -82,7 +82,14 @@ The bootstrap script seeds a default park catalog for `Aurora Adventure Park`, i
 - Park metadata required to create new trips
 - Idempotent upserts so repeated deploys stay safe
 
-It does not create demo accounts or demo trips.
+It does not create demo trips.
+
+When `SEED_LOCAL_TEST_USER=true`, it also creates a local test account:
+
+- `Email`: `localtest@parqara.dev`
+- `Password`: `parqara123!`
+
+That account is intended for local development only and should stay disabled in any shared or production environment.
 
 ## AWS Elastic Beanstalk deployment
 
@@ -297,12 +304,14 @@ These are the improvements intentionally being postponed while the first live ve
 - [ ] Switch Cloudflare SSL from `Flexible` to `Full (strict)` once the AWS origin has a valid certificate.
 - [ ] Finish the Stripe billing flow with checkout sessions, webhook handling, subscription syncing, and a customer portal.
 - [ ] Replace the temporary personal Google support/contact email in the Google Auth Platform config with a real Parqara business address once branded email is set up.
+- [ ] Split email workflows into dedicated sender addresses (
+o-reply@, hello@, billing, invites, support) once the core mail flow is stable; use hello@parqara.com as the temporary all-purpose sender for now.
 - [ ] Wire the recommended integrations into runtime code: `Sentry`, `PostHog`, and `Mapbox`.
 - [ ] Replace the mock provider adapters with real park, weather, wait-time, and routing providers where available.
 - [ ] Split the app into separate deployable `web` and `api` services only if the current full-stack Next.js deployment starts to become a constraint.
 - [ ] Add a remote Terraform state backend with S3 and locking so infrastructure changes are safer across machines.
 - [ ] Tighten the EBS deployment flow so app versions can be promoted with a repeatable release process instead of only manual UI uploads.
-- [ ] Add a proper seeded internal test/admin account flow for smoke testing instead of relying only on manual sign-up.
+- [ ] Add a proper shared staging smoke-test account flow for hosted environments instead of relying only on local seeded users or manual sign-up.
 - [ ] Expand test coverage beyond the recommendation engine and targeted billing/admin tests, especially around auth, billing gates, and deployment-critical flows.
 - [ ] Revisit the landing page again once product screenshots from the live app are available, replacing placeholder marketing illustrations where needed.
 
@@ -319,7 +328,10 @@ The repository has been validated with:
 
 ## Known note
 
-On this Windows + OneDrive environment, repeated production builds can require clearing the generated `.next` directory between attempts because of file locking on build artifacts. A fresh build from a clean state succeeds.
+On this Windows + OneDrive environment, repeated builds can hit file locking in `.next`. `npm run dev` now clears `.next` before startup automatically, and a fresh production build from a clean state succeeds if you clear `.next` first when needed.
+
+
+
 
 
 

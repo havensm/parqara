@@ -5,7 +5,13 @@ import type { TripDetailDto, TripStatusValue } from "@/lib/contracts";
 export const TRIP_PLANNER_PERSONA = {
   name: "Mara",
   title: "Trip Planning Concierge",
-  description: "A calm, detail-oriented trip strategist who asks practical questions and turns rough ideas into workable plans.",
+  description: "A calm, observant trip strategist who turns rough ideas into clear, workable plans.",
+  voice: "Warm, composed, and quietly decisive.",
+  personality: [
+    "Pulls structure out of fuzzy ideas fast.",
+    "Explains tradeoffs without making the plan feel heavy.",
+    "Protects pacing, comfort, and must-dos at the same time.",
+  ],
   approach: [
     "Clarify the outing, timing, group, and must-dos before recommending a plan.",
     "Use saved profile defaults as helpful context, but call out assumptions clearly.",
@@ -29,6 +35,10 @@ export type TripPlannerTripContext = {
   summary: string | null;
   detailTags: string[];
 };
+
+const TRIP_PLANNER_MAX_MESSAGES = 24;
+const TRIP_PLANNER_MAX_MESSAGE_LENGTH = 2_000;
+const TRIP_PLANNER_MAX_TOTAL_CHARS = 6_000;
 
 function formatTripDate(value: string) {
   const date = new Date(value);
@@ -84,14 +94,10 @@ export function buildTripPlannerTripContext(
 export function buildTripPlannerNeededQuestions(
   trip: Pick<TripDetailDto, "status" | "name" | "partyProfile" | "park" | "itinerary">
 ) {
-  const questions = [`Review ${trip.name} and tell me what details are still missing.`];
-
-  if (trip.status === "DRAFT") {
-    questions.push("Ask me the next two questions you need so this trip can be planned properly.");
-  }
+  const questions: string[] = [];
 
   if (!trip.partyProfile.mustDoRideIds.length) {
-    questions.push("What are the must-do rides, shows, or food stops for this trip?");
+    questions.push("What are the top rides, shows, or food stops you want this trip to protect?");
   }
 
   if (!trip.partyProfile.preferredRideTypes.length) {
@@ -99,7 +105,7 @@ export function buildTripPlannerNeededQuestions(
   }
 
   if (!trip.partyProfile.diningPreferences.length) {
-    questions.push("Any dining preferences, budget notes, or must-have food stops?");
+    questions.push("Any food preferences, budget notes, or must-have stops I should work around?");
   }
 
   if (!trip.partyProfile.kidsAges.length && trip.partyProfile.partySize > 1) {
@@ -107,39 +113,59 @@ export function buildTripPlannerNeededQuestions(
   }
 
   if (!trip.partyProfile.breakStart || !trip.partyProfile.breakEnd) {
-    questions.push("Should I protect a break or lower-energy window in the middle of the day?");
+    questions.push("Should I protect a break or slower window in the middle of the day?");
   }
 
-  if (trip.status !== "DRAFT" && trip.itinerary.length) {
-    questions.push("Check this plan for walking, pacing, and wait-time tradeoffs.");
+  if (questions.length) {
+    return questions.slice(0, 2);
   }
 
-  return Array.from(new Set(questions)).slice(0, 4);
+  if (trip.status === "DRAFT") {
+    return [
+      `Review ${trip.name} and ask me the next one or two details you still need before planning the route.`,
+    ];
+  }
+
+  if (trip.itinerary.length) {
+    return ["Check this plan for pacing, walking, and wait-time tradeoffs."];
+  }
+
+  return ["Review this planner and tell me the next one or two details you still need."];
 }
+
 
 export const tripPlannerChatRequestSchema = z.object({
   messages: z
     .array(
       z.object({
         role: z.enum(["assistant", "user"]),
-        content: z.string().trim().min(1).max(2_000),
+        content: z.string().trim().min(1).max(TRIP_PLANNER_MAX_MESSAGE_LENGTH),
       })
     )
     .min(1)
-    .max(24),
+    .max(TRIP_PLANNER_MAX_MESSAGES)
+    .superRefine((messages, context) => {
+      const totalChars = messages.reduce((sum, message) => sum + message.content.length, 0);
+
+      if (totalChars > TRIP_PLANNER_MAX_TOTAL_CHARS) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Keep the full Mara prompt under ${TRIP_PLANNER_MAX_TOTAL_CHARS.toLocaleString()} characters.`,
+        });
+      }
+    }),
   tripId: z.string().trim().min(1).max(200).optional(),
 });
-
 export const tripPlannerStarterPrompts = [
-  "Help me plan a kid-friendly theme park day.",
-  "Ask me the right questions before I book a weekend getaway.",
-  "Build a relaxed day trip plan around food and low stress.",
-  "Compare two outing ideas and tell me which fits my style better.",
+  "I want to plan an adventure. Ask me the first one or two details you need.",
+  "I want to go somewhere fun this weekend. Help me narrow it down.",
+  "Help me plan a low-stress day for my group around food and must-dos.",
+  "I know where I want to go. Ask me the next one or two details you need.",
 ] as const;
 
 export const tripPlannerTripStarterPrompts = [
   "Review this trip and tell me what details are still missing.",
-  "Use this trip and ask me the next two questions you need answered.",
+  "Use this trip and ask me the next one or two details you need.",
   "Tell me what you would change to make this trip lower stress.",
   "Pressure-test this trip against my saved preferences.",
 ] as const;
@@ -153,20 +179,19 @@ export function buildTripPlannerWelcomeMessage(firstName?: string | null, tripCo
 
   if (tripContext) {
     return [
-      `${greeting} I am ${TRIP_PLANNER_PERSONA.name}, your Parqara ${TRIP_PLANNER_PERSONA.title.toLowerCase()}.`,
-      `I am already looking at ${tripContext.name} at ${tripContext.parkName} on ${tripContext.visitDate}.`,
+      `${greeting} I'm Mara, your Parqara trip strategist.`,
+      `I'm already looking at ${tripContext.name} at ${tripContext.parkName} on ${tripContext.visitDate}.`,
       `This trip is currently ${formatTripPlannerStatusLabel(tripContext.status).toLowerCase()}, and I can use its saved details as context.`,
-      "Tell me if you want to fill gaps, tighten the plan, stress-test the pacing, or change priorities for this specific trip.",
+      "Tell me what feels off, what changed, or what you want to protect, and I'll help reshape the plan.",
     ].join("\n");
   }
 
   return [
-    `${greeting} I am ${TRIP_PLANNER_PERSONA.name}, your Parqara ${TRIP_PLANNER_PERSONA.title.toLowerCase()}.`,
-    "I can help shape a theme park day, zoo trip, beach day, city outing, or weekend plan.",
-    "Start by telling me where you want to go and when, or answer these basics:",
-    "- What kind of outing is this?",
-    "- When is it happening?",
-    "- Who is going?",
-    "- What matters most: time, budget, kid-fit, food, accessibility, or flexibility?",
+    `${greeting} I'm Mara, your Parqara trip strategist.`,
+    "Give me the rough idea and I'll turn it into a clear trip brief.",
+    "Start with where you want to go, when it is happening, or what matters most for the day.",
+    "If you are not sure yet, I can ask the next one or two details and narrow it with you.",
   ].join("\n");
 }
+
+

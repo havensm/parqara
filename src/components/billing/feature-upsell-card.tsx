@@ -11,7 +11,7 @@ import { buttonStyles } from "@/components/ui/button";
 export function FeatureUpsellCard({
   feature,
   currentTier,
-  actionHref = "/billing",
+  actionHref = "/profile#billing",
   className,
 }: {
   feature: BillingFeatureKey;
@@ -51,3 +51,4 @@ export function FeatureUpsellCard({
     </div>
   );
 }
+

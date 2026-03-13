@@ -10,6 +10,7 @@ import {
 import {
   buildTripWorkspaceTabs,
   getTripWorkspaceStatusDetail,
+  isPlannerKickoffDraft,
 } from "@/lib/trip-workspace";
 import {
   createDefaultDraftTrip,
@@ -55,18 +56,24 @@ export default async function NewTripPage({ searchParams }: { searchParams: Prom
     getParkCatalog(draftTrip.park.slug),
     listDashboardTrips(user.id),
   ]);
-  const tripContext = buildTripPlannerTripContext(draftTrip);
-  const questions = buildTripPlannerNeededQuestions(draftTrip);
+  const isStarterDraft = isPlannerKickoffDraft({
+    status: draftTrip.status,
+    currentStep: draftTrip.currentStep,
+    itineraryCount: draftTrip.itinerary.length,
+  });
+  const tripContext = isStarterDraft ? undefined : buildTripPlannerTripContext(draftTrip);
+  const questions = isStarterDraft ? [] : buildTripPlannerNeededQuestions(draftTrip);
   const tabs = buildTripWorkspaceTabs(trips);
-  const activeTab = tabs.find((tab) => tab.id === draftTrip.id);
 
   return (
     <div className="space-y-6">
       <TripWorkspaceHeader
         currentTier={billing.currentTier}
+        starterMode={isStarterDraft}
         activeTrip={{
           id: draftTrip.id,
-          label: activeTab?.label ?? draftTrip.name,
+          name: draftTrip.name,
+          isOwner: draftTrip.isOwner,
           parkName: draftTrip.park.name,
           visitDate: draftTrip.visitDate,
           status: draftTrip.status,
@@ -94,5 +101,3 @@ export default async function NewTripPage({ searchParams }: { searchParams: Prom
     </div>
   );
 }
-
-

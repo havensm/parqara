@@ -80,6 +80,7 @@ export type ItineraryItemDto = {
 export type TripDetailDto = {
   id: string;
   name: string;
+  isOwner: boolean;
   status: TripStatusValue;
   visitDate: string;
   simulatedTime: string | null;
@@ -97,12 +98,52 @@ export type TripCollaboratorDto = {
   name: string;
 };
 
+export type UserPersonDto = {
+  id: string;
+  userId: string;
+  email: string;
+  name: string;
+};
+
+export type TripPendingInviteDto = {
+  id: string;
+  email: string;
+};
+
 export type TripCollaboratorStateDto = {
   tripId: string;
   canManage: boolean;
   owner: TripCollaboratorDto;
   collaborators: TripCollaboratorDto[];
+  pendingInvites: TripPendingInviteDto[];
+  people: UserPersonDto[];
 };
+
+export type ProfilePeopleStateDto = {
+  people: UserPersonDto[];
+};
+
+export type AppNotificationTypeValue = "SYSTEM" | "TRAVEL" | "WEATHER" | "RIDE_STATUS" | "PLANNER" | "COLLABORATION";
+
+export type NotificationDto = {
+  id: string;
+  type: AppNotificationTypeValue;
+  severity: Severity;
+  title: string;
+  detail: string;
+  actionHref: string | null;
+  tripId: string | null;
+  tripName: string | null;
+  actorName: string | null;
+  isRead: boolean;
+  createdAt: string;
+};
+
+export type NotificationCenterDto = {
+  unreadCount: number;
+  notifications: NotificationDto[];
+};
+
 export type WeatherDto = {
   condition: string;
   tempF: number;
@@ -156,3 +197,7 @@ export type SummaryDto = {
   highlights: string[];
   latestPlanSummary: string | null;
 };
+
+
+
+

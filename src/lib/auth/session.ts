@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 
-import type { User } from "@prisma/client";
+import type { User } from "@prisma/client/index";
 import { cookies } from "next/headers";
 
 import { SESSION_COOKIE_NAME } from "@/lib/constants";

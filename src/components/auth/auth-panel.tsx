@@ -38,6 +38,19 @@ const oauthErrorMessages: Record<string, string> = {
   google_state_invalid: "Google sign-in could not be verified. Please try again from the login page.",
 };
 
+async function readResponseBody(response: Response): Promise<{ error?: string; message?: string; nextPath?: string; previewUrl?: string }> {
+  const contentType = response.headers.get("content-type") || "";
+
+  if (contentType.includes("application/json")) {
+    return (await response.json()) as { error?: string; message?: string; nextPath?: string; previewUrl?: string };
+  }
+
+  const text = await response.text();
+  return {
+    error: text.includes("<!DOCTYPE") ? "The server returned an unexpected response. Check the local app and database setup." : text,
+  };
+}
+
 export function AuthPanel({ googleEnabled, mode }: AuthPanelProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -46,6 +59,7 @@ export function AuthPanel({ googleEnabled, mode }: AuthPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [emailLinkNotice, setEmailLinkNotice] = useState<EmailLinkNotice | null>(null);
   const oauthError = searchParams.get("error");
+  const invitedEmail = searchParams.get("email") ?? "";
   const displayError = error ?? (oauthError ? oauthErrorMessages[oauthError] || "Unable to continue with authentication." : null);
   const isSignup = mode === "signup";
 
@@ -70,7 +84,7 @@ export function AuthPanel({ googleEnabled, mode }: AuthPanelProps) {
       body: JSON.stringify(payload),
     });
 
-    const result = (await response.json()) as { error?: string; nextPath?: string };
+    const result = await readResponseBody(response);
     if (!response.ok) {
       throw new Error(result.error || "Authentication failed.");
     }
@@ -91,7 +105,7 @@ export function AuthPanel({ googleEnabled, mode }: AuthPanelProps) {
       }),
     });
 
-    const result = (await response.json()) as { error?: string; message?: string; previewUrl?: string };
+    const result = await readResponseBody(response);
     if (!response.ok) {
       throw new Error(result.error || "Unable to send the email link.");
     }
@@ -116,7 +130,7 @@ export function AuthPanel({ googleEnabled, mode }: AuthPanelProps) {
             Sign in to Parqara
           </h2>
           <p className="mt-3 max-w-xl text-sm leading-7 text-slate-600">
-            Use your email and password or continue with Google. If you do not have an account yet, create one first.
+            Use your email and password to jump back into the planner, or continue with Google.
           </p>
         </div>
 
@@ -161,12 +175,12 @@ export function AuthPanel({ googleEnabled, mode }: AuthPanelProps) {
         >
           <label className="block text-sm text-slate-600">
             Email
-            <input name="email" type="email" className={inputClassName} placeholder="you@parqara.app" required />
+            <input name="email" type="email" autoComplete="email" defaultValue={invitedEmail} className={inputClassName} placeholder="you@parqara.app" required />
           </label>
 
           <label className="block text-sm text-slate-600">
             Password
-            <input name="password" type="password" className={inputClassName} placeholder="Enter your password" required />
+            <input name="password" type="password" autoComplete="current-password" className={inputClassName} placeholder="Enter your password" required />
           </label>
 
           {displayError ? <p className="rounded-[22px] border border-[#efc1bc] bg-[#fff0ee] px-4 py-3 text-sm text-[#b14b41]">{displayError}</p> : null}
@@ -272,19 +286,19 @@ export function AuthPanel({ googleEnabled, mode }: AuthPanelProps) {
         {authMethod === "password" ? (
           <label className="block text-sm text-slate-600">
             First name
-            <input name="firstName" className={inputClassName} placeholder="Jordan" required />
+            <input name="firstName" autoComplete="given-name" className={inputClassName} placeholder="Jordan" required />
           </label>
         ) : null}
 
         <label className="block text-sm text-slate-600">
           Email
-          <input name="email" type="email" className={inputClassName} placeholder="you@parqara.app" required />
+          <input name="email" type="email" autoComplete="email" defaultValue={invitedEmail} className={inputClassName} placeholder="you@parqara.app" required />
         </label>
 
         {authMethod === "password" ? (
           <label className="block text-sm text-slate-600">
             Password
-            <input name="password" type="password" className={inputClassName} placeholder="Minimum 8 characters" required />
+            <input name="password" type="password" autoComplete="new-password" className={inputClassName} placeholder="Minimum 8 characters" required />
           </label>
         ) : (
           <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 text-sm leading-7 text-slate-500">
@@ -363,8 +377,6 @@ function GoogleMark() {
     </svg>
   );
 }
-
-
 
 
 

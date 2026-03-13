@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { AuthProvider, OnboardingStatus } from "@prisma/client";
+import { AuthProvider, OnboardingStatus } from "@prisma/client/index";
 import { hash } from "bcryptjs";
 import { NextResponse } from "next/server";
 
@@ -9,6 +9,7 @@ import { getPostAuthRedirectPath } from "@/lib/auth/guards";
 import { createSession } from "@/lib/auth/session";
 import { getAppOrigin } from "@/lib/auth/google";
 import { db } from "@/lib/db";
+import { claimPendingTripInvitesForUser } from "@/server/services/trip-service";
 
 function redirectToSignIn(request: Request, error: string) {
   return NextResponse.redirect(new URL(`/login?error=${error}`, getAppOrigin(request)));
@@ -61,6 +62,7 @@ export async function GET(request: Request) {
     });
   }
 
+  await claimPendingTripInvitesForUser(user.id, user.email);
   await createSession(user.id);
 
   return NextResponse.redirect(new URL(getPostAuthRedirectPath(user), getAppOrigin(request)));

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client/index";
 
 import { isAdminEmail } from "@/lib/admin";
 import { db } from "@/lib/db";

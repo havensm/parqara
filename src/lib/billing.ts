@@ -46,7 +46,7 @@ export const BILLING_PLANS: Record<SubscriptionTierValue, BillingPlan> = {
     monthlyPrice: 0,
     monthlyLabel: "$0",
     tagline: "Core planning",
-    summary: "Start with the itinerary builder, saved defaults, trip summaries, and a short Mara starter preview.",
+    summary: "Planner, saved defaults, trip summaries, and 3 Mara starter replies.",
     badge: "Best for trying the product",
     features: ["Saved planning profile", "Trip setup and itinerary builder", "Trip detail pages and summaries", "3 Mara starter replies"],
   },
@@ -56,7 +56,7 @@ export const BILLING_PLANS: Record<SubscriptionTierValue, BillingPlan> = {
     monthlyPrice: 12,
     monthlyLabel: "$12",
     tagline: "For live park days",
-    summary: "Unlock live park guidance once you are on the ground, while keeping the same Mara starter preview from Free.",
+    summary: "Everything in Free, plus live guidance, replans, and alerts.",
     badge: "Popular",
     features: ["Everything in Free", "Live park dashboard", "One-tap replans and live alerts"],
   },
@@ -66,7 +66,7 @@ export const BILLING_PLANS: Record<SubscriptionTierValue, BillingPlan> = {
     monthlyPrice: 29,
     monthlyLabel: "$29",
     tagline: "For power planners",
-    summary: "Add unlimited Mara planning help and shared trip workspaces for more demanding itineraries.",
+    summary: "Everything in Plus, plus unlimited Mara and shared planners.",
     badge: "For groups and frequent planners",
     features: ["Everything in Plus", "Unlimited Mara AI concierge", "Trip collaborators and shared planning"],
   },
@@ -190,3 +190,6 @@ export function getBillingStatusLabel(status: SubscriptionStatusValue | null | u
       return "Free";
   }
 }
+
+
+

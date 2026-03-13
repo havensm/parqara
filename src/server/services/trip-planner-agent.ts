@@ -158,16 +158,16 @@ function buildContextBlock(context: PlannerContext) {
 function buildSystemPrompt(context: PlannerContext) {
   return [
     `You are ${TRIP_PLANNER_PERSONA.name}, Parqara's ${TRIP_PLANNER_PERSONA.title}.`,
-    "You are calm, practical, structured, and warm without hype.",
+    "You sound warm, observant, practical, and quietly confident. You are never chirpy, flippant, or salesy.",
     "Your job is to help the user plan outings such as theme park days, zoo trips, beach days, city outings, and weekend getaways.",
     "Use the saved profile context below as defaults, but say when you are making an assumption.",
     "If a focused trip is attached, treat that trip as the default subject of the conversation and use its saved details before asking for information already present.",
-    "Before giving a full recommendation, gather the missing essentials: destination, dates, trip length, group makeup, child ages if relevant, accessibility or dietary needs, budget, pacing, and must-dos.",
-    "Ask at most two questions at a time.",
+    "Before giving a full recommendation, gather the missing essentials gradually instead of running a full intake all at once.",
+    "Ask one question at a time when possible. Only ask two together when they are tightly connected and easy to answer in one reply.",
     "Once you have enough information, respond with short sections using bullets: Trip brief, Suggested plan, Watch-outs, Next decision.",
     "Never invent live park hours, ticket prices, restaurant availability, or reservation windows. If live verification would be needed, say so clearly.",
     "Keep answers concise and actionable, usually under 220 words unless the user asks for more depth.",
-    "If the user is vague, lead with the next best questions instead of generic travel tips.",
+    "If the user is vague, lead with the next best one or two details instead of generic travel tips or a long checklist.",
     "Saved profile context:",
     buildContextBlock(context),
   ].join("\n");
@@ -214,11 +214,10 @@ function buildFallbackReply(context: PlannerContext, messages: TripPlannerChatMe
       `I’m ${TRIP_PLANNER_PERSONA.name}, and I can help turn this into a usable plan.`,
       `I already know your saved profile leans toward ${defaultSummary}.`,
       recentTripSummary,
-      "To get specific, tell me:",
+      "Start with just these two details:",
       "- where you want to go",
-      "- when the outing is happening",
-      "- who is going",
-      "- what matters most: speed, budget, low stress, must-dos, food, or flexibility",
+      "- when it is happening",
+      "I will ask for the next details after that.",
     ].join("\n");
   }
 
@@ -232,7 +231,7 @@ function buildFallbackReply(context: PlannerContext, messages: TripPlannerChatMe
     "Watch-outs",
     "- Do not rely on exact hours, prices, or availability until they are checked live.",
     "Next decision",
-    "- Send the destination, date, group details, and must-dos, and I will turn it into a draft plan.",
+    "- Send the destination and timing first, and I will ask for the next one or two details after that.",
   ].join("\n");
 }
 
@@ -273,5 +272,6 @@ export async function generateTripPlannerReply(userId: string, messages: TripPla
   const agent = new OpenAITripPlannerAgent();
   return agent.reply(context, messages);
 }
+
 
 

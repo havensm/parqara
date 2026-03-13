@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { CirclePlus, LoaderCircle, Mail, ShieldCheck, Trash2, UserRound, X } from "lucide-react";
 
 import { canAccessBillingFeature } from "@/lib/billing";
-import type { SubscriptionTierValue, TripCollaboratorStateDto } from "@/lib/contracts";
+import type { SubscriptionTierValue, TripCollaboratorStateDto, UserPersonDto } from "@/lib/contracts";
 
 import { FeatureUpsellCard } from "@/components/billing/feature-upsell-card";
 import { Button } from "@/components/ui/button";
@@ -94,8 +94,8 @@ export function TripCollaboratorManager({
     setInviteEmail("");
   }
 
-  function handleInvite() {
-    const email = inviteEmail.trim();
+  function handleInvite(nextEmail = inviteEmail) {
+    const email = nextEmail.trim();
     if (!email || isPending || isLocked) {
       return;
     }
@@ -148,7 +148,40 @@ export function TripCollaboratorManager({
     });
   }
 
+  function handleRemoveInvite(inviteId: string) {
+    if (isPending || isLocked) {
+      return;
+    }
+
+    startTransition(async () => {
+      setError(null);
+
+      try {
+        const response = await fetch(`/api/trips/${tripId}/collaborators/invites/${inviteId}`, {
+          method: "DELETE",
+        });
+        const result = (await response.json()) as { error?: string } & Partial<TripCollaboratorStateDto>;
+        if (!response.ok || !result.tripId) {
+          throw new Error(result.error || "Unable to remove invite.");
+        }
+
+        setState(result as TripCollaboratorStateDto);
+      } catch (removeError) {
+        setError(removeError instanceof Error ? removeError.message : "Unable to remove invite.");
+      }
+    });
+  }
+
   const peopleCount = 1 + (state?.collaborators.length ?? 0);
+  const availablePeople = useMemo(() => {
+    if (!state) {
+      return [] as UserPersonDto[];
+    }
+
+    const collaboratorIds = new Set(state.collaborators.map((collaborator) => collaborator.userId));
+    const pendingEmails = new Set(state.pendingInvites.map((invite) => invite.email.toLowerCase()));
+    return state.people.filter((person) => !collaboratorIds.has(person.userId) && !pendingEmails.has(person.email.toLowerCase()));
+  }, [state]);
 
   return (
     <>
@@ -161,7 +194,11 @@ export function TripCollaboratorManager({
         <CirclePlus className="h-4 w-4" />
         <span>{label}</span>
         <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">{peopleCount}</span>
-        {isLocked ? <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Pro</span> : null}
+        {isLocked ? (
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+            Pro
+          </span>
+        ) : null}
       </button>
 
       {isOpen ? (
@@ -174,10 +211,10 @@ export function TripCollaboratorManager({
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700/70">Collaborators</p>
                 <h2 className="mt-3 font-[family-name:var(--font-space-grotesk)] text-3xl font-semibold tracking-tight text-slate-950">
-                  Manage trip access
+                  Manage planner access
                 </h2>
                 <p className="mt-3 max-w-xl text-sm leading-7 text-slate-600">
-                  Add people who should help shape this trip. Collaborators can open the planner, update details, and work with Mara on the same trip.
+                  Add existing Parqara accounts instantly, or send an invite email that unlocks access after signup.
                 </p>
               </div>
               <button
@@ -196,7 +233,7 @@ export function TripCollaboratorManager({
                 <section className="rounded-[26px] border border-slate-200 bg-white p-5">
                   <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Invite by email</p>
                   <label className="mt-4 block text-sm font-medium text-slate-700" htmlFor={`trip-collaborator-email-${tripId}`}>
-                    Add an existing Parqara user
+                    Add by email
                   </label>
                   <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
                     <div className="min-w-0 flex-1">
@@ -214,12 +251,10 @@ export function TripCollaboratorManager({
                       </div>
                     </div>
                     <Button type="button" disabled>
-                      Add collaborator
+                      Send invite
                     </Button>
                   </div>
-                  <p className="mt-3 text-xs leading-6 text-slate-500">
-                    Shared workspaces stay visible in the UI here, but Pro is required before invitations can be sent.
-                  </p>
+                  <p className="mt-3 text-xs leading-6 text-slate-500">Pro is required before invitations and shared planners can be used.</p>
                 </section>
               </div>
             ) : null}
@@ -256,8 +291,8 @@ export function TripCollaboratorManager({
                 <section className="rounded-[26px] border border-slate-200 bg-white p-5">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Collaborators</p>
-                      <h3 className="mt-2 text-xl font-semibold text-slate-950">People on this trip</h3>
+                      <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Active access</p>
+                      <h3 className="mt-2 text-xl font-semibold text-slate-950">People on this planner</h3>
                     </div>
                     <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500">
                       {state.collaborators.length} added
@@ -292,16 +327,57 @@ export function TripCollaboratorManager({
                       ))}
                     </div>
                   ) : (
-                    <p className="mt-5 text-sm leading-7 text-slate-600">No collaborators have been added yet.</p>
+                    <p className="mt-5 text-sm leading-7 text-slate-600">No collaborators added yet.</p>
                   )}
                 </section>
 
+                {state.pendingInvites.length ? (
+                  <section className="rounded-[26px] border border-slate-200 bg-white p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Pending invites</p>
+                        <h3 className="mt-2 text-xl font-semibold text-slate-950">Waiting on account signup</h3>
+                      </div>
+                      <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500">
+                        {state.pendingInvites.length} sent
+                      </span>
+                    </div>
+
+                    <div className="mt-5 space-y-3">
+                      {state.pendingInvites.map((invite) => (
+                        <div key={invite.id} className="flex items-center justify-between gap-4 rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-4">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-white text-slate-500">
+                              <Mail className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-slate-950">{invite.email}</p>
+                              <p className="truncate text-sm text-slate-500">Invited and waiting for signup</p>
+                            </div>
+                          </div>
+                          {state.canManage ? (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveInvite(invite.id)}
+                              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-[#efc1bc] hover:text-[#b14b41]"
+                              aria-label={`Remove invite for ${invite.email}`}
+                              disabled={isPending}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
+
                 <section className="rounded-[26px] border border-slate-200 bg-white p-5">
-                  <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Invite by email</p>
+                  <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Share this planner</p>
                   {state.canManage ? (
                     <>
                       <label className="mt-4 block text-sm font-medium text-slate-700" htmlFor={`trip-collaborator-email-${tripId}`}>
-                        Add an existing Parqara user
+                        Add by email
                       </label>
                       <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
                         <div className="min-w-0 flex-1">
@@ -317,13 +393,41 @@ export function TripCollaboratorManager({
                             />
                           </div>
                         </div>
-                        <Button type="button" onClick={handleInvite} disabled={isPending || !inviteEmail.trim()}>
-                          {isPending ? "Saving..." : "Add collaborator"}
+                        <Button type="button" onClick={() => handleInvite()} disabled={isPending || !inviteEmail.trim()}>
+                          {isPending ? "Working..." : "Send invite"}
                         </Button>
                       </div>
                       <p className="mt-3 text-xs leading-6 text-slate-500">
-                        The email has to belong to an existing Parqara account. Added collaborators can open and edit this trip.
+                        Existing Parqara accounts join immediately. New emails get an invite and unlock the planner after signup.
                       </p>
+
+                      <div className="mt-6 border-t border-slate-200 pt-5">
+                        <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Saved contacts</p>
+                        {availablePeople.length ? (
+                          <div className="mt-4 space-y-3">
+                            {availablePeople.map((person) => (
+                              <div key={person.id} className="flex items-center justify-between gap-4 rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-4">
+                                <div className="flex min-w-0 items-center gap-3">
+                                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-white text-slate-500">
+                                    <UserRound className="h-4 w-4" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="truncate font-semibold text-slate-950">{person.name}</p>
+                                    <p className="truncate text-sm text-slate-500">{person.email}</p>
+                                  </div>
+                                </div>
+                                <Button type="button" variant="secondary" onClick={() => handleInvite(person.email)} disabled={isPending}>
+                                  Add
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="mt-4 text-sm leading-7 text-slate-600">
+                            Save frequent collaborators on the profile page and they will show up here as contacts.
+                          </p>
+                        )}
+                      </div>
                     </>
                   ) : (
                     <p className="mt-4 text-sm leading-7 text-slate-600">
@@ -341,3 +445,4 @@ export function TripCollaboratorManager({
     </>
   );
 }
+
