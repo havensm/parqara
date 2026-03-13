@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { AuthProvider, OnboardingStatus, SubscriptionTier, TripStatus } from "@prisma/client";
 
+import type { AdminAccessAccount } from "@/lib/admin";
 import type { AdminDashboardMetrics } from "@/server/services/admin-service";
 import type { AdminFeedbackSnapshot } from "@/server/services/feedback-service";
 import type {
@@ -132,11 +133,15 @@ function getIntegrationStageLabel(stage: AdminIntegrationStage) {
 }
 
 export function AdminDashboard({
+  adminAccounts,
+  currentAdminEmail,
   feedback,
   integrations,
   metrics,
   firstTimeState,
 }: {
+  adminAccounts: AdminAccessAccount[];
+  currentAdminEmail: string | null;
   feedback: AdminFeedbackSnapshot;
   integrations: AdminIntegrationsSnapshot;
   metrics: AdminDashboardMetrics;
@@ -185,7 +190,7 @@ export function AdminDashboard({
         </div>
 
         <TabsContent value="metrics" className="space-y-6">
-          <MetricsPanel metrics={metrics} />
+          <MetricsPanel adminAccounts={adminAccounts} currentAdminEmail={currentAdminEmail} metrics={metrics} />
         </TabsContent>
 
         <TabsContent value="feedback" className="space-y-6">
@@ -204,7 +209,15 @@ export function AdminDashboard({
   );
 }
 
-function MetricsPanel({ metrics }: { metrics: AdminDashboardMetrics }) {
+function MetricsPanel({
+  adminAccounts,
+  currentAdminEmail,
+  metrics,
+}: {
+  adminAccounts: AdminAccessAccount[];
+  currentAdminEmail: string | null;
+  metrics: AdminDashboardMetrics;
+}) {
   return (
     <>
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -264,6 +277,8 @@ function MetricsPanel({ metrics }: { metrics: AdminDashboardMetrics }) {
           </div>
         </Card>
       </section>
+
+      <AdminAccessPanel adminAccounts={adminAccounts} currentAdminEmail={currentAdminEmail} />
 
       <section className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
         <Card className="p-6">
@@ -370,6 +385,50 @@ function MetricsPanel({ metrics }: { metrics: AdminDashboardMetrics }) {
         </Card>
       </section>
     </>
+  );
+}
+
+function AdminAccessPanel({
+  adminAccounts,
+  currentAdminEmail,
+}: {
+  adminAccounts: AdminAccessAccount[];
+  currentAdminEmail: string | null;
+}) {
+  const normalizedCurrentAdminEmail = currentAdminEmail?.trim().toLowerCase() ?? null;
+
+  return (
+    <Card className="p-6 sm:p-7">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Admin access</p>
+          <h3 className="mt-2 text-2xl font-semibold text-slate-950">Current admin accounts</h3>
+        </div>
+        <Badge variant="neutral">{adminAccounts.length}</Badge>
+      </div>
+      <div className="mt-5 grid gap-3">
+        {adminAccounts.map((account) => {
+          const isCurrentSession = normalizedCurrentAdminEmail === account.email.trim().toLowerCase();
+
+          return (
+            <div key={account.email} className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-semibold text-slate-950">{account.email}</p>
+                <Badge variant={account.scope === "global" ? "success" : "warning"}>
+                  {account.scope === "global" ? "All environments" : "Local dev only"}
+                </Badge>
+                {isCurrentSession ? <Badge variant="info">Current session</Badge> : null}
+              </div>
+              <p className="mt-2 text-sm leading-7 text-slate-500">
+                {account.scope === "global"
+                  ? "This email can access the admin dashboard anywhere the app is deployed."
+                  : "This email only has admin access in local and localhost environments."}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
   );
 }
 
@@ -799,6 +858,8 @@ function BreakdownRow({ label, value, badge }: { label: string; value: number; b
     </div>
   );
 }
+
+
 
 
 

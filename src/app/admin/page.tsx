@@ -1,6 +1,7 @@
 import { Activity, KeyRound, ShieldCheck, Sparkles } from "lucide-react";
 
 import { requireAdminUser } from "@/lib/auth/guards";
+import { getAdminAccessAccounts } from "@/lib/admin";
 import { getAdminDashboardMetrics } from "@/server/services/admin-service";
 import { getAdminFeedbackSnapshot } from "@/server/services/feedback-service";
 import { getAdminIntegrationsSnapshot } from "@/server/services/integration-service";
@@ -13,6 +14,7 @@ export default async function AdminPage() {
   const metrics = await getAdminDashboardMetrics();
   const feedback = await getAdminFeedbackSnapshot();
   const integrations = getAdminIntegrationsSnapshot();
+  const adminAccounts = getAdminAccessAccounts();
 
   return (
     <AppShell
@@ -36,6 +38,8 @@ export default async function AdminPage() {
       }
     >
       <AdminDashboard
+        adminAccounts={adminAccounts}
+        currentAdminEmail={user.email}
         feedback={feedback}
         integrations={integrations}
         metrics={metrics}

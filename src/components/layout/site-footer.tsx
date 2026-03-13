@@ -5,6 +5,7 @@ import { BrandLogo } from "@/components/layout/brand-logo";
 const footerLinks = [
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
+  { href: "/roadmap", label: "Roadmap" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
 ];
@@ -33,5 +34,3 @@ export function SiteFooter() {
     </footer>
   );
 }
-
-
