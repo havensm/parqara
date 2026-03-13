@@ -256,18 +256,21 @@ function buildDraftClearingPayload(
   values: TripFormValues,
   previousPayload: PersistableDraftPayload
 ): PersistableDraftPayload | null {
+  const hadSavedKidsAges = (previousPayload.kidsAges?.length ?? 0) > 0;
   const hadSavedCollectionSelections =
     (previousPayload.mustDoRideIds?.length ?? 0) > 0 ||
     (previousPayload.preferredRideTypes?.length ?? 0) > 0 ||
     (previousPayload.diningPreferences?.length ?? 0) > 0;
+  const shouldClearKidsAges = !values.kidsAgesInput.trim() && hadSavedKidsAges;
   const shouldClearBreakWindow =
     !values.breakStart && !values.breakEnd && Boolean(previousPayload.breakStart || previousPayload.breakEnd);
 
-  if (!hadSavedCollectionSelections && !shouldClearBreakWindow) {
+  if (!hadSavedCollectionSelections && !shouldClearKidsAges && !shouldClearBreakWindow) {
     return null;
   }
 
   return {
+    ...(shouldClearKidsAges ? { kidsAges: [] } : {}),
     mustDoRideIds: values.mustDoRideIds,
     preferredRideTypes: values.preferredRideTypes,
     diningPreferences: values.diningPreferences,
