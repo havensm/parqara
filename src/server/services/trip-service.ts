@@ -1031,12 +1031,37 @@ export async function addTripCollaborator(
       throw new HttpError(400, "That user already has access to this trip.");
     }
 
-    await db.tripCollaborator.create({
+    const createdCollaborator = await db.tripCollaborator.create({
       data: {
         tripId: trip.id,
         userId: collaborator.id,
       },
     });
+
+    const actionHref = getTripWorkspaceHrefForStatus(trip.id, trip.status);
+
+    try {
+      await sendTripInviteEmail({
+        appOrigin,
+        email: collaborator.email,
+        inviterName: buildUserDisplayName(trip.user),
+        parkName: trip.park.name,
+        tripName: trip.name,
+        tripStatus: trip.status,
+        tripId: trip.id,
+        requiresAccount: false,
+      });
+    } catch (error) {
+      await db.tripCollaborator
+        .delete({
+          where: {
+            id: createdCollaborator.id,
+          },
+        })
+        .catch(() => undefined);
+
+      throw error;
+    }
 
     if (existingInvite) {
       await db.tripCollaboratorInvite.delete({
@@ -1047,18 +1072,6 @@ export async function addTripCollaborator(
     }
 
     await saveUserPerson(userId, collaborator.id);
-
-    const actionHref = getTripWorkspaceHrefForStatus(trip.id, trip.status);
-    await sendTripInviteEmail({
-      appOrigin,
-      email: collaborator.email,
-      inviterName: buildUserDisplayName(trip.user),
-      parkName: trip.park.name,
-      tripName: trip.name,
-      tripStatus: trip.status,
-      tripId: trip.id,
-      requiresAccount: false,
-    });
 
     await createNotifications({
       userIds: [collaborator.id],
