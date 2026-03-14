@@ -1,321 +1,340 @@
-import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Bot, CalendarRange, Compass, Map, Route, Sparkles, Users, type LucideIcon } from "lucide-react";
+import {
+  ArrowRight,
+  BellRing,
+  CalendarClock,
+  Compass,
+  CreditCard,
+  FolderKanban,
+  Route,
+  Sparkles,
+  UserCircle2,
+  type LucideIcon,
+} from "lucide-react";
 
 import { getUserBillingState } from "@/lib/billing";
+import { isAdminEmail } from "@/lib/admin";
 import { requireCompletedOnboardingUser } from "@/lib/auth/guards";
+import { type DashboardTripDto } from "@/lib/contracts";
+
 import { buildPreferenceSummary } from "@/lib/onboarding";
-import type { SubscriptionTierValue } from "@/lib/contracts";
+import { formatTripPlannerStatusLabel } from "@/lib/trip-planner-agent";
+import { getTripWorkspaceHref, pickDefaultTrip } from "@/lib/trip-workspace";
+import { getNotificationPreview } from "@/server/services/notification-service";
+import { getPlannerLimitState } from "@/server/services/planner-entitlement-service";
 import { getDefaultParkSummary, listDashboardTrips } from "@/server/services/trip-service";
 import { getOnboardingState } from "@/server/services/user-service";
 
 import { AppShell } from "@/components/app/app-shell";
 import { EmptyState } from "@/components/app/empty-state";
-import { ParksUnavailableState } from "@/components/app/parks-unavailable-state";
 import { PreferenceSummary } from "@/components/app/preference-summary";
-import { PlanBadge } from "@/components/billing/plan-badge";
+import { NotificationFeed } from "@/components/notifications/notification-feed";
 import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
-type StepCard = {
+
+type HomeAction = {
   href: string;
   title: string;
   detail: string;
   icon: LucideIcon;
-  iconClassName: string;
-  surfaceClassName: string;
-  requiredTier?: SubscriptionTierValue;
+  tone: "amber" | "sky" | "teal" | "violet";
 };
+
+const actionToneClassNames: Record<HomeAction["tone"], string> = {
+  amber: "bg-[rgba(255,248,235,0.96)] text-[var(--amber-700)]",
+  sky: "bg-[rgba(239,245,255,0.92)] text-[var(--sky-700)]",
+  teal: "bg-[rgba(238,253,249,0.92)] text-[var(--teal-700)]",
+  violet: "bg-[rgba(246,240,255,0.92)] text-[#6d4fd6]",
+};
+
+function formatVisitDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).format(date);
+}
+
+function getUpcomingTrips(trips: DashboardTripDto[]) {
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const upcoming = [...trips]
+    .filter((trip) => trip.visitDate >= todayKey)
+    .sort((left, right) => left.visitDate.localeCompare(right.visitDate));
+
+  return upcoming.length ? upcoming : [...trips].sort((left, right) => left.visitDate.localeCompare(right.visitDate));
+}
 
 export default async function AppPage() {
   const user = await requireCompletedOnboardingUser();
+  const adminEnabled = isAdminEmail(user.email);
   const billing = getUserBillingState(user);
-  const [onboarding, trips, defaultPark] = await Promise.all([
+  const [onboarding, trips, defaultPark, plannerLimitState, notificationPreview] = await Promise.all([
     getOnboardingState(user.id),
     listDashboardTrips(user.id),
     getDefaultParkSummary(),
+    getPlannerLimitState(user.id),
+    getNotificationPreview(user.id, 4),
   ]);
-  const summaryItems = buildPreferenceSummary(onboarding.values);
+
   const firstName = user.firstName ?? user.name ?? "there";
-  const canStartPlanning = Boolean(defaultPark);
-  const nextSteps: StepCard[] = [
+  const summaryItems = buildPreferenceSummary(onboarding.values);
+  const upcomingTrips = getUpcomingTrips(trips);
+  const featuredTrips = upcomingTrips.slice(0, 4);
+  const currentFocusTrip = pickDefaultTrip(upcomingTrips.length ? upcomingTrips : trips);
+  const unreadNotification = notificationPreview.notifications.find((notification) => !notification.isRead) ?? notificationPreview.notifications[0] ?? null;
+  const canCreatePlanner = plannerLimitState.canCreate && Boolean(defaultPark);
+
+  const nextMoves: HomeAction[] = [
+    currentFocusTrip
+      ? {
+          href: getTripWorkspaceHref(currentFocusTrip),
+          title: currentFocusTrip.status === "DRAFT" ? "Continue your active draft" : "Pick up your current planner",
+          detail: currentFocusTrip.latestPlanSummary ?? `${currentFocusTrip.parkName} is ready for the next planning move.`,
+          icon: Route,
+          tone: "teal",
+        }
+      : {
+          href: "/dashboard",
+          title: "Open planner workspace",
+          detail: "Jump into the planner board and start shaping the next outing with Mara.",
+          icon: FolderKanban,
+          tone: "teal",
+        },
+    canCreatePlanner
+      ? {
+          href: "/trips/new?fresh=1",
+          title: "Start a new planner",
+          detail: `Open a fresh planner for ${defaultPark?.name ?? "your next destination"} and carry your defaults forward.`,
+          icon: Sparkles,
+          tone: "sky",
+        }
+      : {
+          href: billing.currentTier === "FREE" ? "/pricing" : "/billing",
+          title: "Manage planner space",
+          detail: `You are using ${plannerLimitState.activePlannerCount} of ${plannerLimitState.plannerLimit} active planner slots.`,
+          icon: CreditCard,
+          tone: "amber",
+        },
     {
-      href: "/dashboard",
-      title: "Shape the trip with Mara",
-      detail: "Use chat to fill gaps and sharpen the plan.",
-      icon: Bot,
-      iconClassName: "bg-sky-100 text-sky-700",
-      surfaceClassName: "bg-[linear-gradient(180deg,#f1f8ff_0%,#ffffff_100%)]",
-      requiredTier: "PRO",
+      href: unreadNotification?.actionHref ?? "/notifications",
+      title: unreadNotification ? "Handle the next alert" : "Review your inbox",
+      detail: unreadNotification ? unreadNotification.title : "Stay on top of planner, travel, and shared-trip activity.",
+      icon: BellRing,
+      tone: "amber",
     },
     {
-      href: "/trips/new?fresh=1",
-      title: "Build a day plan",
-      detail: "Turn saved defaults into a first route.",
-      icon: Route,
-      iconClassName: "bg-teal-100 text-teal-700",
-      surfaceClassName: "bg-[linear-gradient(180deg,#f1fbf8_0%,#ffffff_100%)]",
-    },
-    {
-      href: "/profile#billing",
-      title: "Compare Plus and Pro",
-      detail: "See when live tools and full Mara make sense.",
-      icon: Sparkles,
-      iconClassName: "bg-amber-100 text-amber-700",
-      surfaceClassName: "bg-[linear-gradient(180deg,#fff9ef_0%,#ffffff_100%)]",
+      href: "/calendar",
+      title: "See the month ahead",
+      detail: `${upcomingTrips.length} trip${upcomingTrips.length === 1 ? "" : "s"} lined up across your calendar and planners.`,
+      icon: CalendarClock,
+      tone: "violet",
     },
     {
       href: "/profile",
-      title: "Refine saved defaults",
-      detail: "Update pace, party needs, and planning style.",
-      icon: Users,
-      iconClassName: "bg-violet-100 text-violet-700",
-      surfaceClassName: "bg-[linear-gradient(180deg,#f7f2ff_0%,#ffffff_100%)]",
+      title: "Refresh account defaults",
+      detail: "Keep your name, profile image, preferences, and planning style current.",
+      icon: UserCircle2,
+      tone: "sky",
     },
   ];
 
   return (
     <AppShell
-      eyebrow="Parqara app"
+      eyebrow="Account home"
       title={`Welcome back, ${firstName}.`}
-      description="Keep trips, preferences, and planning in one place."
-      actionHref={canStartPlanning ? "/trips/new?fresh=1" : undefined}
-      actionLabel={canStartPlanning ? "Start a new trip" : undefined}
+      description="This is the signed-in home for Parqara: upcoming trips, inbox activity, planner momentum, current plan access, and the fastest path back into Mara-guided planning."
+      actionHref={canCreatePlanner ? "/trips/new?fresh=1" : "/dashboard"}
+      actionLabel={canCreatePlanner ? "Start a new planner" : "Open planners"}
+      secondaryActionHref="/calendar"
+      secondaryActionLabel="Open calendar"
       icon={<Compass className="h-6 w-6" />}
+      currentTier={billing.currentTier}
+      adminEnabled={adminEnabled}
       highlights={[
-        { icon: <Map className="h-4 w-4" />, label: "Trips, details, and must-dos" },
-        { icon: <CalendarRange className="h-4 w-4" />, label: "Saved defaults" },
-        { icon: <Sparkles className="h-4 w-4" />, label: "Mara for kickoff" },
+        { icon: <FolderKanban className="h-4 w-4" />, label: `${plannerLimitState.activePlannerCount} active planners` },
+        { icon: <BellRing className="h-4 w-4" />, label: `${notificationPreview.unreadCount} unread notifications` },
+        { icon: <CalendarClock className="h-4 w-4" />, label: `${upcomingTrips.length} upcoming trip${upcomingTrips.length === 1 ? "" : "s"}` },
       ]}
-      visual={
-        <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="overflow-hidden rounded-[24px] border border-slate-200/80 bg-white">
-            <Image
-              src="/illustrations/park-planning-studio.svg"
-              alt="Parqara planning workspace illustration"
-              width={1200}
-              height={900}
-              className="h-full w-full object-cover"
-              priority
-            />
-          </div>
-          <div className="grid gap-3">
-            <VisualSummaryCard
-              icon={Map}
-              title="Saved profile"
-              detail="Preferences stay with every trip."
-              iconClassName="bg-teal-100 text-teal-700"
-            />
-            <VisualSummaryCard
-              icon={Route}
-              title="Practical plan"
-              detail="Go from idea to route faster."
-              iconClassName="bg-sky-100 text-sky-700"
-            />
-            <VisualSummaryCard
-              icon={Bot}
-              title="Guided kickoff"
-              detail="Mara fills the gaps."
-              iconClassName="bg-amber-100 text-amber-700"
-            />
-          </div>
-        </div>
-      }
-    >
-      <div className="grid gap-6 xl:grid-cols-[1.03fr_0.97fr]">
-        <PreferenceSummary items={summaryItems.length ? summaryItems : ["Your defaults are saved and ready for your first plan"]} />
 
-        {canStartPlanning ? (
-          <Card className="overflow-hidden p-0">
-            <div className="border-b border-slate-200/80 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.18),transparent_32%),linear-gradient(180deg,rgba(248,252,255,0.98),rgba(255,255,255,0.98))] px-6 py-6 sm:px-7">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700/70">Next steps</p>
-              <h2 className="mt-3 font-[family-name:var(--font-space-grotesk)] text-3xl font-semibold tracking-tight text-slate-950">
-                Pick the next step.
-              </h2>
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-                Move from brief to plan.
-              </p>
-            </div>
-            <div className="grid gap-3 p-6 sm:p-7">
-              {nextSteps.map((item) => (
-                <Link
-                  key={item.title}
-                  href={item.href}
-                  className={`rounded-[26px] border border-slate-200 px-5 py-5 transition hover:-translate-y-0.5 hover:border-[#c9d8d1] hover:shadow-[0_18px_30px_rgba(15,23,42,0.05)] ${item.surfaceClassName}`}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex gap-4">
-                      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] ${item.iconClassName}`}>
-                        <item.icon className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-semibold text-slate-950">{item.title}</p>
-                          {item.requiredTier ? <PlanBadge tier={item.requiredTier} /> : null}
-                        </div>
-                        <p className="mt-2 max-w-xl text-sm leading-7 text-slate-600">{item.detail}</p>
-                      </div>
-                    </div>
-                    <ArrowRight className="mt-1 h-4 w-4 text-slate-400" />
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </Card>
-        ) : (
-          <Card className="overflow-hidden p-0">
-            <div className="border-b border-slate-200/80 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.18),transparent_30%),linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.98))] px-6 py-6 sm:px-7">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-amber-700/80">Catalog status</p>
-              <h2 className="mt-3 font-[family-name:var(--font-space-grotesk)] text-3xl font-semibold tracking-tight text-slate-950">
-                No parks are configured for production yet.
-              </h2>
-              <p className="mt-3 text-sm leading-7 text-slate-600">
-                Trip creation stays off until one park catalog is loaded.
-              </p>
-            </div>
-            <div className="p-6 sm:p-7">
-              <Image
-                src="/illustrations/trip-summary-preview.svg"
-                alt="Trip summary preview illustration"
-                width={1200}
-                height={900}
-                className="h-auto w-full rounded-[24px] border border-slate-200 bg-white object-cover"
-              />
-            </div>
-          </Card>
-        )}
+    >
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <HomeMetricCard label="Upcoming" value={String(upcomingTrips.length)} detail="Trips on the calendar" />
+        <HomeMetricCard label="Inbox" value={String(notificationPreview.unreadCount)} detail="Unread notifications" />
+        <HomeMetricCard label="Active planners" value={`${plannerLimitState.activePlannerCount}/${plannerLimitState.plannerLimit}`} detail="Planner capacity" />
+        <HomeMetricCard label="Defaults" value={String(summaryItems.length || 1)} detail="Saved account signals" />
       </div>
 
-      {trips.length ? (
-        <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
-          {trips.slice(0, 3).map((trip, index) => (
-            <Card key={trip.id} className="overflow-hidden p-0">
-              <div className={`h-1.5 ${index % 3 === 0 ? "bg-teal-400" : index % 3 === 1 ? "bg-sky-400" : "bg-amber-400"}`} />
-              <div className="p-6">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">{trip.status}</p>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">Continue trip</span>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
+        <Card className="overflow-hidden p-0">
+          <div className="bg-[linear-gradient(180deg,#f8fbff_0%,#ffffff_100%)] px-6 py-6 sm:px-7">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--muted)]">Next moves</p>
+            <h2 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight text-[var(--foreground)]">
+              The fastest useful actions are right here.
+            </h2>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">
+              Jump back into the current planner, start another one, clear inbox activity, or tighten the account defaults that guide every plan.
+            </p>
+          </div>
+          <div className="grid gap-3 p-6 sm:p-7">
+            {nextMoves.map((item) => (
+              <Link key={item.title} href={item.href} className="premium-card-tilt rounded-[28px] border border-[var(--card-border)] bg-white/72 px-5 py-5 transition hover:bg-white">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex gap-4">
+                    <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] ${actionToneClassNames[item.tone]}`}>
+                      <item.icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-[var(--foreground)]">{item.title}</p>
+                      <p className="mt-2 max-w-xl text-sm leading-7 text-[var(--muted)]">{item.detail}</p>
+                    </div>
+                  </div>
+                  <ArrowRight className="mt-1 h-4 w-4 text-[var(--muted)]" />
                 </div>
-                <h2 className="mt-4 font-[family-name:var(--font-space-grotesk)] text-2xl font-semibold tracking-tight text-slate-950">{trip.name}</h2>
-                <p className="mt-3 text-sm leading-7 text-slate-600">{trip.latestPlanSummary ?? "Open to keep going."}</p>
-                <div className="mt-6 flex gap-3">
-                  <Link href={trip.status === "DRAFT" ? `/trips/new?tripId=${trip.id}` : `/trips/${trip.id}`} className={buttonStyles({ variant: "secondary", size: "default" })}>
-                    Open
+              </Link>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="overflow-hidden p-0">
+          <div className="bg-[linear-gradient(180deg,#f8fcfb_0%,#ffffff_100%)] px-6 py-6 sm:px-7">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--muted)]">Notifications</p>
+            <h2 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight text-[var(--foreground)]">
+              Your account inbox at a glance.
+            </h2>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">
+              See the latest planner, travel, and shared-trip updates without leaving the home page.
+            </p>
+          </div>
+          <div className="p-4 sm:p-5">
+            <NotificationFeed initialCenter={notificationPreview} mode="compact" />
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,0.96fr)_minmax(0,1.04fr)]">
+        <PreferenceSummary items={summaryItems.length ? summaryItems : ["Your account defaults are saved and ready for the next planner"]} />
+
+        <Card className="overflow-hidden p-0">
+          <div className="bg-[linear-gradient(180deg,#fffaf0_0%,#ffffff_100%)] px-6 py-6 sm:px-7">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--muted)]">Planner pulse</p>
+            <h2 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight text-[var(--foreground)]">
+              What your account is tracking right now.
+            </h2>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">
+              Keep one eye on planner mix, current focus, and where Mara or the route likely needs attention next.
+            </p>
+          </div>
+          <div className="grid gap-4 p-6 sm:grid-cols-2 sm:p-7">
+            <div className="rounded-[24px] border border-[var(--card-border)] bg-[var(--surface-muted)] p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Current focus</p>
+              {currentFocusTrip ? (
+                <>
+                  <p className="mt-3 text-lg font-semibold text-[var(--foreground)]">{currentFocusTrip.name}</p>
+                  <p className="mt-2 text-sm text-[var(--muted)]">{currentFocusTrip.parkName} · {formatVisitDate(currentFocusTrip.visitDate)}</p>
+                  <p className="mt-3 text-sm leading-6 text-[var(--muted)]">{currentFocusTrip.latestPlanSummary ?? "Open this planner to keep moving the route forward."}</p>
+                  <Link href={getTripWorkspaceHref(currentFocusTrip)} className={buttonStyles({ variant: "secondary", size: "sm" }) + " mt-4"}>
+                    Open current focus
                   </Link>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      ) : canStartPlanning ? (
-        <EmptyState
-          eyebrow="No adventures yet"
-          title="You haven&apos;t planned an adventure yet."
-          description="Start one trip and let Parqara carry the setup."
-          actionHref="/dashboard"
-          actionLabel="Talk to the planner"
-          visual={
-            <div className="flex h-36 w-36 items-center justify-center rounded-[36px] bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.2),transparent_60%),linear-gradient(180deg,#f7fbff_0%,#eef6fb_100%)] text-teal-700">
-              <Compass className="h-12 w-12" />
+                </>
+              ) : (
+                <p className="mt-3 text-sm leading-6 text-[var(--muted)]">No planner is active yet. Start one and it will become the account focus here.</p>
+              )}
             </div>
-          }
+            <div className="rounded-[24px] border border-[var(--card-border)] bg-[var(--surface-muted)] p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Status mix</p>
+              <div className="mt-4 space-y-3">
+                <StatusRow label="Draft" value={trips.filter((trip) => trip.status === "DRAFT").length} />
+                <StatusRow label="Planned" value={trips.filter((trip) => trip.status === "PLANNED").length} />
+                <StatusRow label="Live" value={trips.filter((trip) => trip.status === "LIVE").length} />
+                <StatusRow label="Completed" value={trips.filter((trip) => trip.status === "COMPLETED").length} />
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {featuredTrips.length ? (
+        <Card className="overflow-hidden p-0">
+          <div className="bg-[linear-gradient(180deg,#f8fbff_0%,#ffffff_100%)] px-6 py-6 sm:px-7">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--muted)]">Upcoming trips</p>
+                <h2 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight text-[var(--foreground)]">
+                  Your next adventures, all in reach.
+                </h2>
+                <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">
+                  Open the planner, jump into the calendar, or use these upcoming trips as the quickest way back into active planning.
+                </p>
+              </div>
+              <Link href="/dashboard" className={buttonStyles({ variant: "secondary", size: "default" })}>
+                View all planners
+              </Link>
+            </div>
+          </div>
+          <div className="grid gap-3 p-6 md:grid-cols-2 xl:grid-cols-4 sm:p-7">
+            {featuredTrips.map((trip) => (
+              <Link key={trip.id} href={getTripWorkspaceHref(trip)} className="premium-card-tilt rounded-[26px] border border-[var(--card-border)] bg-white/72 p-4 transition hover:bg-white">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="rounded-full border border-[var(--card-border)] bg-[var(--surface-muted)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+                    {formatTripPlannerStatusLabel(trip.status)}
+                  </span>
+                  <ArrowRight className="h-4 w-4 text-[var(--muted)]" />
+                </div>
+                <h3 className="mt-4 text-lg font-semibold text-[var(--foreground)]">{trip.name}</h3>
+                <p className="mt-2 text-sm text-[var(--muted)]">{trip.parkName}</p>
+                <p className="mt-3 text-sm text-[var(--muted)]">{formatVisitDate(trip.visitDate)}</p>
+                <p className="mt-3 line-clamp-3 text-sm leading-6 text-[var(--muted)]">{trip.latestPlanSummary ?? "Open this planner to keep shaping the route and next moves."}</p>
+              </Link>
+            ))}
+          </div>
+        </Card>
+      ) : canCreatePlanner ? (
+        <EmptyState
+          eyebrow="No trips yet"
+          title="Your signed-in home is ready for its first planner."
+          description="Start a planner and this page will begin showing upcoming trips, next moves, and the account signals that matter most."
+          actionHref="/trips/new?fresh=1"
+          actionLabel="Start the first planner"
         />
       ) : (
-        <ParksUnavailableState />
+        <Card className="p-6 sm:p-7">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--muted)]">Planner setup</p>
+          <h2 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight text-[var(--foreground)]">
+            Planner creation is waiting on catalog access.
+          </h2>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">
+            As soon as a park or destination catalog is configured, your home page will start filling with upcoming planners and live trip activity.
+          </p>
+        </Card>
       )}
-
-      <Card className="overflow-hidden p-0">
-        <div className="grid gap-0 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.18),transparent_26%),linear-gradient(180deg,rgba(248,252,255,0.98),rgba(255,255,255,0.98))] px-6 py-6 sm:px-7">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700/70">Current plan</p>
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              <h2 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-semibold tracking-tight text-slate-950">{billing.currentPlan.name}</h2>
-              <PlanBadge tier={billing.currentTier} />
-            </div>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
-              Free covers the planner. Plus adds live tools. Pro adds full Mara and collaboration.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link href="/profile" className={buttonStyles({ variant: "secondary", size: "lg" })}>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Open profile
-              </Link>
-              <Link href="/profile#billing" className={buttonStyles({ variant: "ghost", size: "lg" })}>
-                View plans
-              </Link>
-            </div>
-          </div>
-          <div className="grid gap-3 bg-white px-6 py-6 sm:px-7">
-            <PlanFeaturePill label="Free" detail="Planner and Mara preview" tone="teal" />
-            <PlanFeaturePill label="Plus" detail="Live mode and replans" tone="sky" />
-            <PlanFeaturePill label="Pro" detail="Full Mara and collaboration" tone="amber" />
-          </div>
-        </div>
-      </Card>
     </AppShell>
   );
 }
 
-function VisualSummaryCard({
-  icon: Icon,
-  title,
-  detail,
-  iconClassName,
-}: {
-  icon: LucideIcon;
-  title: string;
-  detail: string;
-  iconClassName: string;
-}) {
+function HomeMetricCard({ label, value, detail }: { label: string; value: string; detail: string }) {
   return (
-    <div className="rounded-[22px] border border-slate-200/80 bg-white p-4">
-      <div className="flex items-start gap-3">
-        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[16px] ${iconClassName}`}>
-          <Icon className="h-5 w-5" />
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-slate-950">{title}</p>
-          <p className="mt-2 text-sm leading-6 text-slate-600">{detail}</p>
-        </div>
-      </div>
-    </div>
+    <Card className="p-4 sm:p-5">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">{label}</p>
+      <p className="mt-3 font-[family-name:var(--font-space-grotesk)] text-3xl font-semibold tracking-tight text-[var(--foreground)]">{value}</p>
+      <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{detail}</p>
+    </Card>
   );
 }
 
-function PlanFeaturePill({
-  label,
-  detail,
-  tone,
-}: {
-  label: string;
-  detail: string;
-  tone: "amber" | "sky" | "teal";
-}) {
-  const toneClassNames = {
-    amber: "bg-[linear-gradient(180deg,#fff8eb_0%,#ffffff_100%)] text-amber-700",
-    sky: "bg-[linear-gradient(180deg,#f2f8ff_0%,#ffffff_100%)] text-sky-700",
-    teal: "bg-[linear-gradient(180deg,#effbf8_0%,#ffffff_100%)] text-teal-700",
-  } as const;
-
+function StatusRow({ label, value }: { label: string; value: number }) {
   return (
-    <div className={`rounded-[24px] border border-slate-200 px-5 py-5 ${toneClassNames[tone]}`}>
-      <p className="text-xs font-semibold uppercase tracking-[0.24em]">{label}</p>
-      <p className="mt-2 text-base font-semibold text-slate-950">{detail}</p>
+    <div className="flex items-center justify-between gap-3 rounded-[18px] border border-[var(--card-border)] bg-white/72 px-4 py-3">
+      <p className="text-sm text-[var(--muted)]">{label}</p>
+      <p className="text-sm font-semibold text-[var(--foreground)]">{value}</p>
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

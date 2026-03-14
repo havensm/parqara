@@ -9,6 +9,7 @@ import { canAccessBillingFeature } from "@/lib/billing";
 import type { SubscriptionTierValue, TripCollaboratorStateDto } from "@/lib/contracts";
 
 import { FeatureUpsellCard } from "@/components/billing/feature-upsell-card";
+import { PlannerWorkflowPanel } from "@/components/trip/planner-workflow-panel";
 import { Button } from "@/components/ui/button";
 
 const inputClassName =
@@ -483,6 +484,8 @@ export function TripPlannerSettingsDialog({
                 ) : null}
               </section>
 
+              <PlannerWorkflowPanel currentTier={currentTier} tripId={tripId} tripName={draftName.trim() || tripName} isOwner={isOwner} />
+
               {isOwner ? (
                 <section className="rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -596,6 +599,8 @@ export function TripPlannerSettingsDialog({
     </>
   );
 }
+
+
 
 
 

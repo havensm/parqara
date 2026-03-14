@@ -17,13 +17,13 @@ describe("mara rate limits", () => {
 
   it("keeps pro limits broader than free", () => {
     expect(getMaraRateLimitRules("PRO")).toHaveLength(3);
-    expect(getMaraRateLimitRules("FREE")).toEqual([{ key: "2 requests per minute", maxRequests: 2, windowMs: 60_000 }]);
+    expect(getMaraRateLimitRules("FREE")).toEqual([{ key: "1 request per minute", maxRequests: 1, windowMs: 60_000 }]);
   });
 
   it("builds a user-facing rate limit message", () => {
     const [rule] = getMaraRateLimitRules("FREE");
     expect(buildMaraRateLimitMessage(rule, 30)).toBe(
-      "You have hit the Mara limit of 2 requests per minute. Try again in about 30s."
+      "Mara has reached the current fair-use guardrail for your plan. Try again in about 30s."
     );
   });
 });

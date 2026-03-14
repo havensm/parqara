@@ -4,7 +4,9 @@ import { Suspense } from "react";
 import { Manrope, Space_Grotesk } from "next/font/google";
 
 import { SiteFooter } from "@/components/layout/site-footer";
-import { SiteHeader } from "@/components/layout/site-header";
+import { SiteSidebar } from "@/components/layout/site-sidebar";
+import { MarketingHeader } from "@/components/layout/marketing-header";
+import { RootChrome } from "@/components/layout/root-chrome";
 import { RouteScrollManager } from "@/components/layout/route-scroll-manager";
 
 import "./globals.css";
@@ -22,9 +24,9 @@ const spaceGrotesk = Space_Grotesk({
 export const runtime = "nodejs";
 
 export const metadata: Metadata = {
-  title: "Parqara | Adventure planner with live park guidance",
+  title: "Parqara | AI planning for trips, weekends, and days out",
   description:
-    "Parqara is an adventure planner that builds park-day itineraries around real constraints and updates guidance live as conditions change.",
+    "Parqara is an AI-powered planning platform centered around Mara, helping people plan trips, weekends, date nights, family adventures, and vacations in one polished workspace.",
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
@@ -34,13 +36,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <Suspense fallback={null}>
           <RouteScrollManager />
         </Suspense>
-        <div className="relative isolate min-h-screen overflow-x-clip">
-          <SiteHeader />
-          <main className="relative mx-auto min-h-[calc(100vh-104px)] w-full max-w-[88rem] px-4 pb-14 pt-4 sm:px-8 sm:pb-20 sm:pt-6 lg:px-10">
-            {children}
-          </main>
-          <SiteFooter />
-        </div>
+        <RootChrome footer={<SiteFooter />} marketingHeader={<MarketingHeader />} sidebar={<SiteSidebar />}>
+          {children}
+        </RootChrome>
       </body>
     </html>
   );

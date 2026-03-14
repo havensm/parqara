@@ -5,6 +5,7 @@ import type { ProfilePeopleStateDto, UserPersonDto } from "@/lib/contracts";
 import { db } from "@/lib/db";
 import { HttpError } from "@/lib/http-error";
 import { clampOnboardingStep, emptyOnboardingValues, onboardingDraftSchema, onboardingSubmissionSchema, type OnboardingValues } from "@/lib/onboarding";
+import { profileSettingsSchema } from "@/lib/profile";
 
 export type UserWithPreference = Prisma.UserGetPayload<{
   include: {
@@ -204,11 +205,12 @@ export async function resetFirstTimeWalkthrough(userId: string) {
   });
 }
 
-export async function updateProfilePreferences(userId: string, input: unknown) {
-  const values = onboardingDraftSchema.parse(input);
+export async function updateProfileSettings(userId: string, input: unknown) {
+  const values = profileSettingsSchema.parse(input);
   const user = await getUserWithPreference(userId);
   const firstName = toNullable(values.firstName);
   const lastName = toNullable(values.lastName);
+  const profileImageDataUrl = values.profileImageDataUrl?.trim() || null;
 
   await upsertUserPreference(userId, values);
 
@@ -220,10 +222,14 @@ export async function updateProfilePreferences(userId: string, input: unknown) {
       firstName,
       lastName,
       name: buildStoredName(firstName, lastName) ?? user.name,
+      profileImageDataUrl,
     },
   });
 
-  return getOnboardingState(userId);
+  return {
+    ...(await getOnboardingState(userId)),
+    profileImageDataUrl,
+  };
 }
 
 export async function getProfilePeopleState(userId: string): Promise<ProfilePeopleStateDto> {
@@ -384,3 +390,5 @@ export async function adminSetSubscriptionTierByEmail(input: {
     subscriptionStatus: updatedUser.subscriptionStatus,
   };
 }
+
+

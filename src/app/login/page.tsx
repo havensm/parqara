@@ -1,13 +1,13 @@
 import { redirect } from "next/navigation";
 
-import { getCurrentUserState, getPostAuthRedirectPath } from "@/lib/auth/guards";
+import { getCurrentUserStateIfAvailable, getPostAuthRedirectPath } from "@/lib/auth/guards";
 import { isGoogleAuthEnabled } from "@/lib/auth/google";
 
 import { AuthPanel } from "@/components/auth/auth-panel";
 import { AuthShell } from "@/components/auth/auth-shell";
 
 export default async function LoginPage() {
-  const user = await getCurrentUserState();
+  const user = await getCurrentUserStateIfAvailable();
   if (user) {
     redirect(getPostAuthRedirectPath(user));
   }
@@ -20,8 +20,11 @@ export default async function LoginPage() {
       alternateHref="/signup"
       alternateLabel="Create account"
       variant="minimal"
+      panelOrder="panel-first"
     >
       <AuthPanel googleEnabled={isGoogleAuthEnabled()} mode="login" />
     </AuthShell>
   );
 }
+
+

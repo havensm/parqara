@@ -2,9 +2,12 @@ import type { PartyProfile, Trip } from "@prisma/client/index";
 import { format } from "date-fns";
 
 import type {
+  DashboardTripDto,
   ItineraryItemDto,
   ParkCatalogDto,
   PartyProfileDto,
+  PlannerTemplateDto,
+  PlannerVersionDto,
   SummaryDto,
   TripCollaboratorDto,
   TripCollaboratorStateDto,
@@ -16,11 +19,12 @@ import { db } from "@/lib/db";
 import { HttpError } from "@/lib/http-error";
 import { sendPlannerInviteEmail } from "@/lib/planner-invite-email";
 import { tripSetupSchema, tripUpdateSchema } from "@/lib/validation/trip";
-import type { AttractionMetadata } from "@/server/providers/contracts";
+import type { AttractionMetadata, ParkMetadata } from "@/server/providers/contracts";
 import { computeSummaryMetrics, recommendNextAction, scoreCandidate } from "@/server/engine/recommendation-engine";
 import { createProviderSuite } from "@/server/providers/factory";
 import { diningPreferenceOptions, preferredRideTypes } from "@/server/providers/mock/mock-data";
 import { createNotifications, createOperationalNotificationsForTrip, createTripMemberNotifications } from "@/server/services/notification-service";
+import { ensurePlannerCanBeCreated } from "@/server/services/planner-entitlement-service";
 import { saveUserPerson } from "@/server/services/user-service";
 
 function requirePartyProfile<T extends { partyProfile: PartyProfile | null }>(trip: T): asserts trip is T & { partyProfile: PartyProfile } {
@@ -311,6 +315,106 @@ async function getManageableTrip(userId: string, tripId: string, errorMessage = 
   }
 
   return trip;
+}
+
+function requireActivePlanner<T extends { plannerStatus: "ACTIVE" | "ARCHIVED" }>(trip: T) {
+  if (trip.plannerStatus !== "ACTIVE") {
+    throw new HttpError(409, "This planner is archived. Restore it before making changes.");
+  }
+}
+
+type PlannerSnapshotTrip = {
+  id: string;
+  name: string;
+  plannerStatus: "ACTIVE" | "ARCHIVED";
+  status: "DRAFT" | "PLANNED" | "LIVE" | "COMPLETED";
+  visitDate: Date;
+  currentStep: number;
+  latestPlanSummary: string | null;
+  park: {
+    id: string;
+    slug: string;
+    name: string;
+    resort: string;
+    description: string | null;
+    opensAt: string;
+    closesAt: string;
+  };
+  partyProfile: PartyProfile | null;
+  itineraryItems: Array<{
+    id: string;
+    attractionId: string | null;
+    title: string;
+    type: "RIDE" | "SHOW" | "DINING" | "BREAK";
+    order: number;
+    startTime: Date;
+    endTime: Date;
+    arrivalWindowStart: Date;
+    arrivalWindowEnd: Date;
+    predictedWaitMinutes: number;
+    walkingMinutes: number;
+    score: number | null;
+    reason: string;
+    explanation: string;
+    status: "PLANNED" | "COMPLETED" | "SKIPPED" | "CANCELLED";
+    attraction?: {
+      slug: string;
+      zone: string;
+      category: "RIDE" | "SHOW" | "DINING" | "PLAY";
+      thrillLevel: number;
+      kidFriendly: boolean;
+    } | null;
+  }>;
+};
+
+function buildPlannerSnapshot(trip: PlannerSnapshotTrip) {
+  requirePartyProfile(trip);
+
+  return {
+    id: trip.id,
+    name: trip.name,
+    plannerStatus: trip.plannerStatus,
+    status: trip.status,
+    visitDate: formatIsoDate(trip.visitDate),
+    currentStep: trip.currentStep,
+    latestPlanSummary: trip.latestPlanSummary,
+    park: trip.park,
+    partyProfile: toPartyProfileDto(trip.partyProfile),
+    itinerary: trip.itineraryItems.map(serializeItineraryItem),
+  };
+}
+
+async function recordPlannerVersion(userId: string | null, tripId: string, label: string) {
+  const trip = await db.trip.findUnique({
+    where: {
+      id: tripId,
+    },
+    include: {
+      park: true,
+      partyProfile: true,
+      itineraryItems: {
+        include: {
+          attraction: true,
+        },
+        orderBy: {
+          order: "asc",
+        },
+      },
+    },
+  });
+
+  if (!trip || !trip.partyProfile) {
+    return;
+  }
+
+  await db.plannerVersion.create({
+    data: {
+      tripId,
+      userId,
+      label,
+      snapshot: buildPlannerSnapshot(trip),
+    },
+  });
 }
 
 function serializeTripCollaboratorState(
@@ -606,6 +710,8 @@ async function persistPlan({
     actionHref,
   });
 
+  await recordPlannerVersion(actorUserId, trip.id, phase === "initial" ? "Itinerary generated" : "Planner replanned");
+
   return getTripDetail(actorUserId, trip.id);
 }
 
@@ -616,6 +722,10 @@ export async function getParkCatalog(slug: string): Promise<ParkCatalogDto> {
     throw new Error("Park not found.");
   }
 
+  return buildParkCatalog(park);
+}
+
+export function buildParkCatalog(park: ParkMetadata): ParkCatalogDto {
   const attractionOptions = park.attractions.map((attraction) => ({
     id: attraction.id,
     slug: attraction.slug,
@@ -631,7 +741,7 @@ export async function getParkCatalog(slug: string): Promise<ParkCatalogDto> {
   return {
     park: park.park,
     attractions: attractionOptions,
-    mustDoOptions: attractionOptions.filter((attraction) => attraction.category === "RIDE"),
+    mustDoOptions: attractionOptions.filter((attraction) => attraction.category === "RIDE" && attraction.tags.includes("must-do")),
     rideTypeOptions: preferredRideTypes,
     diningPreferenceOptions,
   };
@@ -672,6 +782,7 @@ export async function findOrCreateDraftTrip(userId: string, parkSlug: string, de
   const existingDraft = await db.trip.findFirst({
     where: {
       userId,
+      plannerStatus: "ACTIVE",
       status: "DRAFT",
       park: {
         slug: parkSlug,
@@ -690,9 +801,46 @@ export async function findOrCreateDraftTrip(userId: string, parkSlug: string, de
   return createDefaultDraftTrip(userId, parkSlug, defaultVisitDate);
 }
 
-export async function listDashboardTrips(userId: string) {
+function serializeDashboardTrip(
+  trip: {
+    id: string;
+    name: string;
+    status: DashboardTripDto["status"];
+    plannerStatus: DashboardTripDto["plannerStatus"];
+    visitDate: Date;
+    userId: string;
+    park: { name: string };
+    itineraryItems: Array<{ status: "PLANNED" | "COMPLETED" | "SKIPPED" | "CANCELLED"; title: string }>;
+    latestPlanSummary: string | null;
+    currentStep: number;
+    summary: Trip["summary"];
+  },
+  currentUserId: string
+): DashboardTripDto {
+  return {
+    id: trip.id,
+    name: trip.name,
+    status: trip.status,
+    plannerStatus: trip.plannerStatus,
+    visitDate: formatIsoDate(trip.visitDate),
+    parkName: trip.park.name,
+    itineraryCount: trip.itineraryItems.length,
+    currentItemTitle: trip.itineraryItems.find((item) => item.status === "PLANNED")?.title ?? null,
+    latestPlanSummary:
+      trip.latestPlanSummary ??
+      (trip.status === "DRAFT"
+        ? "Your answers are saved automatically, so you can leave the flow and resume the plan whenever you want."
+        : null),
+    currentStep: trip.currentStep,
+    isOwner: trip.userId === currentUserId,
+    metrics: trip.summary && typeof trip.summary === "object" ? (trip.summary as Record<string, unknown>) : null,
+  };
+}
+
+export async function listDashboardTrips(userId: string): Promise<DashboardTripDto[]> {
   const trips = await db.trip.findMany({
     where: {
+      plannerStatus: "ACTIVE",
       OR: [{ userId }, { collaborators: { some: { userId } } }],
     },
     include: {
@@ -704,25 +852,30 @@ export async function listDashboardTrips(userId: string) {
     orderBy: [{ visitDate: "desc" }, { createdAt: "desc" }],
   });
 
-  return trips.map((trip) => ({
-    id: trip.id,
-    name: trip.name,
-    status: trip.status,
-    visitDate: formatIsoDate(trip.visitDate),
-    parkName: trip.park.name,
-    itineraryCount: trip.itineraryItems.length,
-    currentItemTitle: trip.itineraryItems.find((item) => item.status === "PLANNED")?.title ?? null,
-    latestPlanSummary:
-      trip.latestPlanSummary ??
-      (trip.status === "DRAFT"
-        ? "Your answers are saved automatically, so you can leave the flow and resume the plan whenever you want."
-        : null),
-    currentStep: trip.currentStep,
-    metrics: trip.summary && typeof trip.summary === "object" ? (trip.summary as Record<string, unknown>) : null,
-  }));
+  return trips.map((trip) => serializeDashboardTrip(trip, userId));
+}
+
+export async function listArchivedTrips(userId: string): Promise<DashboardTripDto[]> {
+  const trips = await db.trip.findMany({
+    where: {
+      userId,
+      plannerStatus: "ARCHIVED",
+    },
+    include: {
+      park: true,
+      itineraryItems: {
+        orderBy: { order: "asc" },
+      },
+    },
+    orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+  });
+
+  return trips.map((trip) => serializeDashboardTrip(trip, userId));
 }
 
 export async function createTrip(userId: string, input: import("zod").infer<typeof tripSetupSchema>) {
+  await ensurePlannerCanBeCreated(userId);
+
   const providers = createProviderSuite();
   const park = await providers.metadata.getParkBySlug(input.parkSlug);
   if (!park) {
@@ -737,6 +890,8 @@ export async function createTrip(userId: string, input: import("zod").infer<type
       name: input.name?.trim() || `${park.park.name} ${format(new Date(input.visitDate), "MMM d")}`,
       visitDate: visitDateTime,
       status: "DRAFT",
+      plannerStatus: "ACTIVE",
+      archivedAt: null,
       simulatedTime: visitDateTime,
       summary: {
         replanCount: 0,
@@ -758,12 +913,15 @@ export async function createTrip(userId: string, input: import("zod").infer<type
     },
   });
 
+  await recordPlannerVersion(userId, trip.id, "Planner created");
+
   return { tripId: trip.id };
 }
 
 export async function updateTrip(userId: string, tripId: string, input: import("zod").infer<typeof tripUpdateSchema>) {
   const trip = await getAccessibleTrip(userId, tripId);
   requirePartyProfile(trip);
+  requireActivePlanner(trip);
 
   const nextName = input.name?.trim() || trip.name;
   const nextVisitDateTime = resolveVisitDateTime(input.visitDate ?? trip.visitDate, input.startTime ?? trip.partyProfile.startTime);
@@ -813,6 +971,178 @@ export async function updateTrip(userId: string, tripId: string, input: import("
   return { tripId: updated.id };
 }
 
+export async function archiveTrip(userId: string, tripId: string) {
+  const trip = await getManageableTrip(userId, tripId, "Only the trip owner can archive this planner.");
+  requireActivePlanner(trip);
+
+  await db.trip.update({
+    where: { id: trip.id },
+    data: {
+      plannerStatus: "ARCHIVED",
+      archivedAt: new Date(),
+    },
+  });
+
+  await recordPlannerVersion(userId, trip.id, "Planner archived");
+
+  return {
+    tripId: trip.id,
+    nextPath: "/dashboard",
+  };
+}
+
+export async function restoreTrip(userId: string, tripId: string) {
+  await ensurePlannerCanBeCreated(userId);
+
+  const trip = await getManageableTrip(userId, tripId, "Only the trip owner can restore this planner.");
+
+  await db.trip.update({
+    where: { id: trip.id },
+    data: {
+      plannerStatus: "ACTIVE",
+      archivedAt: null,
+    },
+  });
+
+  await recordPlannerVersion(userId, trip.id, "Planner restored");
+
+  return { tripId: trip.id };
+}
+
+export async function duplicateTrip(userId: string, tripId: string) {
+  await ensurePlannerCanBeCreated(userId);
+
+  const trip = await getAccessibleTrip(userId, tripId);
+  requirePartyProfile(trip);
+
+  const duplicatedTrip = await db.$transaction(async (tx) => {
+    const createdTrip = await tx.trip.create({
+      data: {
+        userId,
+        parkId: trip.parkId,
+        name: `${trip.name} Copy`,
+        visitDate: trip.visitDate,
+        status: trip.status,
+        plannerStatus: "ACTIVE",
+        archivedAt: null,
+        currentStep: trip.currentStep,
+        simulatedTime: trip.simulatedTime,
+        currentLocationAttractionId: trip.currentLocationAttractionId,
+        latestPlanSummary: trip.latestPlanSummary,
+        summary: trip.summary ?? undefined,
+        partyProfile: {
+          create: {
+            partySize: trip.partyProfile.partySize,
+            kidsAges: trip.partyProfile.kidsAges,
+            thrillTolerance: trip.partyProfile.thrillTolerance,
+            walkingTolerance: trip.partyProfile.walkingTolerance,
+            preferredRideTypes: trip.partyProfile.preferredRideTypes,
+            mustDoRideIds: trip.partyProfile.mustDoRideIds,
+            diningPreferences: trip.partyProfile.diningPreferences,
+            startTime: trip.partyProfile.startTime,
+            breakStart: trip.partyProfile.breakStart,
+            breakEnd: trip.partyProfile.breakEnd,
+          },
+        },
+      },
+    });
+
+    if (trip.itineraryItems.length) {
+      await tx.itineraryItem.createMany({
+        data: trip.itineraryItems.map((item) => ({
+          tripId: createdTrip.id,
+          attractionId: item.attractionId,
+          title: item.title,
+          type: item.type,
+          order: item.order,
+          startTime: item.startTime,
+          endTime: item.endTime,
+          arrivalWindowStart: item.arrivalWindowStart,
+          arrivalWindowEnd: item.arrivalWindowEnd,
+          predictedWaitMinutes: item.predictedWaitMinutes,
+          walkingMinutes: item.walkingMinutes,
+          score: item.score,
+          reason: item.reason,
+          explanation: item.explanation,
+          status: item.status,
+          completedAt: item.completedAt,
+          metadata: item.metadata ?? undefined,
+        })),
+      });
+    }
+
+    return createdTrip;
+  });
+
+  await recordPlannerVersion(userId, duplicatedTrip.id, `Duplicated from ${trip.name}`);
+
+  return { tripId: duplicatedTrip.id };
+}
+
+export async function createPlannerTemplateFromTrip(userId: string, tripId: string, name?: string): Promise<PlannerTemplateDto> {
+  const trip = await getAccessibleTrip(userId, tripId);
+
+  const createdTemplate = await db.plannerTemplate.create({
+    data: {
+      userId,
+      name: name?.trim() || `${trip.name} template`,
+      snapshot: buildPlannerSnapshot(trip),
+    },
+    select: {
+      id: true,
+      name: true,
+      createdAt: true,
+    },
+  });
+
+  return {
+    id: createdTemplate.id,
+    name: createdTemplate.name,
+    createdAt: formatDateTime(createdTemplate.createdAt),
+  };
+}
+
+export async function listPlannerTemplates(userId: string): Promise<PlannerTemplateDto[]> {
+  const templates = await db.plannerTemplate.findMany({
+    where: {
+      userId,
+    },
+    orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+    select: {
+      id: true,
+      name: true,
+      createdAt: true,
+    },
+  });
+
+  return templates.map((template) => ({
+    id: template.id,
+    name: template.name,
+    createdAt: formatDateTime(template.createdAt),
+  }));
+}
+
+export async function listPlannerVersions(userId: string, tripId: string): Promise<PlannerVersionDto[]> {
+  await getAccessibleTrip(userId, tripId);
+
+  const versions = await db.plannerVersion.findMany({
+    where: {
+      tripId,
+    },
+    orderBy: [{ createdAt: "desc" }],
+    select: {
+      id: true,
+      label: true,
+      createdAt: true,
+    },
+  });
+
+  return versions.map((version) => ({
+    id: version.id,
+    label: version.label,
+    createdAt: formatDateTime(version.createdAt),
+  }));
+}
 export async function deleteTrip(userId: string, tripId: string) {
   const trip = await getManageableTrip(userId, tripId, "Only the trip owner can delete this planner.");
 
@@ -836,6 +1166,7 @@ export async function deleteTrip(userId: string, tripId: string) {
 
 export async function generateTripItinerary(userId: string, tripId: string) {
   const trip = await getAccessibleTrip(userId, tripId);
+  requireActivePlanner(trip);
   return persistPlan({
     trip,
     phase: "initial",
@@ -847,6 +1178,7 @@ export async function generateTripItinerary(userId: string, tripId: string) {
 
 export async function replanTrip(userId: string, tripId: string) {
   const trip = await getAccessibleTrip(userId, tripId);
+  requireActivePlanner(trip);
   return persistPlan({
     trip,
     phase: "replan",
@@ -865,6 +1197,7 @@ export async function getTripDetail(userId: string, tripId: string): Promise<Tri
     name: trip.name,
     isOwner: trip.userId === userId,
     status: trip.status,
+    plannerStatus: trip.plannerStatus,
     visitDate: formatIsoDate(trip.visitDate),
     simulatedTime: trip.simulatedTime ? formatDateTime(trip.simulatedTime) : null,
     currentStep: trip.currentStep,
@@ -1004,6 +1337,7 @@ export async function addTripCollaborator(
   appOrigin: string
 ): Promise<TripCollaboratorStateDto> {
   const trip = await getManageableTrip(userId, tripId);
+  requireActivePlanner(trip);
   const normalizedEmail = email.trim().toLowerCase();
   if (!normalizedEmail) {
     throw new HttpError(400, "Email is required.");
@@ -1149,6 +1483,7 @@ export async function addTripCollaborator(
 
 export async function removeTripCollaboratorInvite(userId: string, tripId: string, inviteId: string): Promise<TripCollaboratorStateDto> {
   const trip = await getManageableTrip(userId, tripId);
+  requireActivePlanner(trip);
   const invite = trip.pendingInvites.find((item) => item.id === inviteId);
 
   if (!invite) {
@@ -1168,6 +1503,7 @@ export async function removeTripCollaboratorInvite(userId: string, tripId: strin
 
 export async function removeTripCollaborator(userId: string, tripId: string, collaboratorId: string): Promise<TripCollaboratorStateDto> {
   const trip = await getManageableTrip(userId, tripId);
+  requireActivePlanner(trip);
   const collaborator = trip.collaborators.find((item) => item.id === collaboratorId);
 
   if (!collaborator) {
@@ -1208,6 +1544,7 @@ export async function removeTripCollaborator(userId: string, tripId: string, col
 export async function getLiveDashboard(userId: string, tripId: string) {
   const trip = await getAccessibleTrip(userId, tripId);
   requirePartyProfile(trip);
+  requireActivePlanner(trip);
   const providers = createProviderSuite();
   const parkMetadata = await providers.metadata.getParkById(trip.parkId);
   if (!parkMetadata) {
@@ -1317,6 +1654,7 @@ export async function getLiveDashboard(userId: string, tripId: string) {
 
 export async function completeCurrentItem(userId: string, tripId: string) {
   const trip = await getAccessibleTrip(userId, tripId);
+  requireActivePlanner(trip);
   const nextItem = trip.itineraryItems.find((item) => item.status === "PLANNED");
   if (!nextItem) {
     return getTripSummary(userId, tripId);
@@ -1431,4 +1769,9 @@ export async function getTripSummary(userId: string, tripId: string): Promise<Su
     latestPlanSummary: trip.latestPlanSummary,
   };
 }
+
+
+
+
+
 

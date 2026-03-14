@@ -47,7 +47,7 @@ Parqara is a production-oriented MVP for AI-powered theme park planning and in-p
    ```bash
    npm run db:push
    ```
-5. Bootstrap the default park catalog and, if `SEED_LOCAL_TEST_USER=true`, the local test login:
+5. Bootstrap the default park catalog and the local test login:
    ```bash
    npm run db:seed
    ```
@@ -86,8 +86,8 @@ It does not create demo trips.
 
 When `SEED_LOCAL_TEST_USER=true`, it also creates a local test account:
 
-- `Email`: `localtest@parqara.dev`
-- `Password`: `parqara123!`
+- `Email`: `test@test.com`
+- `Password`: `test`
 
 That account is intended for local development only and should stay disabled in any shared or production environment.
 
@@ -329,6 +329,7 @@ The repository has been validated with:
 ## Known note
 
 On this Windows + OneDrive environment, repeated builds can hit file locking in `.next`. `npm run dev` now clears `.next` before startup automatically, and a fresh production build from a clean state succeeds if you clear `.next` first when needed.
+
 
 
 

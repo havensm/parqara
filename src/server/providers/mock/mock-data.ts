@@ -376,7 +376,7 @@ export const mockAttractions: MockAttractionDefinition[] = [
     durationMinutes: 6,
     xCoord: 76,
     yCoord: 48,
-    tags: ["coaster", "launch", "speed"],
+    tags: ["coaster", "launch", "speed", "must-do"],
     waitProfile: waitProfiles.thrillCoaster,
   },
   {
@@ -392,7 +392,7 @@ export const mockAttractions: MockAttractionDefinition[] = [
     durationMinutes: 10,
     xCoord: 62,
     yCoord: 76,
-    tags: ["water", "family", "outdoor"],
+    tags: ["water", "family", "outdoor", "must-do"],
     waitProfile: waitProfiles.waterRide,
   },
   {
@@ -457,7 +457,7 @@ export const mockAttractions: MockAttractionDefinition[] = [
     durationMinutes: 9,
     xCoord: 42,
     yCoord: 58,
-    tags: ["dark-ride", "story", "indoors"],
+    tags: ["dark-ride", "story", "indoors", "must-do"],
     waitProfile: waitProfiles.storyRide,
   },
   {
@@ -474,7 +474,7 @@ export const mockAttractions: MockAttractionDefinition[] = [
     durationMinutes: 4,
     xCoord: 20,
     yCoord: 94,
-    tags: ["coaster", "dueling", "speed"],
+    tags: ["coaster", "dueling", "speed", "must-do"],
     waitProfile: waitProfiles.thrillCoaster,
   },
   {
@@ -555,7 +555,7 @@ export const mockAttractions: MockAttractionDefinition[] = [
     durationMinutes: 7,
     xCoord: 58,
     yCoord: 44,
-    tags: ["interactive", "family", "indoors"],
+    tags: ["interactive", "family", "indoors", "must-do"],
     waitProfile: waitProfiles.familyHeadliner,
   },
   {
@@ -705,5 +705,6 @@ export function clampHour(hour: number) {
 export function getWaitProfileValue(profile: Record<number, number>, hour: number) {
   return profile[clampHour(hour)] ?? profile[8];
 }
+
 
 

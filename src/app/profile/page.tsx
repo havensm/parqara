@@ -1,98 +1,125 @@
 import Link from "next/link";
-import { HeartHandshake, Settings2, Sparkles, Users } from "lucide-react";
+import { Settings2, Sparkles, Users } from "lucide-react";
 
 import { requireCompletedOnboardingUser } from "@/lib/auth/guards";
-import { getBillingStatusLabel, getUserBillingState } from "@/lib/billing";
-import { isStripeBillingConfigured } from "@/lib/billing-env";
+import { isAdminEmail } from "@/lib/admin";
+import { getBillingStatusLabel, getPlanByTier, getUserBillingState } from "@/lib/billing";
+import { getBillingCheckoutHref, getBillingNotice } from "@/lib/billing-links";
+import { getPlannerLimitState } from "@/server/services/planner-entitlement-service";
 import { getOnboardingState } from "@/server/services/user-service";
 
 import { AppShell } from "@/components/app/app-shell";
 import { PlanBadge } from "@/components/billing/plan-badge";
-import { PricingGrid } from "@/components/billing/pricing-grid";
 import { ProfilePeopleManager } from "@/components/profile/profile-people-manager";
 import { ProfilePreferencesForm } from "@/components/profile/preferences-form";
 import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
-export default async function ProfilePage() {
+export default async function ProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ billing?: string; tier?: string }>;
+}) {
   const user = await requireCompletedOnboardingUser();
+  const adminEnabled = isAdminEmail(user.email);
   const onboarding = await getOnboardingState(user.id);
   const billing = getUserBillingState(user);
   const billingStatusLabel = getBillingStatusLabel(user.subscriptionStatus);
-  const stripeConfigured = isStripeBillingConfigured();
-  const showBillingStatus = ![billing.currentPlan.name.toLowerCase(), billing.currentTier.toLowerCase()].includes(
-    billingStatusLabel.toLowerCase()
-  );
+  const plannerLimitState = await getPlannerLimitState(user.id);
+  const params = await searchParams;
+  const notice = getBillingNotice(params.billing, params.tier);
+  const nextUpgradeTier = billing.currentTier === "FREE" ? "PLUS" : billing.currentTier === "PLUS" ? "PRO" : null;
+  const nextUpgradePlan = nextUpgradeTier ? getPlanByTier(nextUpgradeTier) : null;
+  const maraAccessLabel = billing.featureAccess.aiConcierge ? "Unlimited" : "1 preview";
 
   return (
     <AppShell
-      eyebrow="Profile"
-      title="Your defaults"
-      description="Save defaults and manage your plan in one place."
+      eyebrow="Account settings"
+      title="Your profile and planning defaults."
+      actionHref="/billing"
+      actionLabel="Open billing"
+      secondaryActionHref="/dashboard"
+      secondaryActionLabel="Back to planners"
       icon={<Settings2 className="h-6 w-6" />}
+      currentTier={billing.currentTier}
+      adminEnabled={adminEnabled}
       highlights={[
-        { icon: <HeartHandshake className="h-4 w-4" />, label: "Preferences carry forward" },
-        { icon: <Users className="h-4 w-4" />, label: "Party needs stay saved" },
-        { icon: <Sparkles className="h-4 w-4" />, label: "Billing lives here now" },
+        { icon: <Users className="h-4 w-4" />, label: `${plannerLimitState.activePlannerCount}/${plannerLimitState.plannerLimit} active planners` },
+        { icon: <Sparkles className="h-4 w-4" />, label: billing.featureAccess.aiConcierge ? "Unlimited Mara unlocked" : "Free Mara preview included" },
       ]}
-
     >
-      <Card className="overflow-hidden p-0">
-        <div className="bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.18),transparent_28%),linear-gradient(180deg,rgba(248,252,255,0.98),rgba(255,255,255,0.98))] px-6 py-6 sm:px-7">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700/70">Subscription</p>
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <h2 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-semibold tracking-tight text-slate-950">
-              {billing.currentPlan.name}
+      {notice ? (
+        <Card className="overflow-hidden p-0">
+          <div className={`px-6 py-6 sm:px-7 ${notice.tone === "amber" ? "bg-[linear-gradient(180deg,#fffaf0_0%,#ffffff_100%)]" : "bg-[linear-gradient(180deg,#f8fbff_0%,#ffffff_100%)]"}`}>
+            <p className={`text-[11px] font-semibold uppercase tracking-[0.28em] ${notice.tone === "amber" ? "text-[var(--amber-700)]" : "text-[var(--sky-700)]"}`}>
+              Billing update
+            </p>
+            <h2 className="mt-4 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-[var(--foreground)]">
+              {notice.title}
             </h2>
-            <PlanBadge tier={billing.currentTier} />
-            {showBillingStatus ? (
-              <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-500">
-                {billingStatusLabel}
-              </span>
-            ) : null}
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">{notice.detail}</p>
           </div>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
-            Free and Plus include a Mara preview. Pro adds full Mara and sharing.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="/profile#billing" className={buttonStyles({ variant: "secondary", size: "default" })}>
-              Compare plans
-            </Link>
-          </div>
-        </div>
-      </Card>
+        </Card>
+      ) : null}
 
-      <ProfilePeopleManager />
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start">
+        <ProfilePreferencesForm
+          initialValues={onboarding.values}
+          initialProfileImageDataUrl={user.profileImageDataUrl ?? null}
+          userEmail={user.email}
+        />
 
-      <section id="billing" className="scroll-mt-28 space-y-4">
-        <div className="max-w-3xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Plans</p>
-          <h2 className="mt-4 font-[family-name:var(--font-space-grotesk)] text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-            Compare plans.
-          </h2>
-          <p className="mt-4 text-base leading-8 text-slate-600">Plus is for live execution. Pro unlocks full Mara.</p>
-        </div>
+        <div className="space-y-6">
+          <Card className="p-6 sm:p-7">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">Plan and access</p>
+                <h2 className="mt-3 text-2xl font-semibold text-[var(--foreground)]">{billing.currentPlan.name}</h2>
+                <p className="mt-2 text-sm text-[var(--muted)]">{billingStatusLabel}</p>
+              </div>
+              <PlanBadge tier={billing.currentTier} />
+            </div>
 
-        {!stripeConfigured ? (
-          <Card className="overflow-hidden p-0">
-            <div className="bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.18),transparent_28%),linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.98))] px-6 py-6 sm:px-7">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-amber-700/80">Stripe status</p>
-              <h2 className="mt-4 font-[family-name:var(--font-space-grotesk)] text-2xl font-semibold tracking-tight text-slate-950">
-                Stripe checkout is not live yet.
-              </h2>
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-                Add live Stripe keys and price IDs to turn on upgrades.
-              </p>
+            <div className="mt-5 space-y-3">
+              <SummaryRow label="Mara" value={maraAccessLabel} />
+              <SummaryRow label="Active planners" value={`${plannerLimitState.activePlannerCount}/${plannerLimitState.plannerLimit}`} />
+              <SummaryRow label="Archived planners" value={`${plannerLimitState.archivedTrips.length}`} />
+            </div>
+
+            <div className={`mt-5 rounded-[22px] border px-4 py-4 text-sm leading-6 ${plannerLimitState.canCreate ? "border-[var(--card-border)] bg-[var(--surface-muted)] text-[var(--muted)]" : "border-[rgba(244,182,73,0.28)] bg-[linear-gradient(180deg,#fffaf0_0%,#ffffff_100%)] text-[var(--amber-700)]"}`}>
+              {plannerLimitState.canCreate
+                ? "You still have room for another active planner."
+                : "You are at your active planner limit. Archive one or upgrade for more room."}
+            </div>
+
+            <div className="mt-5 flex flex-col gap-2.5">
+              <Link href="/billing" className={buttonStyles({ variant: "primary", size: "default" }) + " w-full justify-center"}>
+                Open billing
+              </Link>
+              {nextUpgradePlan ? (
+                <Link href={getBillingCheckoutHref(nextUpgradeTier!)} className={buttonStyles({ variant: "secondary", size: "default" }) + " w-full justify-center"}>
+                  Upgrade to {nextUpgradePlan.name}
+                </Link>
+              ) : (
+                <Link href="/pricing" className={buttonStyles({ variant: "secondary", size: "default" }) + " w-full justify-center"}>
+                  View pricing
+                </Link>
+              )}
             </div>
           </Card>
-        ) : null}
 
-        <PricingGrid currentTier={billing.currentTier} signedIn showActions={false} />
-      </section>
-
-      <ProfilePreferencesForm initialValues={onboarding.values} />
+          <ProfilePeopleManager />
+        </div>
+      </div>
     </AppShell>
   );
 }
 
-
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-[18px] border border-[var(--card-border)] bg-[var(--surface-muted)] px-4 py-3">
+      <p className="text-sm text-[var(--muted)]">{label}</p>
+      <p className="text-sm font-semibold text-[var(--foreground)]">{value}</p>
+    </div>
+  );
+}

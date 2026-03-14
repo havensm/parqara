@@ -1,7 +1,12 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
 
-import { buttonStyles } from "@/components/ui/button";
+import type { SubscriptionTierValue } from "@/lib/contracts";
+import type { TripWorkspaceTab } from "@/lib/trip-workspace";
+import { cn } from "@/lib/utils";
+
+import { AppFrame } from "@/components/app/app-frame";
+import { TopUtilityBar } from "@/components/app/top-utility-bar";
+import { PanelCard } from "@/components/ui/panel-card";
 
 export function AppShell({
   children,
@@ -10,77 +15,67 @@ export function AppShell({
   description,
   actionHref,
   actionLabel,
+  secondaryActionHref,
+  secondaryActionLabel,
   icon,
   visual,
+  aside,
   highlights = [],
+  currentTier,
+  adminEnabled = false,
+  plannerTabs = [],
 }: {
   children: ReactNode;
   eyebrow: string;
   title: string;
-  description: string;
+  description?: string;
   actionHref?: string;
   actionLabel?: string;
+  secondaryActionHref?: string;
+  secondaryActionLabel?: string;
   icon?: ReactNode;
   visual?: ReactNode;
+  aside?: ReactNode;
   highlights?: Array<{
     icon?: ReactNode;
     label: string;
   }>;
+  currentTier?: SubscriptionTierValue;
+  adminEnabled?: boolean;
+  plannerTabs?: Array<TripWorkspaceTab & { isActive?: boolean }>;
 }) {
   return (
-    <div className="space-y-8">
-      <section className="overflow-hidden rounded-[36px] border border-white/80 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.22),transparent_26%),radial-gradient(circle_at_78%_18%,rgba(20,184,166,0.14),transparent_24%),linear-gradient(145deg,rgba(255,255,255,0.95),rgba(243,249,253,0.96))] px-6 py-7 shadow-[0_26px_80px_rgba(15,23,42,0.08)] sm:px-8 sm:py-8">
-        <div className="grid gap-8 xl:grid-cols-[1.15fr_0.85fr] xl:items-center">
-          <div>
-            <div className="flex flex-wrap items-center gap-3">
-              {icon ? (
-                <div className="flex h-12 w-12 items-center justify-center rounded-[18px] border border-white/70 bg-white/80 text-teal-700 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
-                  {icon}
-                </div>
-              ) : null}
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700/70">{eyebrow}</p>
-            </div>
-
-            <h1 className="mt-5 max-w-3xl font-[family-name:var(--font-space-grotesk)] text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-              {title}
-            </h1>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">{description}</p>
-
-            {highlights.length ? (
-              <div className="mt-6 flex flex-wrap gap-3">
-                {highlights.map((item) => (
-                  <div
-                    key={item.label}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/82 px-4 py-2 text-sm font-medium text-slate-700 shadow-[0_10px_28px_rgba(15,23,42,0.04)]"
-                  >
-                    {item.icon ? <span className="text-teal-700">{item.icon}</span> : null}
-                    <span>{item.label}</span>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-
-            {actionHref && actionLabel ? (
-              <div className="mt-7">
-                <Link href={actionHref} className={buttonStyles({ variant: "primary", size: "lg" })}>
-                  {actionLabel}
-                </Link>
-              </div>
-            ) : null}
-          </div>
+    <AppFrame adminEnabled={adminEnabled} currentTier={currentTier} plannerTabs={plannerTabs}>
+      {/* Shared authenticated shell keeps product pages aligned around one hero, optional visual, and sticky aside pattern. */}
+      <div className="space-y-6 lg:space-y-7">
+        <div className={cn("grid gap-6", visual ? "2xl:grid-cols-[minmax(0,1fr)_24rem] 2xl:items-stretch" : undefined)}>
+          <TopUtilityBar
+            eyebrow={eyebrow}
+            title={title}
+            description={description}
+            icon={icon}
+            highlights={highlights}
+            actionHref={actionHref}
+            actionLabel={actionLabel}
+            secondaryActionHref={secondaryActionHref}
+            secondaryActionLabel={secondaryActionLabel}
+          />
 
           {visual ? (
-            <div className="rounded-[30px] border border-white/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(239,247,252,0.92))] p-4 shadow-[0_20px_48px_rgba(15,23,42,0.08)] sm:p-5">
-              {visual}
-            </div>
-          ) : (
-            <div className="hidden xl:block" />
-          )}
+            <PanelCard className="h-full p-4 sm:p-5">
+              <div className="h-full rounded-[28px] border border-white/72 bg-[linear-gradient(180deg,rgba(255,255,255,0.78),rgba(245,248,255,0.58))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] sm:p-4">
+                {visual}
+              </div>
+            </PanelCard>
+          ) : null}
         </div>
-      </section>
 
-      {children}
-    </div>
+        <div className={cn("grid gap-6 lg:gap-7", aside ? "2xl:grid-cols-[minmax(0,1fr)_24rem]" : undefined)}>
+          <div className="min-w-0 space-y-6">{children}</div>
+          {aside ? <aside className="space-y-6 2xl:sticky 2xl:top-[116px] 2xl:self-start">{aside}</aside> : null}
+        </div>
+      </div>
+    </AppFrame>
   );
 }
 

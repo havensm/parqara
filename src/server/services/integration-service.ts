@@ -11,7 +11,9 @@ export type AdminIntegrationCategory =
   | "AI"
   | "Observability"
   | "Analytics"
-  | "Routing";
+  | "Routing"
+  | "Weather"
+  | "Park data";
 export type AdminIntegrationStage = "live" | "scaffolded" | "recommended";
 export type AdminIntegrationStatus = "configured" | "partial" | "missing";
 
@@ -31,6 +33,7 @@ type IntegrationBlueprint = {
   envVars: IntegrationEnvVarBlueprint[];
   key: string;
   name: string;
+  roadmapRank: number;
   stage: AdminIntegrationStage;
   stageDetail: string;
   steps: Array<{
@@ -51,6 +54,7 @@ export type AdminIntegration = {
   envVars: Array<IntegrationEnvVarBlueprint & { present: boolean; required: boolean }>;
   key: string;
   name: string;
+  roadmapRank: number;
   stage: AdminIntegrationStage;
   stageDetail: string;
   status: AdminIntegrationStatus;
@@ -105,6 +109,7 @@ const integrationBlueprints: IntegrationBlueprint[] = [
     key: "google-auth",
     name: "Google OAuth",
     category: "Auth",
+    roadmapRank: 1,
     stage: "live",
     stageDetail: "Google sign-in already has route handlers and session support in the app.",
     description: "Lets users sign in with Google instead of creating a local password.",
@@ -170,6 +175,7 @@ const integrationBlueprints: IntegrationBlueprint[] = [
     key: "stripe-billing",
     name: "Stripe Billing",
     category: "Billing",
+    roadmapRank: 2,
     stage: "scaffolded",
     stageDetail: "Tiered plans, entitlements, and pricing UI are live; checkout and webhook sync still need final route wiring.",
     description: "Handles paid subscriptions for the Free, Plus, and Pro plans.",
@@ -238,6 +244,7 @@ const integrationBlueprints: IntegrationBlueprint[] = [
     key: "transactional-email",
     name: "Transactional Email",
     category: "Messaging",
+    roadmapRank: 3,
     stage: "live",
     stageDetail: "Email-link auth can now send through Postmark first, with Resend still available as a fallback during cutover.",
     description: "Delivers sign-in and verification links reliably in production.",
@@ -314,6 +321,7 @@ const integrationBlueprints: IntegrationBlueprint[] = [
     key: "openai",
     name: "OpenAI",
     category: "AI",
+    roadmapRank: 4,
     stage: "live",
     stageDetail: "The app already uses OpenAI when a key is present and falls back to deterministic copy when it is not.",
     description: "Powers the concierge, explanation generation, and richer planning responses.",
@@ -376,6 +384,7 @@ const integrationBlueprints: IntegrationBlueprint[] = [
     key: "sentry",
     name: "Sentry",
     category: "Observability",
+    roadmapRank: 1,
     stage: "recommended",
     stageDetail: "This is the highest-value next integration for production visibility because it will catch auth, billing, and live-trip failures automatically.",
     description: "Captures server exceptions, frontend errors, and release-linked traces in production.",
@@ -443,6 +452,7 @@ const integrationBlueprints: IntegrationBlueprint[] = [
     key: "posthog",
     name: "PostHog",
     category: "Analytics",
+    roadmapRank: 2,
     stage: "recommended",
     stageDetail: "PostHog is the best fit for conversion analytics, paywall experiments, and session replay without adding a separate data warehouse first.",
     description: "Tracks product analytics, funnels, feature flags, and session replay for growth decisions.",
@@ -499,6 +509,7 @@ const integrationBlueprints: IntegrationBlueprint[] = [
     key: "mapbox",
     name: "Mapbox",
     category: "Routing",
+    roadmapRank: 5,
     stage: "recommended",
     stageDetail: "Mapbox would replace the current mock walking-time model with real routing and make live recommendations more trustworthy.",
     description: "Adds geocoding and real walking-time estimates for park navigation.",
@@ -540,6 +551,84 @@ const integrationBlueprints: IntegrationBlueprint[] = [
       };
     },
   },
+  {
+    key: "tomorrow-weather",
+    name: "Tomorrow.io Weather",
+    category: "Weather",
+    roadmapRank: 4,
+    stage: "recommended",
+    stageDetail: "The provider seam already exists in the server provider factory, but the app still relies on generated weather data today.",
+    description: "Replaces mock weather conditions with live and forecast park weather.",
+    benefit: "Makes indoor-vs-outdoor recommendations, rain delays, and heat planning feel grounded in real conditions.",
+    docsUrl: "https://docs.tomorrow.io/",
+    envVars: [
+      {
+        name: "TOMORROW_API_KEY",
+        description: "Tomorrow.io API key for realtime and forecast weather calls.",
+      },
+    ],
+    steps: [
+      {
+        title: "Create a Tomorrow.io project and API key",
+        detail: "Create the production project, confirm the plan limits you want, and generate an API key that can be rotated without touching other services.",
+      },
+      {
+        title: "Set the production weather secret",
+        detail: "Add TOMORROW_API_KEY in your production environment so the server can request weather at planner runtime.",
+      },
+      {
+        title: "Swap the mock weather provider for a live provider",
+        detail: "Implement a real provider next to src/server/providers/mock/weather-provider.ts and switch src/server/providers/factory.ts to use it when TOMORROW_API_KEY is present.",
+      },
+    ],
+    resolveStatus(env, envVars) {
+      const status = evaluateEnvStatus(env, envVars);
+
+      if (status === "configured") {
+        return {
+          status,
+          detail: "The weather API key is present. The remaining work is wiring a production weather provider into the existing provider factory.",
+        };
+      }
+
+      return {
+        status,
+        detail: "Weather is still driven by generated mock conditions. Add a live weather provider before you rely on weather-sensitive planning in production.",
+      };
+    },
+  },
+  {
+    key: "queue-times",
+    name: "Queue-Times park operations",
+    category: "Park data",
+    roadmapRank: 3,
+    stage: "recommended",
+    stageDetail: "Parqara already has wait-time and closure provider seams, but live mode still uses synthetic park operations data today.",
+    description: "Adds real ride statuses, closures, and live wait times for supported parks.",
+    benefit: "Makes Mara's replans and the live dashboard reflect actual park conditions instead of local mock scenarios.",
+    docsUrl: "https://queue-times.com/pages/api",
+    envVars: [],
+    steps: [
+      {
+        title: "Confirm the supported parks and attribution requirement",
+        detail: "Queue-Times requires a prominent Powered by Queue-Times.com attribution for the free realtime API, so decide which parks you want to support first and where that attribution will live in the product.",
+      },
+      {
+        title: "Add a production wait-time provider",
+        detail: "Implement a real provider next to src/server/providers/mock/wait-time-provider.ts and switch src/server/providers/factory.ts to use it for supported parks while keeping a fallback path for unsupported parks.",
+      },
+      {
+        title: "Map Parqara park and attraction IDs once",
+        detail: "Create a stable mapping from your internal park and attraction IDs to the external Queue-Times IDs so wait times, closures, and alerts land on the right planner items.",
+      },
+    ],
+    resolveStatus() {
+      return {
+        status: "missing",
+        detail: "The app still uses synthetic wait times and ride-status scenarios. Add a real park-operations feed before treating live replans as production-grounded.",
+      };
+    },
+  },
 ];
 
 export function getAdminIntegrationsSnapshot(env: EnvShape = process.env): AdminIntegrationsSnapshot {
@@ -550,6 +639,7 @@ export function getAdminIntegrationsSnapshot(env: EnvShape = process.env): Admin
       key: blueprint.key,
       name: blueprint.name,
       category: blueprint.category,
+      roadmapRank: blueprint.roadmapRank,
       stage: blueprint.stage,
       stageDetail: blueprint.stageDetail,
       status: status.status,

@@ -1,21 +1,21 @@
 import type { ReactNode } from "react";
 import { CircleHelp, LifeBuoy, Search } from "lucide-react";
 
-import { getCurrentUserState } from "@/lib/auth/guards";
+import { getCurrentUserStateIfAvailable } from "@/lib/auth/guards";
 
 import { HelpCenter } from "@/components/help/help-center";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 
 export default async function HelpPage() {
-  const user = await getCurrentUserState();
+  const user = await getCurrentUserStateIfAvailable();
   const displayName = user?.firstName ?? user?.name ?? user?.email ?? null;
 
   return (
     <div className="mx-auto max-w-6xl space-y-5 pb-16 sm:space-y-6 sm:pb-20">
       <Card className="overflow-hidden p-0">
         <div className="grid gap-0 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.18),transparent_28%),linear-gradient(180deg,rgba(248,252,255,0.98),rgba(255,255,255,0.98))] px-6 py-6 sm:px-8 sm:py-7 lg:px-10">
+          <div className="bg-[linear-gradient(180deg,#f8fbff_0%,#ffffff_100%)] px-6 py-6 sm:px-8 sm:py-7 lg:px-10">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700/70">Help</p>
             <h1 className="mt-3 font-[family-name:var(--font-space-grotesk)] text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
               Search the FAQ.
@@ -64,3 +64,5 @@ function HelpStatCard({
     </div>
   );
 }
+
+

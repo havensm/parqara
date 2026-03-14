@@ -1,26 +1,20 @@
 import { getUserBillingState } from "@/lib/billing";
-import { getCurrentUserState } from "@/lib/auth/guards";
+import { getCurrentUserStateIfAvailable } from "@/lib/auth/guards";
 
 import { PremiumHomepage } from "@/components/marketing/premium-homepage";
 
 export default async function Home() {
-  const user = await getCurrentUserState();
-  const signedIn = Boolean(user);
-  const primaryHref = user ? "/dashboard" : "/signup";
-  const primaryLabel = user ? "Open dashboard" : "Get started";
-  const secondaryHref = user ? "/profile" : "/#how-it-works";
-  const secondaryLabel = user ? "View profile" : "How it works";
+  const user = await getCurrentUserStateIfAvailable();
   const currentTier = user ? getUserBillingState(user).currentTier : undefined;
 
   return (
     <PremiumHomepage
       currentTier={currentTier}
-      primaryHref={primaryHref}
-      primaryLabel={primaryLabel}
-      secondaryHref={secondaryHref}
-      secondaryLabel={secondaryLabel}
-      signedIn={signedIn}
+      primaryHref={user ? "/app" : "/signup"}
+      primaryLabel={user ? "Open home" : "Get started"}
+      secondaryHref={user ? "/dashboard" : "/#how-it-works"}
+      secondaryLabel={user ? "Open planners" : "How it works"}
+      signedIn={Boolean(user)}
     />
   );
 }
-

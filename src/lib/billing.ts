@@ -1,6 +1,14 @@
 import type { SubscriptionStatusValue, SubscriptionTierValue } from "@/lib/contracts";
 
-export type BillingFeatureKey = "liveDashboard" | "liveReplan" | "aiConcierge" | "tripCollaboration";
+export type BillingFeatureKey =
+  | "liveDashboard"
+  | "liveReplan"
+  | "aiConcierge"
+  | "tripCollaboration"
+  | "plannerDuplication"
+  | "plannerTemplates"
+  | "versionHistory"
+  | "professionalExports";
 
 export type BillingPlan = {
   tier: SubscriptionTierValue;
@@ -10,6 +18,7 @@ export type BillingPlan = {
   tagline: string;
   summary: string;
   badge: string;
+  activePlannerLimit: number;
   features: string[];
 };
 
@@ -37,7 +46,8 @@ const tierRank: Record<SubscriptionTierValue, number> = {
 
 const activeStatuses = new Set<SubscriptionStatusValue>(["ACTIVE", "TRIALING"]);
 
-export const MARA_STARTER_REPLY_LIMIT = 3;
+export const MARA_FREE_PREVIEW_REPLY_LIMIT = 1;
+export const MARA_STARTER_REPLY_LIMIT = MARA_FREE_PREVIEW_REPLY_LIMIT;
 
 export const BILLING_PLANS: Record<SubscriptionTierValue, BillingPlan> = {
   FREE: {
@@ -45,30 +55,52 @@ export const BILLING_PLANS: Record<SubscriptionTierValue, BillingPlan> = {
     name: "Free",
     monthlyPrice: 0,
     monthlyLabel: "$0",
-    tagline: "Core planning",
-    summary: "Planner, saved defaults, trip summaries, and 3 Mara starter replies.",
-    badge: "Best for trying the product",
-    features: ["Saved planning profile", "Trip setup and itinerary builder", "Trip detail pages and summaries", "3 Mara starter replies"],
+    tagline: "Start planning",
+    summary: "Trip setup, itinerary views, calendar access, one active planner, and one intentional Mara preview after the basics are saved.",
+    badge: "Best for getting started",
+    activePlannerLimit: 1,
+    features: [
+      "Trip setup with dates, group details, must-dos, and dining preferences",
+      "Build and view generated itinerary routes",
+      "Calendar view, private trip feed, and notifications",
+      "1 active planner",
+      "One Mara preview after the planner basics are saved",
+    ],
   },
   PLUS: {
     tier: "PLUS",
     name: "Plus",
     monthlyPrice: 12,
     monthlyLabel: "$12",
-    tagline: "For live park days",
-    summary: "Everything in Free, plus live guidance, replans, and alerts.",
-    badge: "Popular",
-    features: ["Everything in Free", "Live park dashboard", "One-tap replans and live alerts"],
+    tagline: "Unlimited Mara",
+    summary: "Unlimited Mara, live dashboard access, instant replans, and up to three active planners for the full day-of planning experience.",
+    badge: "Best plan for most people",
+    activePlannerLimit: 3,
+    features: [
+      "Unlimited Mara access for trip-specific planning",
+      "Unlimited follow-up questions and route revisions",
+      "Live dashboard with next-move guidance",
+      "Instant replans and ride-completion controls",
+      "3 active planners",
+    ],
   },
   PRO: {
     tier: "PRO",
     name: "Pro",
     monthlyPrice: 29,
     monthlyLabel: "$29",
-    tagline: "For power planners",
-    summary: "Everything in Plus, plus unlimited Mara and shared planners.",
-    badge: "For groups and frequent planners",
-    features: ["Everything in Plus", "Unlimited Mara AI concierge", "Trip collaborators and shared planning"],
+    tagline: "Repeat workflows",
+    summary: "Everything in Plus, plus more planner room, duplication, templates, version history, and collaborator invites for higher-volume planning.",
+    badge: "For repeat planners and shared trips",
+    activePlannerLimit: 10,
+    features: [
+      "Everything in Plus",
+      "10 active planners",
+      "Planner duplication",
+      "Reusable planner templates",
+      "Version history and saved snapshots",
+      "Collaborator invites and shared planner management",
+    ],
   },
 };
 
@@ -76,30 +108,58 @@ export const BILLING_FEATURES: Record<BillingFeatureKey, BillingFeatureDefinitio
   liveDashboard: {
     label: "Live park dashboard",
     requiredTier: "PLUS",
-    upgradeTitle: "Live park mode is part of Plus",
-    upgradeDescription: "Track the next best move with live waits, operational alerts, and an at-the-moment park readout.",
+    upgradeTitle: "Live trip mode is part of Plus",
+    upgradeDescription: "Open the live dashboard, keep the next move visible, and let Parqara adapt the day around what is changing.",
     highlights: ["Live conditions and alerts", "On-the-ground next step guidance", "A dedicated dashboard for the park day"],
   },
   liveReplan: {
     label: "Instant replans",
     requiredTier: "PLUS",
     upgradeTitle: "One-tap replans unlock on Plus",
-    upgradeDescription: "Let Parqara rebalance the rest of the day when waits spike, closures hit, or the pace changes.",
+    upgradeDescription: "Let Parqara rebalance the rest of the day when waits spike, closures hit, or your pace changes.",
     highlights: ["Replan around changing waits", "Adapt to closures and slowdowns", "Keep the rest of the route intact"],
   },
   aiConcierge: {
-    label: "Mara AI concierge",
-    requiredTier: "PRO",
-    upgradeTitle: "Full Mara concierge is part of Pro",
-    upgradeDescription: "Free and Plus can sample Mara with a short starter preview. Upgrade to Pro for ongoing, trip-specific planning chat.",
-    highlights: ["A short Mara starter preview on Free and Plus", "Unlimited trip-specific planning chat", "Context-aware follow-up questions and refinements"],
+    label: "Unlimited Mara access",
+    requiredTier: "PLUS",
+    upgradeTitle: "Unlimited Mara is part of Plus",
+    upgradeDescription: "Free includes a single intentional Mara preview. Plus unlocks the full planning conversation with unlimited Mara access.",
+    highlights: ["Full AI trip planning", "Follow-up questions and revisions", "Memory-backed, trip-specific guidance"],
   },
   tripCollaboration: {
-    label: "Trip collaboration",
+    label: "Shared planner collaboration",
     requiredTier: "PRO",
-    upgradeTitle: "Shared trip workspaces are on Pro",
-    upgradeDescription: "Invite other Parqara users into the same trip so the plan can be shaped together.",
-    highlights: ["Invite collaborators by email", "Shared visibility into the trip", "Centralize group edits in one workspace"],
+    upgradeTitle: "Shared planner collaboration is on Pro",
+    upgradeDescription: "Invite existing Parqara users, manage access, and keep one planner visible to everyone working on the same trip.",
+    highlights: ["Invite collaborators by email", "Manage shared planner access", "Keep group planning in one place"],
+  },
+  plannerDuplication: {
+    label: "Planner duplication",
+    requiredTier: "PRO",
+    upgradeTitle: "Planner duplication is on Pro",
+    upgradeDescription: "Duplicate a planner when you need to reuse a structure, branch a plan, or spin up a client-ready variant quickly.",
+    highlights: ["Reuse a proven brief", "Branch without overwriting", "Move faster across multiple planners"],
+  },
+  plannerTemplates: {
+    label: "Planner templates",
+    requiredTier: "PRO",
+    upgradeTitle: "Planner templates are on Pro",
+    upgradeDescription: "Save repeatable planning setups as templates so future planners start from a stronger baseline.",
+    highlights: ["Save repeatable structures", "Reuse preferred defaults", "Designed for repeat planners"],
+  },
+  versionHistory: {
+    label: "Version history",
+    requiredTier: "PRO",
+    upgradeTitle: "Version history is on Pro",
+    upgradeDescription: "Track meaningful planner snapshots as the plan changes so power users can review and compare versions cleanly.",
+    highlights: ["Snapshot important changes", "Review planning evolution", "Supports higher-volume workflows"],
+  },
+  professionalExports: {
+    label: "Future export tools",
+    requiredTier: "PRO",
+    upgradeTitle: "Future export tools are reserved for Pro",
+    upgradeDescription: "Pro keeps room for a later export workspace, but the shipped workflow focus today is duplication, templates, versions, and collaboration.",
+    highlights: ["Reserved for future export tools", "Kept on the Pro workflow tier", "Not a shipped workspace yet"],
   },
 };
 
@@ -122,8 +182,79 @@ export function hasTierAccess(currentTier: SubscriptionTierValue, requiredTier: 
   return tierRank[currentTier] >= tierRank[requiredTier];
 }
 
+export function getPlannerLimitForTier(tier: SubscriptionTierValue) {
+  return BILLING_PLANS[tier].activePlannerLimit;
+}
+
 export function canAccessBillingFeature(currentTier: SubscriptionTierValue, feature: BillingFeatureKey) {
   return hasTierAccess(currentTier, BILLING_FEATURES[feature].requiredTier);
+}
+
+export function canUseFullMara(
+  input:
+    | SubscriptionTierValue
+    | {
+        subscriptionTier?: SubscriptionTierValue | null;
+        subscriptionStatus?: SubscriptionStatusValue | null;
+      }
+) {
+  const currentTier =
+    typeof input === "string"
+      ? input
+      : getEffectiveSubscriptionTier(input.subscriptionTier, input.subscriptionStatus);
+
+  return canAccessBillingFeature(currentTier, "aiConcierge");
+}
+
+export function canUseFreePreview(
+  user: {
+    subscriptionTier?: SubscriptionTierValue | null;
+    subscriptionStatus?: SubscriptionStatusValue | null;
+    maraPreviewRepliesUsed?: number | null;
+  },
+  planner?: {
+    plannerStatus?: "ACTIVE" | "ARCHIVED" | null;
+  } | null
+) {
+  const currentTier = getEffectiveSubscriptionTier(user.subscriptionTier, user.subscriptionStatus);
+
+  if (currentTier !== "FREE") {
+    return false;
+  }
+
+  if (planner?.plannerStatus === "ARCHIVED") {
+    return false;
+  }
+
+  return (user.maraPreviewRepliesUsed ?? 0) < MARA_FREE_PREVIEW_REPLY_LIMIT;
+}
+
+export function canCreatePlanner(input: {
+  activePlannerCount: number;
+  currentTier?: SubscriptionTierValue;
+  subscriptionTier?: SubscriptionTierValue | null;
+  subscriptionStatus?: SubscriptionStatusValue | null;
+}) {
+  const currentTier =
+    input.currentTier ?? getEffectiveSubscriptionTier(input.subscriptionTier, input.subscriptionStatus);
+
+  return input.activePlannerCount < getPlannerLimitForTier(currentTier);
+}
+
+export function canDuplicatePlanner(currentTier: SubscriptionTierValue) {
+  return canAccessBillingFeature(currentTier, "plannerDuplication");
+}
+
+export function canUseTemplates(currentTier: SubscriptionTierValue) {
+  return canAccessBillingFeature(currentTier, "plannerTemplates");
+}
+
+export function canUseVersionHistory(currentTier: SubscriptionTierValue) {
+  return canAccessBillingFeature(currentTier, "versionHistory");
+}
+
+export function canUseProfessionalExports(currentTier: SubscriptionTierValue) {
+  return canAccessBillingFeature(currentTier, "professionalExports");
 }
 
 export function getMaraStarterPreviewState(
@@ -131,23 +262,23 @@ export function getMaraStarterPreviewState(
   usedReplies: number | null | undefined
 ): MaraStarterPreviewState {
   const normalizedUsedReplies = Math.max(0, usedReplies ?? 0);
-  const fullAccess = canAccessBillingFeature(currentTier, "aiConcierge");
+  const fullAccess = canUseFullMara(currentTier);
 
-  if (fullAccess) {
+  if (fullAccess || currentTier !== "FREE") {
     return {
       included: false,
-      replyLimit: MARA_STARTER_REPLY_LIMIT,
+      replyLimit: MARA_FREE_PREVIEW_REPLY_LIMIT,
       usedReplies: 0,
       remainingReplies: 0,
       canSend: false,
     };
   }
 
-  const remainingReplies = Math.max(0, MARA_STARTER_REPLY_LIMIT - normalizedUsedReplies);
+  const remainingReplies = Math.max(0, MARA_FREE_PREVIEW_REPLY_LIMIT - normalizedUsedReplies);
 
   return {
     included: true,
-    replyLimit: MARA_STARTER_REPLY_LIMIT,
+    replyLimit: MARA_FREE_PREVIEW_REPLY_LIMIT,
     usedReplies: normalizedUsedReplies,
     remainingReplies,
     canSend: remainingReplies > 0,
@@ -158,8 +289,11 @@ export function getUserBillingState(user: {
   subscriptionTier?: SubscriptionTierValue | null;
   subscriptionStatus?: SubscriptionStatusValue | null;
   maraPreviewRepliesUsed?: number | null;
+  activePlannerCount?: number | null;
 }) {
   const currentTier = getEffectiveSubscriptionTier(user.subscriptionTier, user.subscriptionStatus);
+  const plannerLimit = getPlannerLimitForTier(currentTier);
+  const activePlannerCount = Math.max(0, user.activePlannerCount ?? 0);
 
   return {
     currentTier,
@@ -169,6 +303,16 @@ export function getUserBillingState(user: {
       liveReplan: canAccessBillingFeature(currentTier, "liveReplan"),
       aiConcierge: canAccessBillingFeature(currentTier, "aiConcierge"),
       tripCollaboration: canAccessBillingFeature(currentTier, "tripCollaboration"),
+      plannerDuplication: canAccessBillingFeature(currentTier, "plannerDuplication"),
+      plannerTemplates: canAccessBillingFeature(currentTier, "plannerTemplates"),
+      versionHistory: canAccessBillingFeature(currentTier, "versionHistory"),
+      professionalExports: canAccessBillingFeature(currentTier, "professionalExports"),
+    },
+    plannerAllowance: {
+      activeCount: activePlannerCount,
+      limit: plannerLimit,
+      remaining: Math.max(0, plannerLimit - activePlannerCount),
+      canCreate: canCreatePlanner({ currentTier, activePlannerCount }),
     },
     maraStarterPreview: getMaraStarterPreviewState(currentTier, user.maraPreviewRepliesUsed),
   };
@@ -190,6 +334,3 @@ export function getBillingStatusLabel(status: SubscriptionStatusValue | null | u
       return "Free";
   }
 }
-
-
-

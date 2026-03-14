@@ -115,10 +115,10 @@ export function ProfilePeopleManager() {
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Saved contacts</p>
           <h2 className="mt-3 font-[family-name:var(--font-space-grotesk)] text-2xl font-semibold tracking-tight text-slate-950">
-            Save friends and family you plan with.
+            Saved contacts
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">
-            Add existing Parqara accounts here so they are ready to drop into the next planner.
+            Keep frequent planners ready to add to the next trip.
           </p>
         </div>
       </div>
@@ -192,4 +192,5 @@ export function ProfilePeopleManager() {
     </Card>
   );
 }
+
 

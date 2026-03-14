@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { PlannerContext } from "@/server/services/mara-agent-context";
-import { buildMaraInstructions } from "@/server/services/mara-agent-prompt";
+import { buildFallbackReply, buildMaraInstructions } from "@/server/services/mara-agent-prompt";
 
 const sampleContext: PlannerContext = {
   firstName: "Sam",
@@ -43,7 +43,7 @@ const sampleContext: PlannerContext = {
 };
 
 describe("buildMaraInstructions", () => {
-  it("includes the persona rules and saved trip context", () => {
+  it("includes the persona rules and saved trip context for full mode", () => {
     const instructions = buildMaraInstructions(sampleContext);
 
     expect(instructions).toContain("You are Mara, Parqara's Trip Planning Concierge.");
@@ -51,5 +51,24 @@ describe("buildMaraInstructions", () => {
     expect(instructions).toContain("Focused trip: Spring Break at Aurora Adventure Park on 2026-04-01 (Live)");
     expect(instructions).toContain("Focused trip itinerary preview: River Run -> Lunch at Harbor Grill");
     expect(instructions).toContain("Accessibility needs: mobility support");
+  });
+
+  it("switches to preview instructions for the Free plan preview mode", () => {
+    const instructions = buildMaraInstructions(sampleContext, "preview");
+
+    expect(instructions).toContain("This run is the Free plan preview.");
+    expect(instructions).toContain("Starter recommendation, Rough budget range, Example day, Tailored suggestions, Next step");
+    expect(instructions).toContain("Keep the whole reply under 180 words.");
+  });
+});
+
+describe("buildFallbackReply", () => {
+  it("returns the Free preview structure in preview mode", () => {
+    const reply = buildFallbackReply(sampleContext, [{ role: "user", content: "Help me plan this trip." }], "preview");
+
+    expect(reply).toContain("Starter recommendation");
+    expect(reply).toContain("Rough budget range");
+    expect(reply).toContain("Example day");
+    expect(reply).toContain("Upgrade to Plus for unlimited Mara");
   });
 });

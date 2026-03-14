@@ -1,0 +1,18 @@
+export const generatedVisuals = {
+  homepage: {
+    hero: "/generated/homepage/parqara-hero-planning-suite.png",
+    story: "/generated/homepage/parqara-weekend-atlas-scene.png",
+    dayOf: "/generated/homepage/parqara-day-of-itinerary-scene.png",
+  },
+  planners: {
+    studio: "/generated/planners/parqara-planner-studio.png",
+    starter: "/generated/empty-states/parqara-planner-starter.png",
+  },
+  billing: {
+    upgrade: "/generated/billing/parqara-upgrade-lounge.png",
+  },
+  settings: {
+    profile: "/generated/settings/parqara-profile-studio.png",
+  },
+} as const;
+

@@ -73,6 +73,11 @@ enum TripStatus {
   COMPLETED
 }
 
+enum PlannerStatus {
+  ACTIVE
+  ARCHIVED
+}
+
 enum ThrillTolerance {
   LOW
   MEDIUM
@@ -107,6 +112,7 @@ model User {
   firstName                     String?
   lastName                      String?
   name                          String?
+  profileImageDataUrl           String?
   authProvider                  AuthProvider             @default(LOCAL)
   onboardingStatus              OnboardingStatus         @default(NOT_STARTED)
   onboardingCurrentStep         Int                      @default(0)
@@ -135,6 +141,9 @@ model User {
   listedInPeople                UserContact[]            @relation("UserContactMember")
   sentTripCollaboratorInvites   TripCollaboratorInvite[] @relation("TripCollaboratorInviteSender")
   feedbackEntries               Feedback[]
+  plannerVersions               PlannerVersion[]         @relation("PlannerVersionAuthor")
+  plannerTemplates              PlannerTemplate[]
+  plannerExports                PlannerExport[]          @relation("PlannerExportOwner")
 }
 
 model MaraRequestLog {
@@ -237,6 +246,8 @@ model Trip {
   name                        String
   visitDate                   DateTime
   status                      TripStatus              @default(DRAFT)
+  plannerStatus               PlannerStatus           @default(ACTIVE)
+  archivedAt                  DateTime?
   currentStep                 Int                     @default(0)
   simulatedTime               DateTime?
   currentLocationAttractionId String?
@@ -252,10 +263,54 @@ model Trip {
   collaborators               TripCollaborator[]
   pendingInvites              TripCollaboratorInvite[]
   notifications               Notification[]
+  plannerVersions             PlannerVersion[]
+  plannerExports              PlannerExport[]
   user                        User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId, visitDate])
+  @@index([userId, plannerStatus, visitDate])
   @@index([parkId, status])
+  @@index([plannerStatus, updatedAt])
+}
+
+model PlannerVersion {
+  id         String   @id @default(cuid())
+  tripId      String
+  userId      String?
+  label       String
+  snapshot    Json
+  createdAt   DateTime @default(now())
+  trip        Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user        User?     @relation("PlannerVersionAuthor", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([tripId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model PlannerTemplate {
+  id         String   @id @default(cuid())
+  userId      String
+  name        String
+  snapshot    Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model PlannerExport {
+  id           String   @id @default(cuid())
+  tripId        String
+  userId        String
+  format        String
+  brandingMode  String?
+  metadata      Json?
+  createdAt     DateTime @default(now())
+  trip          Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user          User      @relation("PlannerExportOwner", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tripId, createdAt])
+  @@index([userId, createdAt])
 }
 
 model PartyProfile {
@@ -392,6 +447,9 @@ model ParkStateSnapshot {
   @@index([tripId, effectiveTime])
   @@index([parkId, effectiveTime])
 }
+
+
+
 
 
 

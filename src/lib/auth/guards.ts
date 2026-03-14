@@ -1,8 +1,9 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import type { Prisma } from "@prisma/client/index";
 
 import { isAdminEmail } from "@/lib/admin";
-import { db } from "@/lib/db";
+import { db, isDatabaseUnavailableError } from "@/lib/db";
 
 import { getCurrentUser } from "./session";
 
@@ -12,7 +13,7 @@ export type SessionUserState = Prisma.UserGetPayload<{
   };
 }>;
 
-export async function getCurrentUserState(): Promise<SessionUserState | null> {
+const loadCurrentUserState = cache(async (): Promise<SessionUserState | null> => {
   const user = await getCurrentUser();
   if (!user) {
     return null;
@@ -26,11 +27,27 @@ export async function getCurrentUserState(): Promise<SessionUserState | null> {
       preference: true,
     },
   });
+});
+
+export async function getCurrentUserState(): Promise<SessionUserState | null> {
+  return loadCurrentUserState();
+}
+
+export async function getCurrentUserStateIfAvailable(): Promise<SessionUserState | null> {
+  try {
+    return await loadCurrentUserState();
+  } catch (error) {
+    if (isDatabaseUnavailableError(error)) {
+      return null;
+    }
+
+    throw error;
+  }
 }
 
 export function getPostAuthRedirectPath(user?: unknown) {
   void user;
-  return "/dashboard";
+  return "/app";
 }
 
 export async function requireAuthenticatedUser() {
@@ -49,12 +66,12 @@ export async function requireCompletedOnboardingUser() {
 export async function requireAdminUser() {
   const user = await requireAuthenticatedUser();
   if (!isAdminEmail(user.email)) {
-    redirect("/dashboard");
+    redirect("/app");
   }
 
   return user;
 }
 
 export async function requireIncompleteOnboardingUser() {
-  redirect("/dashboard");
+  redirect("/app");
 }

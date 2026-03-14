@@ -42,12 +42,12 @@ export function BrandLogo({
   const content = (
     <div className={cn("flex flex-col items-start", styles.wrapper, className)}>
       <Image
-        src="/brand/parqara-logo.png"
+        src="/brand/parqara-logo-wordmark.png"
         alt="Parqara"
-        width={2752}
-        height={1536}
+        width={1137}
+        height={1012}
         priority={priority}
-        className={cn(styles.image, imageClassName)}
+        className={cn(styles.image, "object-contain drop-shadow-[0_10px_22px_rgba(12,20,37,0.08)]", imageClassName)}
       />
       {subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}
     </div>

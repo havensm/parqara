@@ -154,7 +154,7 @@ export function AdminDashboard({
     <div className="space-y-6">
       <Card className="overflow-hidden p-0">
         <div className="grid gap-0 lg:grid-cols-[1.08fr_0.92fr]">
-          <div className="bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.18),transparent_30%),linear-gradient(180deg,rgba(248,252,255,0.98),rgba(255,255,255,0.98))] px-6 py-6 sm:px-7">
+          <div className="bg-[linear-gradient(180deg,#f8fbff_0%,#ffffff_100%)] px-6 py-6 sm:px-7">
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700/70">Admin only</p>
               <Badge variant="warning">Internal</Badge>
@@ -443,7 +443,7 @@ function TestingPanel({
     <div className="grid gap-6 xl:grid-cols-2">
       <Card className="overflow-hidden p-0">
         <div className="grid gap-0 lg:grid-cols-[1.08fr_0.92fr] xl:grid-cols-1">
-          <div className="bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.16),transparent_28%),linear-gradient(180deg,rgba(248,252,255,0.98),rgba(255,255,255,0.98))] px-6 py-6 sm:px-7">
+          <div className="bg-[linear-gradient(180deg,#f8fbff_0%,#ffffff_100%)] px-6 py-6 sm:px-7">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-sky-100 text-sky-700">
                 <TestTubeDiagonal className="h-5 w-5" />
@@ -534,7 +534,7 @@ function IntegrationsPanel({ integrations }: { integrations: AdminIntegrationsSn
         <MetricCard
           label="Add later"
           value={formatInteger(laterIntegrations.length)}
-          detail="Useful follow-up integrations for observability, analytics, and routing"
+          detail="Useful follow-up integrations for observability, analytics, routing, and live park data"
           icon={Activity}
           tone="sky"
         />
@@ -542,7 +542,7 @@ function IntegrationsPanel({ integrations }: { integrations: AdminIntegrationsSn
 
       <Card className="overflow-hidden p-0">
         <div className="grid gap-0 lg:grid-cols-[1.08fr_0.92fr]">
-          <div className="bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.16),transparent_28%),linear-gradient(180deg,rgba(248,252,255,0.98),rgba(255,255,255,0.98))] px-6 py-6 sm:px-7">
+          <div className="bg-[linear-gradient(180deg,#f8fbff_0%,#ffffff_100%)] px-6 py-6 sm:px-7">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700/70">Integration roadmap</p>
             <h3 className="mt-3 text-2xl font-semibold text-slate-950">Follow the setup in this order</h3>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
@@ -564,7 +564,7 @@ function IntegrationsPanel({ integrations }: { integrations: AdminIntegrationsSn
             />
             <RoadmapSummaryCard
               label="3. Later"
-              detail="Sentry, PostHog, and Mapbox"
+              detail="Sentry, PostHog, weather, and park data"
               value={`${laterIntegrations.length} later`}
               tone="sky"
             />
@@ -580,7 +580,7 @@ function IntegrationsPanel({ integrations }: { integrations: AdminIntegrationsSn
         />
         <RoadmapSection
           title="Add after launch"
-          description="These are worthwhile next additions, but they are not blocking the first live version."
+          description="These are the best follow-up additions once launch-critical setup is done, especially if you want live planner recommendations to feel grounded in real-world data."
           integrations={laterIntegrations}
         />
       </div>
@@ -589,6 +589,11 @@ function IntegrationsPanel({ integrations }: { integrations: AdminIntegrationsSn
 }
 
 function compareIntegrationsForRoadmap(a: AdminIntegration, b: AdminIntegration) {
+  const roadmapPriority = a.roadmapRank - b.roadmapRank;
+  if (roadmapPriority !== 0) {
+    return roadmapPriority;
+  }
+
   const statusPriority = getIntegrationRoadmapStatusPriority(a.status) - getIntegrationRoadmapStatusPriority(b.status);
   if (statusPriority !== 0) {
     return statusPriority;
@@ -640,7 +645,7 @@ function RoadmapSection({
         <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">{description}</p>
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid gap-6 2xl:grid-cols-2">
         {integrations.map((integration, index) => (
           <IntegrationCard key={integration.key} integration={integration} order={index + 1} />
         ))}
@@ -650,13 +655,15 @@ function RoadmapSection({
 }
 
 function IntegrationCard({ integration, order }: { integration: AdminIntegration; order: number }) {
-  const missingRequiredEnvVars = integration.envVars.filter((item) => item.required && !item.present);
+  const requiredEnvVars = integration.envVars.filter((item) => item.required);
+  const missingRequiredEnvVars = requiredEnvVars.filter((item) => !item.present);
   const optionalEnvVars = integration.envVars.filter((item) => !item.required);
+  const hasRequiredEnvVars = requiredEnvVars.length > 0;
 
   return (
     <Card className="p-6 sm:p-7">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
+        <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="neutral">Step {order}</Badge>
             <Badge variant="neutral">{integration.category}</Badge>
@@ -666,50 +673,59 @@ function IntegrationCard({ integration, order }: { integration: AdminIntegration
           <h3 className="mt-4 font-[family-name:var(--font-space-grotesk)] text-2xl font-semibold tracking-tight text-slate-950">
             {integration.name}
           </h3>
-          <p className="mt-3 text-sm leading-7 text-slate-600">{integration.description}</p>
+          <p className="mt-3 break-words text-sm leading-7 text-slate-600">{integration.description}</p>
         </div>
         <a
           href={integration.docsUrl}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-teal-300 hover:text-teal-700"
+          className="inline-flex shrink-0 items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-teal-300 hover:text-teal-700"
         >
           Open docs
         </a>
       </div>
 
-      <div className="mt-6 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-        <div className="space-y-4">
+      <div className="mt-6 grid gap-4 2xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
+        <div className="min-w-0 space-y-4">
           <SimpleRoadmapPanel title="Current state" body={integration.statusDetail} />
+          <SimpleRoadmapPanel title="In the app today" body={integration.stageDetail} />
           <SimpleRoadmapPanel title="Why add it" body={integration.benefit} />
           <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-semibold text-slate-950">Required env vars</p>
-              <Badge variant={missingRequiredEnvVars.length ? "warning" : "success"}>
-                {missingRequiredEnvVars.length ? `${missingRequiredEnvVars.length} missing` : "All set"}
+              <Badge variant={!hasRequiredEnvVars ? "neutral" : missingRequiredEnvVars.length ? "warning" : "success"}>
+                {!hasRequiredEnvVars ? "Code-only setup" : missingRequiredEnvVars.length ? String(missingRequiredEnvVars.length) + " missing" : "All set"}
               </Badge>
             </div>
-            {missingRequiredEnvVars.length ? (
+            {!hasRequiredEnvVars ? (
+              <p className="mt-3 break-words text-sm leading-7 text-slate-500">
+                This integration does not need a production secret yet. Finish the owner checklist and wire the provider seam in code.
+              </p>
+            ) : missingRequiredEnvVars.length ? (
               <div className="mt-3 flex flex-wrap gap-2">
                 {missingRequiredEnvVars.map((item) => (
-                  <code key={item.name} className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
+                  <code key={item.name} className="break-all rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
                     {item.name}
                   </code>
                 ))}
               </div>
             ) : (
-              <p className="mt-3 text-sm leading-7 text-slate-500">All required keys for this integration are present in the current environment.</p>
+              <p className="mt-3 break-words text-sm leading-7 text-slate-500">All required keys for this integration are present in the current environment.</p>
             )}
             {optionalEnvVars.length ? (
-              <p className="mt-3 text-xs leading-6 text-slate-500">
-                Optional later: {optionalEnvVars.map((item) => item.name).join(", ")}
-              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {optionalEnvVars.map((item) => (
+                  <code key={item.name} className="break-all rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
+                    {item.name}
+                  </code>
+                ))}
+              </div>
             ) : null}
           </div>
         </div>
 
-        <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4 sm:p-5">
-          <p className="text-sm font-semibold text-slate-950">Do this next</p>
+        <div className="min-w-0 rounded-[24px] border border-slate-200 bg-slate-50 p-4 sm:p-5">
+          <p className="text-sm font-semibold text-slate-950">Owner checklist</p>
           <ol className="mt-4 space-y-3">
             {integration.steps.map((step, index) => (
               <li key={step.title} className="rounded-[20px] border border-slate-200 bg-white px-4 py-4">
@@ -717,9 +733,9 @@ function IntegrationCard({ integration, order }: { integration: AdminIntegration
                   <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-950 text-xs font-semibold text-white">
                     {index + 1}
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-950">{step.title}</p>
-                    <p className="mt-2 text-sm leading-7 text-slate-500">{step.detail}</p>
+                  <div className="min-w-0">
+                    <p className="break-words text-sm font-semibold text-slate-950">{step.title}</p>
+                    <p className="mt-2 break-words text-sm leading-7 text-slate-500">{step.detail}</p>
                   </div>
                 </div>
               </li>
@@ -735,7 +751,7 @@ function SimpleRoadmapPanel({ body, title }: { body: string; title: string }) {
   return (
     <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
       <p className="text-sm font-semibold text-slate-950">{title}</p>
-      <p className="mt-2 text-sm leading-7 text-slate-500">{body}</p>
+      <p className="mt-2 break-words text-sm leading-7 text-slate-500">{body}</p>
     </div>
   );
 }
@@ -858,6 +874,7 @@ function BreakdownRow({ label, value, badge }: { label: string; value: number; b
     </div>
   );
 }
+
 
 
 

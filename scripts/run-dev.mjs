@@ -1,4 +1,4 @@
-import { access, rm } from "node:fs/promises";
+import { access, rename, rm } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -26,9 +26,56 @@ async function removeWithRetry(targetPath, attempts = 6, delayMs = 2_000) {
   }
 }
 
+function isRecoverableCleanupError(error) {
+  return Boolean(
+    error &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error.code === "EPERM" || error.code === "EBUSY" || error.code === "ENOTEMPTY")
+  );
+}
+
+async function moveWithRetry(sourcePath, destinationPath, attempts = 3, delayMs = 500) {
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      await rename(sourcePath, destinationPath);
+      return true;
+    } catch (error) {
+      if (attempt === attempts || !isRecoverableCleanupError(error)) {
+        return false;
+      }
+
+      await sleep(delayMs);
+    }
+  }
+
+  return false;
+}
+
 try {
   await access(nextBuildDir);
-  await removeWithRetry(nextBuildDir);
+
+  try {
+    await removeWithRetry(nextBuildDir);
+  } catch (error) {
+    if (!isRecoverableCleanupError(error)) {
+      throw error;
+    }
+
+    const fallbackBuildDir = join(repoRoot, `.next-stale-${Date.now()}`);
+    const movedAside = await moveWithRetry(nextBuildDir, fallbackBuildDir);
+
+    if (movedAside) {
+      console.warn(
+        `[parqara] Warning: .next was locked, so the existing cache was moved to ${fallbackBuildDir}. Starting Next.js with a fresh dev build.`
+      );
+    } else {
+      const detail = error instanceof Error ? error.message : String(error);
+      console.warn(
+        `[parqara] Warning: Unable to clear .next before starting Next.js. Continuing with the existing dev cache because Windows is holding a file lock. If you hit stale output, pause OneDrive or close any other dev session, then delete .next manually. Original error: ${detail}`
+      );
+    }
+  }
 } catch (error) {
   if (error && typeof error === "object" && "code" in error && error.code !== "ENOENT") {
     const detail = error instanceof Error ? error.message : String(error);
@@ -58,4 +105,3 @@ child.on("exit", (code, signal) => {
 
   process.exit(code ?? 0);
 });
-

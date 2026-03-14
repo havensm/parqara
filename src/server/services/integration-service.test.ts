@@ -18,7 +18,7 @@ describe("getAdminIntegrationsSnapshot", () => {
 
     expect(snapshot.summary.configured).toBe(1);
     expect(snapshot.summary.partial).toBe(1);
-    expect(snapshot.summary.missing).toBe(5);
+    expect(snapshot.summary.missing).toBe(7);
     expect(findIntegration("google-auth", {
       GOOGLE_CLIENT_ID: "google-client",
       GOOGLE_CLIENT_SECRET: "google-secret",
@@ -34,6 +34,8 @@ describe("getAdminIntegrationsSnapshot", () => {
       RESEND_FROM_EMAIL: "hello@parqara.com",
     })?.status).toBe("partial");
     expect(snapshot.integrations.find((integration) => integration.key === "sentry")?.stage).toBe("recommended");
+    expect(snapshot.integrations.find((integration) => integration.key === "tomorrow-weather")?.status).toBe("missing");
+    expect(snapshot.integrations.find((integration) => integration.key === "queue-times")?.status).toBe("missing");
   });
 
   it("treats postmark and stripe as configured when their required keys exist", () => {

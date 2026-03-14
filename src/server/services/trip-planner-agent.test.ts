@@ -60,26 +60,30 @@ describe("generateTripPlannerReply", () => {
 
     expect(reply).toBe("fallback reply");
     expect(mockRunMaraAgent).not.toHaveBeenCalled();
-    expect(mockBuildFallbackReply).toHaveBeenCalledWith(sampleContext, [{ role: "user", content: "Help me plan a trip." }]);
+    expect(mockBuildFallbackReply).toHaveBeenCalledWith(sampleContext, [{ role: "user", content: "Help me plan a trip." }], "full");
   });
 
   it("returns the SDK reply when the run succeeds", async () => {
     process.env.OPENAI_API_KEY = "test-key";
     mockRunMaraAgent.mockResolvedValue("sdk reply");
 
-    const reply = await generateTripPlannerReply("user-1", [{ role: "user", content: "Help me plan a trip." }]);
+    const reply = await generateTripPlannerReply("user-1", [{ role: "user", content: "Help me plan a trip." }], undefined, {
+      replyMode: "preview",
+    });
 
     expect(reply).toBe("sdk reply");
-    expect(mockRunMaraAgent).toHaveBeenCalledWith(sampleContext, [{ role: "user", content: "Help me plan a trip." }]);
+    expect(mockRunMaraAgent).toHaveBeenCalledWith(sampleContext, [{ role: "user", content: "Help me plan a trip." }], "preview");
   });
 
   it("falls back when the SDK run fails", async () => {
     process.env.OPENAI_API_KEY = "test-key";
     mockRunMaraAgent.mockRejectedValue(new Error("SDK failed"));
 
-    const reply = await generateTripPlannerReply("user-1", [{ role: "user", content: "Help me plan a trip." }]);
+    const reply = await generateTripPlannerReply("user-1", [{ role: "user", content: "Help me plan a trip." }], undefined, {
+      replyMode: "preview",
+    });
 
     expect(reply).toBe("fallback reply");
-    expect(mockBuildFallbackReply).toHaveBeenCalled();
+    expect(mockBuildFallbackReply).toHaveBeenCalledWith(sampleContext, [{ role: "user", content: "Help me plan a trip." }], "preview");
   });
 });

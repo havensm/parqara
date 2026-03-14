@@ -1,19 +1,21 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { CalendarDays, Footprints, Sparkles, TimerReset } from "lucide-react";
+import { CalendarDays, Footprints, Sparkles } from "lucide-react";
 
 import type { SummaryDto } from "@/lib/contracts";
+import { generatedVisuals } from "@/lib/generated-assets";
 
 import { Badge } from "@/components/ui/badge";
 import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { VisualShowcase } from "@/components/ui/visual-showcase";
 
 function Metric({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-[26px] border border-slate-200 bg-white p-5">
-      <p className="text-xs uppercase tracking-[0.24em] text-slate-400">{label}</p>
-      <p className="mt-3 text-3xl font-semibold text-slate-950">{value}</p>
+    <div className="rounded-[26px] border border-[var(--card-border)] bg-white p-5">
+      <p className="text-xs uppercase tracking-[0.24em] text-[var(--muted)]">{label}</p>
+      <p className="mt-3 text-3xl font-semibold text-[var(--foreground)]">{value}</p>
     </div>
   );
 }
@@ -31,15 +33,15 @@ export function SummaryView({ summary }: { summary: SummaryDto }) {
 
   return (
     <div className="space-y-6">
-      <Card className="p-6 sm:p-8 lg:p-10">
-        <div className="grid gap-6 xl:grid-cols-[1.04fr_0.96fr] xl:items-start">
-          <div>
+      <Card className="overflow-hidden p-0">
+        <div className="grid gap-0 xl:grid-cols-[minmax(0,1.04fr)_minmax(320px,0.96fr)]">
+          <div className="px-6 py-6 sm:px-8 sm:py-8 lg:px-10">
             <Badge variant="success">Trip summary</Badge>
-            <h1 className="mt-5 font-[family-name:var(--font-space-grotesk)] text-3xl font-semibold text-slate-950 sm:text-4xl lg:text-5xl">
+            <h1 className="mt-5 font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--foreground)] sm:text-4xl lg:text-5xl">
               {summary.tripName}
             </h1>
-            <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">{summary.latestPlanSummary}</p>
-            <p className="mt-5 text-sm text-slate-500">{format(new Date(summary.visitDate), "EEEE, MMM d")}</p>
+            <p className="mt-4 max-w-3xl text-lg leading-8 text-[var(--muted)]">{summary.latestPlanSummary}</p>
+            <p className="mt-5 text-sm text-[var(--muted)]">{format(new Date(summary.visitDate), "EEEE, MMM d")}</p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link href="/dashboard" className={buttonStyles({ variant: "primary", size: "default" })}>
                 Back to dashboard
@@ -49,26 +51,21 @@ export function SummaryView({ summary }: { summary: SummaryDto }) {
               </Link>
             </div>
           </div>
-
-          <div className="rounded-[32px] border border-sky-100 bg-cyan-50 p-6">
-            <p className="text-xs uppercase tracking-[0.28em] text-teal-700/80">Efficiency score</p>
-            <div className="mt-4 flex items-end gap-3 text-slate-950">
-              <p className="text-6xl font-semibold sm:text-7xl">{summary.metrics.efficiencyScore}</p>
-              <p className="pb-3 text-sm uppercase tracking-[0.24em] text-slate-500">out of 100</p>
-            </div>
-            <p className="mt-3 text-lg font-semibold text-slate-950">{efficiencyLabel}</p>
-            <p className="mt-2 text-sm leading-7 text-slate-600">
-              Based on completed attractions, expected wait efficiency, preserved priorities, and how much walking the route avoided.
-            </p>
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              <ScoreTile label="Rides" value={String(rideCount)} icon={<Sparkles className="h-4 w-4" />} />
-              <ScoreTile label="Dining" value={String(diningCount)} icon={<CalendarDays className="h-4 w-4" />} />
-              <ScoreTile label="Replans" value={String(summary.metrics.replanCount)} icon={<TimerReset className="h-4 w-4" />} />
-            </div>
+          <div className="border-t border-[var(--card-border)] p-4 xl:border-l xl:border-t-0">
+            <VisualShowcase
+              src={generatedVisuals.planners.studio}
+              alt="Parqara summary visual"
+              eyebrow="Efficiency score"
+              title={`${summary.metrics.efficiencyScore} / 100`}
+              description={efficiencyLabel}
+              chips={[`${rideCount} rides`, `${diningCount} dining`, `${summary.metrics.replanCount} replans`]}
+              aspect="square"
+              className="h-full"
+            />
           </div>
         </div>
 
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 border-t border-[var(--card-border)] px-6 py-6 sm:grid-cols-2 sm:px-8 sm:py-8 xl:grid-cols-4 lg:px-10">
           <Metric label="Rides completed" value={summary.metrics.ridesCompleted} />
           <Metric label="Time saved" value={`${summary.metrics.timeSavedMinutes}m`} />
           <Metric label="Average wait" value={`${summary.metrics.averagePredictedWait}m`} />
@@ -79,10 +76,10 @@ export function SummaryView({ summary }: { summary: SummaryDto }) {
       <div className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
         <div className="space-y-6 xl:sticky xl:top-28 xl:self-start">
           <Card className="p-6 sm:p-7">
-            <p className="text-xs uppercase tracking-[0.28em] text-teal-700/80">Highlights</p>
+            <p className="text-[11px] uppercase tracking-[0.28em] text-[var(--muted)]">Highlights</p>
             <div className="mt-5 space-y-3">
               {summary.highlights.map((highlight) => (
-                <div key={highlight} className="rounded-[24px] border border-slate-200 bg-white p-4 text-sm leading-7 text-slate-600">
+                <div key={highlight} className="rounded-[24px] border border-[var(--card-border)] bg-white p-4 text-sm leading-7 text-[var(--muted)]">
                   {highlight}
                 </div>
               ))}
@@ -90,7 +87,7 @@ export function SummaryView({ summary }: { summary: SummaryDto }) {
           </Card>
 
           <Card className="p-6 sm:p-7">
-            <p className="text-xs uppercase tracking-[0.28em] text-teal-700/80">Day mix</p>
+            <p className="text-[11px] uppercase tracking-[0.28em] text-[var(--muted)]">Day mix</p>
             <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
               <MixTile label="Attractions" value={String(rideCount)} icon={<Sparkles className="h-4 w-4" />} />
               <MixTile label="Dining stops" value={String(diningCount)} icon={<CalendarDays className="h-4 w-4" />} />
@@ -102,37 +99,37 @@ export function SummaryView({ summary }: { summary: SummaryDto }) {
         <Card className="p-6 sm:p-7">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.28em] text-teal-700/80">Completed timeline</p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-950">What the day actually covered</h2>
+              <p className="text-[11px] uppercase tracking-[0.28em] text-[var(--muted)]">Completed timeline</p>
+              <h2 className="mt-2 text-2xl font-semibold text-[var(--foreground)]">What the day actually covered</h2>
             </div>
-            <p className="text-sm text-slate-500">Completed items are listed in the order the plan advanced.</p>
+            <p className="text-sm text-[var(--muted)]">Completed items are listed in the order the plan advanced.</p>
           </div>
 
           <div className="mt-6 space-y-4">
             {summary.completedItems.map((item, index) => (
               <div key={item.id} className="relative pl-10">
                 {index < summary.completedItems.length - 1 ? (
-                  <div className="absolute left-[15px] top-12 h-[calc(100%+1rem)] w-px bg-[#d7ddd4]" />
+                  <div className="absolute left-[15px] top-12 h-[calc(100%+1rem)] w-px bg-[rgba(124,149,182,0.22)]" />
                 ) : null}
-                <div className="absolute left-0 top-5 flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-950">
+                <div className="absolute left-0 top-5 flex h-8 w-8 items-center justify-center rounded-full border border-[var(--card-border)] bg-white text-sm font-semibold text-[var(--foreground)]">
                   {index + 1}
                 </div>
-                <div className="rounded-[28px] border border-slate-200 bg-white p-5 sm:p-6">
+                <div className="rounded-[28px] border border-[var(--card-border)] bg-white p-5 sm:p-6">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-xl font-semibold text-slate-950">{item.title}</h3>
+                        <h3 className="text-xl font-semibold text-[var(--foreground)]">{item.title}</h3>
                         <Badge variant={item.type === "DINING" ? "success" : item.type === "BREAK" ? "warning" : "neutral"}>
                           {item.type}
                         </Badge>
                       </div>
-                      <p className="mt-2 text-sm text-slate-500">
+                      <p className="mt-2 text-sm text-[var(--muted)]">
                         {format(new Date(item.startTime), "h:mm a")} • {item.predictedWaitMinutes}m wait • {item.walkingMinutes}m walk
                       </p>
-                      <p className="mt-3 text-sm leading-7 text-slate-600">{item.explanation}</p>
+                      <p className="mt-3 text-sm leading-7 text-[var(--muted)]">{item.explanation}</p>
                     </div>
-                    <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 lg:min-w-[220px]">
-                      <p className="font-semibold text-slate-950">Completion note</p>
+                    <div className="rounded-[24px] border border-[var(--card-border)] bg-[var(--surface-muted)] p-4 text-sm text-[var(--muted)] lg:min-w-[220px]">
+                      <p className="font-semibold text-[var(--foreground)]">Completion note</p>
                       <p className="mt-2">{item.reason}</p>
                     </div>
                   </div>
@@ -148,32 +145,15 @@ export function SummaryView({ summary }: { summary: SummaryDto }) {
 
 function MixTile({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
-    <div className="rounded-[24px] border border-slate-200 bg-white p-4">
-      <div className="flex items-center gap-3 text-slate-950">
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-50 text-teal-700">{icon}</div>
+    <div className="rounded-[24px] border border-[var(--card-border)] bg-white p-4">
+      <div className="flex items-center gap-3 text-[var(--foreground)]">
+        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[rgba(238,253,249,0.9)] text-[var(--teal-700)]">{icon}</div>
         <div>
-          <p className="text-xs uppercase tracking-[0.22em] text-slate-400">{label}</p>
-          <p className="mt-1 text-lg font-semibold text-slate-950">{value}</p>
+          <p className="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">{label}</p>
+          <p className="mt-1 text-lg font-semibold text-[var(--foreground)]">{value}</p>
         </div>
       </div>
     </div>
   );
 }
-
-function ScoreTile({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
-  return (
-    <div className="rounded-[24px] border border-sky-100 bg-slate-50 p-4">
-      <div className="flex items-center gap-3 text-slate-950">
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-50 text-teal-700">{icon}</div>
-        <div>
-          <p className="text-xs uppercase tracking-[0.22em] text-slate-400">{label}</p>
-          <p className="mt-1 text-sm font-semibold text-slate-950">{value}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-
-
 

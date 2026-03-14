@@ -4,6 +4,7 @@ export type AttractionCategoryValue = "RIDE" | "SHOW" | "DINING" | "PLAY";
 export type ThrillToleranceValue = "LOW" | "MEDIUM" | "HIGH";
 export type WalkingToleranceValue = "LOW" | "MEDIUM" | "HIGH";
 export type TripStatusValue = "DRAFT" | "PLANNED" | "LIVE" | "COMPLETED";
+export type PlannerStatusValue = "ACTIVE" | "ARCHIVED";
 export type ItineraryItemTypeValue = "RIDE" | "SHOW" | "DINING" | "BREAK";
 export type ItineraryItemStatusValue =
   | "PLANNED"
@@ -82,6 +83,7 @@ export type TripDetailDto = {
   name: string;
   isOwner: boolean;
   status: TripStatusValue;
+  plannerStatus: PlannerStatusValue;
   visitDate: string;
   simulatedTime: string | null;
   currentStep: number;
@@ -89,6 +91,42 @@ export type TripDetailDto = {
   park: ParkCatalogDto["park"];
   partyProfile: PartyProfileDto;
   itinerary: ItineraryItemDto[];
+};
+
+export type DashboardTripDto = {
+  id: string;
+  name: string;
+  status: TripStatusValue;
+  plannerStatus: PlannerStatusValue;
+  visitDate: string;
+  parkName: string;
+  itineraryCount: number;
+  currentItemTitle: string | null;
+  latestPlanSummary: string | null;
+  currentStep: number;
+  isOwner: boolean;
+  metrics: Record<string, unknown> | null;
+};
+
+export type PlannerLimitStateDto = {
+  currentTier: SubscriptionTierValue;
+  activePlannerCount: number;
+  plannerLimit: number;
+  canCreate: boolean;
+  activeTrips: Array<Pick<DashboardTripDto, "id" | "name" | "status" | "visitDate" | "parkName">>;
+  archivedTrips: Array<Pick<DashboardTripDto, "id" | "name" | "status" | "visitDate" | "parkName">>;
+};
+
+export type PlannerVersionDto = {
+  id: string;
+  label: string;
+  createdAt: string;
+};
+
+export type PlannerTemplateDto = {
+  id: string;
+  name: string;
+  createdAt: string;
 };
 
 export type TripCollaboratorDto = {
@@ -197,7 +235,3 @@ export type SummaryDto = {
   highlights: string[];
   latestPlanSummary: string | null;
 };
-
-
-
-
