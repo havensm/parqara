@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client/index";
 
-import { MARA_STARTER_REPLY_LIMIT, getPlanByTier } from "@/lib/billing";
+import { MARA_FREE_PREVIEW_REPLY_LIMIT, getPlanByTier } from "@/lib/billing";
 import type { SubscriptionTierValue } from "@/lib/contracts";
 import { db } from "@/lib/db";
 import { HttpError } from "@/lib/http-error";
@@ -113,7 +113,7 @@ async function reserveMaraStarterReply(userId: string, currentTier: Subscription
     where: {
       id: userId,
       maraPreviewRepliesUsed: {
-        lt: MARA_STARTER_REPLY_LIMIT,
+        lt: MARA_FREE_PREVIEW_REPLY_LIMIT,
       },
     },
     data: {
@@ -132,14 +132,14 @@ async function reserveMaraStarterReply(userId: string, currentTier: Subscription
     },
   });
 
-  const usedReplies = usage?.maraPreviewRepliesUsed ?? MARA_STARTER_REPLY_LIMIT;
+  const usedReplies = usage?.maraPreviewRepliesUsed ?? MARA_FREE_PREVIEW_REPLY_LIMIT;
 
   if (!updated.count) {
-    const replyLimit = MARA_STARTER_REPLY_LIMIT;
+    const replyLimit = MARA_FREE_PREVIEW_REPLY_LIMIT;
     const remainingStarterReplies = Math.max(0, replyLimit - usedReplies);
     throw new HttpError(
       402,
-      `You have used the ${replyLimit} Mara starter replies included on ${getPlanByTier(currentTier).name}. Upgrade to Pro to keep planning with Mara.`,
+      `You have already used the Mara preview included on ${getPlanByTier(currentTier).name}. Upgrade to Plus to keep planning with unlimited Mara.`,
       {
         details: {
           usedStarterReplies: usedReplies,

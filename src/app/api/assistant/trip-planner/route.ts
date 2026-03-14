@@ -23,7 +23,9 @@ export async function POST(request: Request) {
     });
 
     try {
-      const reply = await generateTripPlannerReply(user.id, body.messages, body.tripId);
+      const reply = await generateTripPlannerReply(user.id, body.messages, body.tripId, {
+        replyMode: hasFullAccess ? "full" : "preview",
+      });
 
       if (hasFullAccess) {
         return NextResponse.json({
@@ -46,7 +48,6 @@ export async function POST(request: Request) {
         starterReplyLimit: updatedBilling.maraStarterPreview.replyLimit,
       });
     } catch (error) {
-      // Failed AI calls still count against the rate limit, but free/plus users should not lose starter credits.
       await rollbackMaraUsageReservation({
         userId: user.id,
         hadStarterReplyReservation: reservation.hadStarterReplyReservation,

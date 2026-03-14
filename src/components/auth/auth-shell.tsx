@@ -2,25 +2,31 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowRight, CalendarRange, Route, Users } from "lucide-react";
 
+import { generatedVisuals } from "@/lib/generated-assets";
+
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { VisualShowcase } from "@/components/ui/visual-showcase";
 
 const authHighlights = [
   {
     icon: Users,
     title: "Shared trip context",
     detail: "Keep the group, goals, and must-dos in one place.",
+    tone: "bg-[rgba(238,253,249,0.92)] text-[var(--teal-700)]",
   },
   {
     icon: Route,
     title: "Readable route plan",
     detail: "Turn the day into a sequence the whole group can follow.",
+    tone: "bg-[rgba(239,245,255,0.92)] text-[var(--sky-700)]",
   },
   {
     icon: CalendarRange,
     title: "Faster next trip",
     detail: "Saved preferences make the next outing easier to start.",
+    tone: "bg-[rgba(246,240,255,0.92)] text-[#6d4fd6]",
   },
 ];
 
@@ -32,6 +38,7 @@ type AuthShellProps = {
   alternateHref: string;
   alternateLabel: string;
   variant?: "default" | "minimal";
+  panelOrder?: "content-first" | "panel-first";
 };
 
 export function AuthShell({
@@ -42,80 +49,77 @@ export function AuthShell({
   alternateHref,
   alternateLabel,
   variant = "default",
+  panelOrder = "content-first",
 }: AuthShellProps) {
-  if (variant === "minimal") {
-    return (
-      <div className="mx-auto max-w-xl space-y-5">
-        <Card className="overflow-hidden border-white/85 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(247,251,253,0.92))] px-6 py-6 shadow-[0_18px_48px_rgba(15,23,42,0.06)] sm:px-8">
-          <div className="space-y-4">
-            <BrandLogo href="/" size="hero" subtitle="One place to shape the park day" imageClassName="h-24 w-auto sm:h-26" />
-            <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700/70">{eyebrow}</p>
-              <h1 className="font-[family-name:var(--font-space-grotesk)] text-4xl font-semibold tracking-tight text-slate-950 sm:text-[3rem] sm:leading-[0.98]">
-                {title}
-              </h1>
-              <p className="max-w-xl text-base leading-7 text-slate-600">{description}</p>
-            </div>
-            <div>
-              <Link href={alternateHref} className={`${buttonStyles({ variant: "secondary", size: "lg" })} gap-2`}>
-                {alternateLabel}
-                <ArrowRight className="h-4 w-4" />
-              </Link>
+  const storyPanel = (
+    <Card className="overflow-hidden border-white/85 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(245,250,252,0.92))] p-0 shadow-[0_24px_64px_rgba(12,20,37,0.1)]">
+      <div className="relative px-6 py-6 sm:px-8 sm:py-8">
+        <div className="space-y-6">
+          <BrandLogo href="/" size="hero" subtitle="One place to shape the trip" imageClassName="h-24 w-auto sm:h-28" />
+
+          <div className="space-y-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--muted)]">{eyebrow}</p>
+            <h1 className="max-w-xl font-[family-name:var(--font-display)] text-4xl font-semibold tracking-[-0.04em] text-[var(--foreground)] sm:text-[3.2rem] sm:leading-[0.95]">
+              {title}
+            </h1>
+            <p className="max-w-xl text-base leading-7 text-[var(--muted)]">{description}</p>
+          </div>
+
+          <VisualShowcase
+            src={generatedVisuals.settings.profile}
+            alt="Parqara account onboarding visual"
+            eyebrow="Premium planning"
+            title="Mara plus a richer planner workspace from the start."
+            description="The product now feels more like a polished consumer app than a static signup form."
+            aspect="landscape"
+          />
+
+          <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+            {authHighlights.map((item) => {
+              const Icon = item.icon;
+              return (
+                <div key={item.title} className="rounded-[24px] border border-white/82 bg-white/84 px-4 py-4 shadow-[0_12px_28px_rgba(12,20,37,0.08)]">
+                  <div className="flex items-start gap-3">
+                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[16px] ${item.tone}`}>
+                      <Icon className="h-4.5 w-4.5" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-[var(--foreground)]">{item.title}</p>
+                      <p className="mt-1.5 text-sm leading-6 text-[var(--muted)]">{item.detail}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <Link href={alternateHref} className={`${buttonStyles({ variant: "secondary", size: "lg" })} gap-2`}>
+              {alternateLabel}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <div className="glass-chip inline-flex items-center px-4 py-2 text-sm text-[var(--muted)]">
+              Mara plus manual planning in one workspace
             </div>
           </div>
-        </Card>
+        </div>
+      </div>
+    </Card>
+  );
 
-        <div>{children}</div>
+  if (variant === "minimal") {
+    return (
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,0.92fr)_minmax(400px,0.78fr)] xl:items-start">
+        {panelOrder === "content-first" ? storyPanel : <div className="xl:order-2">{storyPanel}</div>}
+        <div className={panelOrder === "panel-first" ? "xl:order-1" : "xl:order-2"}>{children}</div>
       </div>
     );
   }
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[0.72fr_1.28fr] xl:items-start">
-      <Card className="overflow-hidden border-white/85 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(246,250,252,0.9))] p-0 shadow-[0_20px_54px_rgba(15,23,42,0.06)]">
-        <div className="relative px-6 py-6 sm:px-8 sm:py-7">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.1),transparent_30%),radial-gradient(circle_at_84%_20%,rgba(15,118,110,0.12),transparent_26%)]" />
-          <div className="relative space-y-5">
-            <BrandLogo href="/" size="hero" subtitle="One place to shape the park day" imageClassName="h-24 w-auto sm:h-24" />
-
-            <div className="space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700/70">{eyebrow}</p>
-              <h1 className="max-w-xl font-[family-name:var(--font-space-grotesk)] text-4xl font-semibold tracking-tight text-slate-950 sm:text-[3.15rem] sm:leading-[0.96]">
-                {title}
-              </h1>
-              <p className="max-w-xl text-base leading-7 text-slate-600">{description}</p>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-              {authHighlights.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <div key={item.title} className="rounded-[22px] border border-white/80 bg-white/80 px-4 py-3 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
-                    <div className="flex items-start gap-3">
-                      <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-[15px] bg-cyan-50 text-teal-700">
-                        <Icon className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-slate-950">{item.title}</p>
-                        <p className="mt-1 text-sm leading-6 text-slate-500">{item.detail}</p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div>
-              <Link href={alternateHref} className={`${buttonStyles({ variant: "secondary", size: "lg" })} gap-2`}>
-                {alternateLabel}
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      <div className="xl:sticky xl:top-20">{children}</div>
+    <div className="grid gap-5 xl:grid-cols-[0.88fr_1.12fr] xl:items-start">
+      {storyPanel}
+      <div className="xl:sticky xl:top-24">{children}</div>
     </div>
   );
 }

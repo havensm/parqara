@@ -47,7 +47,7 @@ Parqara is a production-oriented MVP for AI-powered theme park planning and in-p
    ```bash
    npm run db:push
    ```
-5. Bootstrap the default park catalog and, if `SEED_LOCAL_TEST_USER=true`, the local test login:
+5. Bootstrap the default park catalog and the local test login:
    ```bash
    npm run db:seed
    ```
@@ -65,6 +65,7 @@ npm run dev
 npm run lint
 npm run test
 npm run build
+npm run pr:create -- --title "My PR title"
 npm run bundle:eb
 npm run db:generate
 npm run db:migrate:deploy
@@ -72,6 +73,27 @@ npm run db:seed
 npm run db:bootstrap
 npm run prisma:studio
 ```
+
+## Programmatic pull requests
+
+Parqara includes a local helper to create GitHub pull requests without using the browser:
+
+```bash
+npm run pr:create -- --title "Modernize product UI" --body-file .github/pr-body.md
+```
+
+How it works:
+
+- infers the current branch from git
+- infers the repo from the `origin` remote
+- defaults the base branch to `main`
+- returns the existing PR URL instead of creating a duplicate when one is already open
+
+Local setup:
+
+1. Add a GitHub token to `.env.local`, `.env`, or your shell as `GH_TOKEN` or `GITHUB_TOKEN`.
+2. Give the token `Pull requests: Read and write` access to `havensm/parqara`.
+3. Run `npm run pr:create -- --help` to see the available flags.
 
 ## Bootstrap data
 
@@ -86,8 +108,8 @@ It does not create demo trips.
 
 When `SEED_LOCAL_TEST_USER=true`, it also creates a local test account:
 
-- `Email`: `localtest@parqara.dev`
-- `Password`: `parqara123!`
+- `Email`: `test@test.com`
+- `Password`: `test`
 
 That account is intended for local development only and should stay disabled in any shared or production environment.
 
@@ -329,6 +351,7 @@ The repository has been validated with:
 ## Known note
 
 On this Windows + OneDrive environment, repeated builds can hit file locking in `.next`. `npm run dev` now clears `.next` before startup automatically, and a fresh production build from a clean state succeeds if you clear `.next` first when needed.
+
 
 
 

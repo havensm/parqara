@@ -1,10 +1,12 @@
-import { CalendarDays, CalendarSync, MapPinned, Route } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 
 import type { CalendarTripItem } from "@/lib/calendar";
 import { buildCalendarFeedUrl, buildCalendarSubscriptionUrl } from "@/lib/calendar-feed";
 import { formatIsoDate } from "@/lib/date-utils";
+import { getUserBillingState } from "@/lib/billing";
 import { getTripWorkspaceHref } from "@/lib/trip-workspace";
 import { requireCompletedOnboardingUser } from "@/lib/auth/guards";
+import { isAdminEmail } from "@/lib/admin";
 import { listDashboardTrips } from "@/server/services/trip-service";
 
 import { AppShell } from "@/components/app/app-shell";
@@ -29,6 +31,8 @@ function buildCalendarTrips(trips: Awaited<ReturnType<typeof listDashboardTrips>
 
 export default async function CalendarPage() {
   const user = await requireCompletedOnboardingUser();
+  const billing = getUserBillingState(user);
+  const adminEnabled = isAdminEmail(user.email);
   const trips = buildCalendarTrips(await listDashboardTrips(user.id));
   const statusCounts = trips.reduce(
     (counts, trip) => {
@@ -47,11 +51,8 @@ export default async function CalendarPage() {
       actionHref="/trips/new?fresh=1"
       actionLabel="Start a new trip"
       icon={<CalendarDays className="h-6 w-6" />}
-      highlights={[
-        { icon: <Route className="h-4 w-4" />, label: `${trips.length} upcoming trip${trips.length === 1 ? "" : "s"}` },
-        { icon: <CalendarSync className="h-4 w-4" />, label: "Import .ics personal calendars" },
-        { icon: <MapPinned className="h-4 w-4" />, label: "Open any trip back in the planner" },
-      ]}
+      currentTier={billing.currentTier}
+      adminEnabled={adminEnabled}
       visual={
         <div className="grid gap-3 sm:grid-cols-2">
           <CalendarMetricCard label="Draft" value={String(statusCounts.DRAFT)} tone="amber" />

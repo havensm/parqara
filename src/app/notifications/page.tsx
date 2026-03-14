@@ -1,6 +1,8 @@
 import { BellRing, CloudRain, Plane, Users2 } from "lucide-react";
 
+import { getUserBillingState } from "@/lib/billing";
 import { requireCompletedOnboardingUser } from "@/lib/auth/guards";
+import { isAdminEmail } from "@/lib/admin";
 import { listUserNotifications } from "@/server/services/notification-service";
 
 import { AppShell } from "@/components/app/app-shell";
@@ -8,6 +10,8 @@ import { NotificationFeed } from "@/components/notifications/notification-feed";
 
 export default async function NotificationsPage() {
   const user = await requireCompletedOnboardingUser();
+  const billing = getUserBillingState(user);
+  const adminEnabled = isAdminEmail(user.email);
   const center = await listUserNotifications(user.id, 50);
   const plannerCount = center.notifications.filter(
     (notification) => notification.type === "PLANNER" || notification.type === "COLLABORATION"
@@ -25,6 +29,8 @@ export default async function NotificationsPage() {
       actionHref="/dashboard"
       actionLabel="Back to dashboard"
       icon={<BellRing className="h-6 w-6" />}
+      currentTier={billing.currentTier}
+      adminEnabled={adminEnabled}
       highlights={[
         { icon: <Users2 className="h-4 w-4" />, label: "Shared planner edits" },
         { icon: <CloudRain className="h-4 w-4" />, label: "Ride and weather changes" },
@@ -57,6 +63,12 @@ function InboxVisualCard({ label, value, tone }: { label: string; value: string;
     </div>
   );
 }
+
+
+
+
+
+
 
 
 

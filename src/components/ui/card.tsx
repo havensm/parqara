@@ -2,14 +2,21 @@ import type { HTMLAttributes } from "react";
 
 import { cn } from "@/lib/utils";
 
-export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+type CardProps = HTMLAttributes<HTMLDivElement> & {
+  tone?: "default" | "solid";
+};
+
+export function Card({ className, tone = "default", ...props }: CardProps) {
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-[30px] border border-[rgba(18,37,31,0.1)] bg-[rgba(255,253,249,0.92)] shadow-[0_24px_64px_rgba(24,41,36,0.06)] backdrop-blur-sm",
+        tone === "solid"
+          ? "relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--card-border)] bg-white shadow-[var(--shadow-soft)]"
+          : "surface-panel panel-grid relative overflow-hidden rounded-[var(--radius-lg)]",
         className
       )}
       {...props}
     />
   );
 }
+

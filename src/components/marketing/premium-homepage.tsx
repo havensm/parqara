@@ -1,14 +1,22 @@
-import type { CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, BellRing, MapPinned, MessageSquareMore, NotebookPen, Route, Users } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarRange,
+  Compass,
+  HeartHandshake,
+  Sparkles,
+  Users2,
+} from "lucide-react";
 
 import type { SubscriptionTierValue } from "@/lib/contracts";
+import { generatedVisuals } from "@/lib/generated-assets";
 
 import { PricingGrid } from "@/components/billing/pricing-grid";
-import { AgentTeamVisual } from "@/components/marketing/agent-team-visual";
-import { HomepageHeroVisual } from "@/components/marketing/homepage-hero-visual";
+import { MaraChatPreview } from "@/components/marketing/mara-chat-preview";
+import { TypedHeroText } from "@/components/marketing/typed-hero-text";
 import { buttonStyles } from "@/components/ui/button";
+import { SectionIntro } from "@/components/ui/section-intro";
 
 type PremiumHomepageProps = {
   currentTier?: SubscriptionTierValue;
@@ -19,279 +27,123 @@ type PremiumHomepageProps = {
   signedIn: boolean;
 };
 
-const heroChips = ["Shared plan", "Route planning", "Live updates"];
+const featureCards = [
+  {
+    title: "AI-led planning and suggestions",
+    detail: "Start with a rough idea and let Mara turn it into smarter suggestions, clearer tradeoffs, and a plan you can actually use.",
+    icon: Sparkles,
+    image: generatedVisuals.planners.studio,
+    imageAlt: "AI-led travel planning workspace illustration",
+    imageClassName: "object-cover object-center",
+    tone: "bg-[rgba(238,253,249,0.9)] text-[var(--teal-700)]",
+  },
+  {
+    title: "Real-time itinerary for the day of",
+    detail: "Keep the plan moving with live timing, next-step guidance, and a cleaner itinerary when the day changes on you.",
+    icon: CalendarRange,
+    image: generatedVisuals.homepage.dayOf,
+    imageAlt: "Day-of planning and itinerary scene",
+    imageClassName: "object-cover object-center",
+    tone: "bg-[rgba(239,245,255,0.92)] text-[var(--sky-700)]",
+  },
+  {
+    title: "Shared calendar and plan",
+    detail: "Give everyone one source of truth with a shared plan, calendar visibility, and fewer handoffs across group messages.",
+    icon: Users2,
+    image: generatedVisuals.settings.profile,
+    imageAlt: "Shared planning and calendar coordination scene",
+    imageClassName: "object-cover object-center",
+    tone: "bg-[rgba(246,240,255,0.92)] text-[#6d4fd6]",
+  },
+] as const;
 
-const painPoints = [
-  "Notes and screenshots get scattered before the day starts.",
-  "The group loses track of what matters once the park changes.",
-  "Shared planners break down when weather, waits, or closures hit.",
-];
-
-const planningRangeCards = [
+const typicalUseCases = [
   {
-    eyebrow: "One evening",
-    title: "Date night out",
-    detail: "Keep dinner, one or two stops, and the backup move in one place instead of scattered texts.",
-    icon: MessageSquareMore,
-    accent: "from-[#eefaf6] to-white",
+    eyebrow: "Typical use case",
+    title: "Planning a date night out",
+    detail:
+      "Use Mara to shape the whole night: line up restaurant ideas, track babysitter timing, keep the route between stops clear, and hold onto backup plans if the evening shifts.",
+    icon: HeartHandshake,
+    tone:
+      "bg-[radial-gradient(circle_at_top_left,rgba(255,141,107,0.2),transparent_26%),linear-gradient(180deg,rgba(255,247,243,0.96),rgba(255,255,255,0.92))]",
+    highlights: ["Babysitter timing", "Restaurant shortlist", "Night-out ideas", "Backup options"],
   },
   {
-    eyebrow: "Weekend reset",
-    title: "Getaway planning",
-    detail: "Map arrival windows, must-dos, shared notes, and the route between everything that matters.",
-    icon: MapPinned,
-    accent: "from-[#eef6ff] to-white",
+    eyebrow: "Typical use case",
+    title: "A full week-long Disney family vacation",
+    detail:
+      "Build the whole trip in one place with park-day pacing, dining notes, shared family context, and a day-of itinerary that stays usable once the vacation actually starts.",
+    icon: Compass,
+    tone:
+      "bg-[radial-gradient(circle_at_top_left,rgba(99,167,255,0.2),transparent_26%),linear-gradient(180deg,rgba(241,247,255,0.96),rgba(255,255,255,0.92))]",
+    highlights: ["7-day trip structure", "Park-day pacing", "Dining and notes", "Shared family itinerary"],
   },
-  {
-    eyebrow: "One full week",
-    title: "Adventure-packed vacation",
-    detail: "Hold travel days, park plans, dining slots, recharge blocks, and live changes inside one readable plan.",
-    icon: Route,
-    accent: "from-[#f3f7ff] to-white",
-  },
-  {
-    eyebrow: "And beyond",
-    title: "Big group plans",
-    detail: "Coordinate families, friend groups, reunions, or multi-stop trips without losing the thread of the plan.",
-    icon: Users,
-    accent: "from-[#f4fbf8] to-white",
-  },
-];
-
-const workflowCards = [
-  {
-    eyebrow: "Start with the ask",
-    title: "Tell Mara what kind of day you want.",
-    icon: MessageSquareMore,
-    tone: "from-[#eff9f6] to-white",
-    visual: "brief" as const,
-  },
-  {
-    eyebrow: "Shape the route",
-    title: "Turn the ideas into one planner.",
-    icon: Route,
-    tone: "from-[#eef6ff] to-white",
-    visual: "route" as const,
-  },
-  {
-    eyebrow: "Run it live",
-    title: "Keep up when the day changes.",
-    icon: BellRing,
-    tone: "from-[#eefcf9] to-white",
-    visual: "live" as const,
-  },
-];
+] as const;
 
 export function PremiumHomepage({ currentTier, primaryHref, primaryLabel, secondaryHref, secondaryLabel, signedIn }: PremiumHomepageProps) {
   return (
-    <div className="relative isolate space-y-8 pb-16 sm:space-y-10 sm:pb-20">
-      <div className="pointer-events-none absolute left-1/2 top-0 -z-10 h-full w-screen -translate-x-1/2 overflow-hidden [mask-image:linear-gradient(90deg,transparent_0%,black_8%,black_92%,transparent_100%)]">
-        <Image
-          src="/marketing/parqara-ambient-background.png"
-          alt=""
-          fill
-          priority
-          className="object-cover object-top opacity-52 scale-[1.04] blur-[1px]"
+    <div className="relative isolate space-y-8 pb-6 sm:space-y-10 sm:pb-8">
+      <section className="page-enter -mx-3 -mt-1 sm:-mx-5 lg:-mx-6 xl:-mx-8">
+        <div className="relative isolate min-h-[calc(100vh-6.5rem)] overflow-hidden rounded-[28px] sm:min-h-[calc(100vh-7.5rem)] sm:rounded-[34px] lg:rounded-[40px]">
+          <Image
+            src={generatedVisuals.homepage.hero}
+            alt="Parqara homepage hero background"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(99,167,255,0.14),transparent_24%),radial-gradient(circle_at_78%_14%,rgba(28,198,170,0.16),transparent_22%),radial-gradient(circle_at_50%_88%,rgba(255,141,107,0.16),transparent_22%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,13,24,0.24)_0%,rgba(5,13,24,0.36)_32%,rgba(5,13,24,0.5)_58%,rgba(5,13,24,0.82)_100%)]" />
+          <div className="absolute inset-x-0 bottom-0 h-[26vh] bg-[linear-gradient(180deg,transparent_0%,rgba(5,13,24,0.2)_24%,rgba(5,13,24,0.76)_100%)]" />
+
+          <div className="relative z-10 flex min-h-[calc(100vh-6.5rem)] items-center justify-center px-6 pb-32 pt-16 sm:min-h-[calc(100vh-7.5rem)] sm:px-10 sm:pb-36 sm:pt-20 lg:px-12 lg:pb-40">
+            <TypedHeroText />
+          </div>
+
+          <div className="absolute inset-x-0 bottom-8 z-10 flex justify-center px-6 sm:bottom-10 lg:bottom-12">
+            <Link
+              href={primaryHref}
+              className={[
+                buttonStyles({ variant: "accent", size: "xl" }),
+                "min-w-[15rem] border-white/30 ring-4 ring-white/10 shadow-[0_28px_70px_rgba(244,182,73,0.34)] hover:shadow-[0_34px_82px_rgba(244,182,73,0.42)] ambient-pulse",
+              ].join(" ")}
+            >
+              Get started
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section id="how-it-works" className="space-y-5 scroll-mt-32">
+        <SectionIntro
+          eyebrow="Core features"
+          title="The three things Parqara does best."
         />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_14%,rgba(56,189,248,0.08),transparent_28%),radial-gradient(circle_at_82%_16%,rgba(15,118,110,0.08),transparent_24%),radial-gradient(circle_at_50%_32%,rgba(255,255,255,0.16),transparent_40%),linear-gradient(180deg,rgba(248,250,252,0.14)_0%,rgba(248,250,252,0.54)_52%,rgba(248,250,252,0.94)_100%)]" />
-      </div>
-
-      <section className="relative overflow-hidden rounded-[38px] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.9)_0%,rgba(248,251,252,0.95)_100%)] px-6 py-7 shadow-[0_28px_90px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:px-8 sm:py-8 lg:px-10 lg:py-9">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_14%_16%,rgba(20,184,166,0.08),transparent_34%),radial-gradient(circle_at_86%_18%,rgba(96,165,250,0.12),transparent_24%)]" />
-        <div className="relative z-10 grid gap-8 xl:grid-cols-[0.44fr_0.56fr] xl:items-center">
-          <div className="homepage-enter space-y-6">
-            <div className="inline-flex rounded-full border border-white/90 bg-white/88 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-teal-900/80 shadow-[0_12px_32px_rgba(15,23,42,0.05)]">
-              Adventure planner
-            </div>
-
-            <div className="space-y-4">
-              <h1 className="max-w-2xl font-[family-name:var(--font-space-grotesk)] text-4xl font-semibold tracking-[-0.05em] text-slate-950 sm:text-5xl lg:text-[4.15rem] lg:leading-[0.96]">
-                Plan the adventure in one place.
-              </h1>
-              <p className="max-w-xl text-base leading-8 text-slate-600 sm:text-lg">
-                Parqara replaces scattered notes, group texts, and changing park conditions with one planner your whole group can actually follow.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <Link href={primaryHref} className={buttonStyles({ variant: "primary", size: "lg" })}>
-                {primaryLabel}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-              <Link href={secondaryHref} className={buttonStyles({ variant: "secondary", size: "lg" })}>
-                {secondaryLabel}
-              </Link>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {heroChips.map((chip) => (
-                <div
-                  key={chip}
-                  className="rounded-full border border-white/90 bg-white/88 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 shadow-[0_12px_28px_rgba(15,23,42,0.04)]"
-                >
-                  {chip}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="homepage-enter relative" style={{ animationDelay: "120ms" }}>
-            <div className="homepage-float absolute -left-3 top-10 hidden rounded-full border border-white/85 bg-white/90 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 shadow-[0_18px_40px_rgba(15,23,42,0.08)] xl:block">
-              Planner plan
-            </div>
-            <div
-              className="homepage-float absolute bottom-8 left-10 hidden rounded-full border border-white/85 bg-white/90 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 shadow-[0_18px_40px_rgba(15,23,42,0.08)] xl:block"
-              style={{ animationDelay: "800ms" }}
-            >
-              Live coordination
-            </div>
-            <div
-              className="homepage-float absolute right-8 top-10 hidden rounded-full border border-white/85 bg-white/90 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 shadow-[0_18px_40px_rgba(15,23,42,0.08)] xl:block"
-              style={{ animationDelay: "1400ms" }}
-            >
-              Route board
-            </div>
-
-            <HomepageHeroVisual />
-          </div>
-        </div>
-      </section>
-
-      <section id="benefits" className="scroll-mt-28 grid gap-4 lg:grid-cols-[0.54fr_0.46fr]">
-        <div className="rounded-[32px] border border-white/80 bg-white/78 px-6 py-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)] backdrop-blur-xl sm:px-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">What problem it solves</p>
-          <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-space-grotesk)] text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-            Park days are hard to run when the plan lives in six different places.
-          </h2>
-        </div>
-
-        <div className="grid gap-3">
-          {painPoints.map((item, index) => (
-            <div
-              key={item}
-              className="homepage-enter rounded-[28px] border border-white/80 bg-white/72 px-5 py-4 text-sm leading-7 text-slate-600 shadow-[0_16px_40px_rgba(15,23,42,0.04)] backdrop-blur-xl"
-              style={{ animationDelay: `${index * 120}ms` }}
-            >
-              <span className="mr-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-950 text-xs font-semibold text-white">
-                0{index + 1}
-              </span>
-              {item}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section id="planning-range" className="scroll-mt-28 grid gap-4 xl:grid-cols-[0.42fr_0.58fr] xl:items-start">
-        <div className="rounded-[32px] border border-white/80 bg-white/78 px-6 py-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)] backdrop-blur-xl sm:px-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Plan range</p>
-          <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-space-grotesk)] text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-            From a quick date night to a week-long adventure, the planner scales with the trip.
-          </h2>
-          <p className="mt-4 max-w-2xl text-base leading-8 text-slate-600">
-            Parqara is just as useful for one polished evening as it is for a packed vacation with travel days, reservations, shared decisions, route changes,
-            and a lot more moving parts.
-          </p>
-          <div className="mt-6 grid gap-3">
-            <FeatureListItem
-              title="Light enough for simple plans"
-              detail="Use it for dinner, one or two stops, timing, and a backup move when you just want the night to feel easy."
-            />
-            <FeatureListItem
-              title="Strong enough for full vacations"
-              detail="Keep travel days, must-dos, park strategy, dining windows, and live updates in one readable planner."
-            />
-            <FeatureListItem
-              title="Flexible enough for anything in between"
-              detail="Weekend escapes, birthday trips, reunions, family adventures, and bigger multi-stop itineraries all fit the same workflow."
-            />
-          </div>
-          <div className="mt-6 rounded-[28px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(248,251,252,0.92),rgba(255,255,255,0.9))] p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
-            <p className="text-sm font-semibold text-slate-950">One planner, different scales</p>
-            <div className="mt-4 space-y-3">
-              <PlanningScaleRow label="Tonight" detail="Reservation, timing, parking, backup stop" />
-              <PlanningScaleRow label="Friday to Sunday" detail="Arrival plan, must-dos, shared notes, route board" />
-              <PlanningScaleRow label="Day 1 to Day 7" detail="Travel, dining, park strategy, live changes, recovery windows" />
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          {planningRangeCards.map((card, index) => (
-            <PlanningRangeCard
-              key={card.title}
-              accent={card.accent}
-              detail={card.detail}
-              eyebrow={card.eyebrow}
-              icon={card.icon}
-              title={card.title}
-              style={{ animationDelay: `${index * 120}ms` }}
-            />
-          ))}
-        </div>
-      </section>
-
-      <section id="agent-team" className="scroll-mt-28 grid gap-4 lg:grid-cols-[0.44fr_0.56fr] lg:items-center">
-        <div className="rounded-[32px] border border-white/80 bg-white/78 px-6 py-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)] backdrop-blur-xl sm:px-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Agent team</p>
-          <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-space-grotesk)] text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-            Mara runs point, then delegates the hard parts to a planning team behind the scenes.
-          </h2>
-          <p className="mt-4 max-w-2xl text-base leading-8 text-slate-600">
-            Instead of treating trip planning like one long chat, Parqara gives you a coordinated agent system. Mara is the head planner agent. She
-            understands the brief, keeps the trip coherent, and hands specialized work to other agents that focus on routing, timing, dining, and
-            live-day change detection.
-          </p>
-          <div className="mt-6 grid gap-3">
-            <FeatureListItem
-              title="One lead planner"
-              detail="Mara owns the conversation so the trip still feels like one plan, not five disconnected tools."
-            />
-            <FeatureListItem
-              title="Specialist agents for the details"
-              detail="Support agents pressure-test the route, protect the calendar, watch break structure, and stay alert for live changes."
-            />
-            <FeatureListItem
-              title="One clear answer back"
-              detail="You do not manage the agent stack. You just get a stronger plan back faster."
-            />
-          </div>
-        </div>
-
-        <div className="homepage-enter" style={{ animationDelay: "120ms" }}>
-          <AgentTeamVisual />
-        </div>
-      </section>
-
-      <section id="how-it-works" className="scroll-mt-28 space-y-5">
-        <div className="max-w-2xl space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">How it works</p>
-          <h2 className="font-[family-name:var(--font-space-grotesk)] text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-            Start with the ask, keep the day readable, adjust live.
-          </h2>
-        </div>
-
-        <div className="grid gap-5 xl:grid-cols-3">
-          {workflowCards.map((card, index) => {
+        <div className="grid gap-4 lg:grid-cols-3">
+          {featureCards.map((card) => {
             const Icon = card.icon;
+
             return (
-              <div
-                key={card.title}
-                className="homepage-enter flex h-full flex-col overflow-hidden rounded-[32px] border border-white/80 bg-white/76 shadow-[0_18px_46px_rgba(15,23,42,0.05)] backdrop-blur-xl"
-                style={{ animationDelay: `${index * 120}ms` }}
-              >
-                <div className={`flex min-h-[255px] flex-col bg-gradient-to-b ${card.tone} p-4`}>
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-[18px] bg-slate-950 text-white shadow-[0_12px_28px_rgba(15,23,42,0.16)]">
+              <div key={card.title} className="surface-shell premium-card-tilt overflow-hidden rounded-[32px]">
+                <div className="relative h-52 overflow-hidden border-b border-white/70 sm:h-56">
+                  <Image
+                    src={card.image}
+                    alt={card.imageAlt}
+                    fill
+                    sizes="(min-width: 1024px) 30vw, 100vw"
+                    className={card.imageClassName}
+                  />
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,17,30,0.02)_0%,rgba(8,17,30,0.46)_100%)]" />
+                </div>
+                <div className="p-5 sm:p-6">
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-[18px] ${card.tone}`}>
                     <Icon className="h-5 w-5" />
                   </div>
-                  <div className="flex-1">
-                    <SimpleWorkflowVisual kind={card.visual} />
-                  </div>
-                </div>
-                <div className="flex min-h-[128px] flex-col justify-start px-5 pb-5 pt-1">
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">{card.eyebrow}</p>
-                  <h3 className="mt-3 font-[family-name:var(--font-space-grotesk)] text-2xl font-semibold tracking-tight text-slate-950">
+                  <h3 className="mt-4 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-[var(--foreground)]">
                     {card.title}
                   </h3>
+                  <p className="mt-3 text-sm leading-7 text-[var(--muted)]">{card.detail}</p>
                 </div>
               </div>
             );
@@ -299,44 +151,85 @@ export function PremiumHomepage({ currentTier, primaryHref, primaryLabel, second
         </div>
       </section>
 
-      <section id="pricing" className="scroll-mt-28 space-y-5">
-        <div className="max-w-3xl space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Pricing</p>
-          <h2 className="font-[family-name:var(--font-space-grotesk)] text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-            Start with the planner. Upgrade when you want more live help.
-          </h2>
-        </div>
+      <section id="use-cases" className="space-y-5 scroll-mt-32">
+        <SectionIntro
+          eyebrow="Typical use cases"
+          title="From a night out to a full family vacation."
+        />
+        <div className="grid gap-5 xl:grid-cols-2">
+          {typicalUseCases.map((useCase) => {
+            const Icon = useCase.icon;
 
-        <PricingGrid currentTier={currentTier} signedIn={signedIn} />
+            return (
+              <div
+                key={useCase.title}
+                className={`surface-shell premium-card-tilt overflow-hidden rounded-[34px] p-6 sm:p-7 ${useCase.tone}`}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="max-w-2xl">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--muted)]">
+                      {useCase.eyebrow}
+                    </p>
+                    <h3 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight text-[var(--foreground)]">
+                      {useCase.title}
+                    </h3>
+                    <p className="mt-4 text-sm leading-7 text-[var(--muted)]">{useCase.detail}</p>
+                  </div>
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[20px] border border-white/75 bg-white/78 shadow-[0_14px_30px_rgba(12,20,37,0.08)]">
+                    <Icon className="h-6 w-6 text-[var(--foreground)]" />
+                  </div>
+                </div>
+
+                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                  {useCase.highlights.map((highlight) => (
+                    <div
+                      key={highlight}
+                      className="rounded-[22px] border border-white/70 bg-white/74 px-4 py-3 text-sm font-semibold text-[var(--foreground)] shadow-[0_12px_28px_rgba(12,20,37,0.06)]"
+                    >
+                      {highlight}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <MaraChatPreview />
+
+      <section id="pricing" className="space-y-5 scroll-mt-32">
+        <SectionIntro
+          eyebrow="Pricing"
+          title="Start free. Upgrade when you want Mara and a richer planning workflow."
+          align="center"
+        />
+        <PricingGrid currentTier={currentTier} signedIn={signedIn} density="compact" className="mx-auto max-w-6xl" />
       </section>
 
       <section
         id="start"
-        className="relative overflow-hidden rounded-[38px] border border-slate-900/10 bg-[linear-gradient(180deg,#07111b_0%,#0f172a_100%)] px-6 py-8 text-white shadow-[0_30px_90px_rgba(15,23,42,0.18)] sm:px-8 sm:py-10 lg:px-10"
+        className="surface-dark relative overflow-hidden rounded-[40px] px-6 py-7 scroll-mt-32 sm:px-8 sm:py-8 lg:px-10"
       >
-        <Image src="/marketing/parqara-ambient-background.png" alt="" fill className="object-cover opacity-20" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(34,211,238,0.16),transparent_26%),radial-gradient(circle_at_86%_28%,rgba(15,118,110,0.18),transparent_24%)]" />
-        <div className="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl space-y-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200/70">Get started</p>
-            <h2 className="font-[family-name:var(--font-space-grotesk)] text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-              One planner from the first idea to the live day.
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(99,167,255,0.18),transparent_26%),radial-gradient(circle_at_82%_26%,rgba(28,198,170,0.18),transparent_24%),radial-gradient(circle_at_48%_100%,rgba(255,141,107,0.14),transparent_18%)]" />
+        <div className="relative z-10 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-3 lg:max-w-[48rem] lg:flex-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-cyan-100/72">{signedIn ? "Welcome back" : "Create your account"}</p>
+            <h2 className="font-[family-name:var(--font-display)] text-4xl font-semibold tracking-[-0.05em] text-white sm:text-5xl lg:text-[3.35rem] lg:leading-[0.96] lg:whitespace-nowrap">
+              {signedIn ? "Jump back into your planning home." : "Create your account and start planning with Mara."}
             </h2>
-            <p className="max-w-xl text-base leading-7 text-slate-300">
+            <p className="text-base leading-7 text-slate-300">
               {signedIn
-                ? "Open the dashboard and start the next planner with Mara, the route, and live coordination already connected."
-                : "Create an account and start planning with the group plan, the route board, and the live inbox in one place."}
+                ? "Open the planner workspace and keep shaping the next adventure."
+                : "Sign up in seconds and start building trips, weekends, nights out, and family plans in one polished place."}
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
             <Link href={primaryHref} className={buttonStyles({ variant: "primary", size: "lg" })}>
-              {primaryLabel}
-              <ArrowRight className="ml-2 h-4 w-4" />
+              {signedIn ? primaryLabel : "Create account"}
+              <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link
-              href={secondaryHref}
-              className={`${buttonStyles({ variant: "ghost", size: "lg" })} text-white hover:bg-white/10 hover:text-white`}
-            >
+            <Link href={secondaryHref} className={`${buttonStyles({ variant: "secondary", size: "lg" })} bg-white/12 text-white hover:bg-white/18`}>
               {secondaryLabel}
             </Link>
           </div>
@@ -346,123 +239,7 @@ export function PremiumHomepage({ currentTier, primaryHref, primaryLabel, second
   );
 }
 
-function SimpleWorkflowVisual({ kind }: { kind: "brief" | "route" | "live" }) {
-  if (kind === "brief") {
-    return (
-      <div className="flex h-full flex-col rounded-[26px] border border-white/90 bg-white/90 p-4 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
-        <div className="flex items-center gap-3 rounded-[18px] bg-[#f4faf8] px-4 py-3 text-sm font-medium text-slate-600">
-          <div className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-[#dff4ee] text-teal-700">
-            <Users className="h-5 w-5" />
-          </div>
-          Family trip, must-do coasters, midday break, stroller-friendly route.
-        </div>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          <MiniPill label="Aurora Adventure Park" />
-          <MiniPill label="March 18" />
-          <MiniPill label="4 guests" />
-          <MiniPill label="Mara kickoff" />
-        </div>
-      </div>
-    );
-  }
 
-  if (kind === "route") {
-    return (
-      <div className="flex h-full flex-col justify-center rounded-[26px] border border-white/90 bg-white/90 p-4 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
-        <div className="space-y-3 rounded-[18px] bg-[#f5f8ff] p-4">
-          {["Rope drop: Comet Run", "11:10 lunch + recharge", "1:45 indoor show backup"].map((step, index) => (
-            <div key={step} className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-950 text-xs font-semibold text-white">{index + 1}</div>
-              <div className="h-3 flex-1 rounded-full bg-white shadow-[inset_0_0_0_1px_rgba(15,23,42,0.06)]">
-                <div className={`h-full rounded-full ${index === 0 ? "w-[82%] bg-[#60a5fa]" : index === 1 ? "w-[64%] bg-[#22c55e]" : "w-[72%] bg-[#818cf8]"}`} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="rounded-[26px] border border-white/90 bg-white/90 p-4 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
-      <div className="grid gap-3">
-        <NotificationRow tone="bg-[#fff3da] text-[#9b6018]" title="Weather update" detail="Move indoor block forward" />
-        <NotificationRow tone="bg-[#ffe8e5] text-[#b14b41]" title="Ride closure" detail="Rocket Reef paused" />
-        <NotificationRow tone="bg-[#e8f5ef] text-[#2f6c50]" title="Planner update" detail="Alex added lunch stop" />
-      </div>
-    </div>
-  );
-}
-
-function FeatureListItem({ title, detail }: { title: string; detail: string }) {
-  return (
-    <div className="rounded-[22px] border border-slate-200/70 bg-slate-50/80 px-4 py-4">
-      <p className="text-sm font-semibold text-slate-950">{title}</p>
-      <p className="mt-1 text-sm leading-6 text-slate-600">{detail}</p>
-    </div>
-  );
-}
-
-function PlanningRangeCard({
-  eyebrow,
-  title,
-  detail,
-  icon: Icon,
-  accent,
-  style,
-}: {
-  eyebrow: string;
-  title: string;
-  detail: string;
-  icon: typeof Users;
-  accent: string;
-  style?: CSSProperties;
-}) {
-  return (
-    <div
-      className="homepage-enter overflow-hidden rounded-[30px] border border-white/80 bg-white/76 shadow-[0_18px_46px_rgba(15,23,42,0.05)] backdrop-blur-xl"
-      style={style}
-    >
-      <div className={`flex h-full min-h-[220px] flex-col bg-gradient-to-b ${accent} px-5 py-5`}>
-        <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-slate-950 text-white shadow-[0_12px_28px_rgba(15,23,42,0.14)]">
-          <Icon className="h-5 w-5" />
-        </div>
-        <p className="mt-5 text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">{eyebrow}</p>
-        <h3 className="mt-3 font-[family-name:var(--font-space-grotesk)] text-2xl font-semibold tracking-tight text-slate-950">{title}</h3>
-        <p className="mt-3 text-sm leading-7 text-slate-600">{detail}</p>
-      </div>
-    </div>
-  );
-}
-
-function PlanningScaleRow({ label, detail }: { label: string; detail: string }) {
-  return (
-    <div className="flex items-center gap-3 rounded-[20px] border border-slate-200 bg-white/88 px-4 py-4">
-      <div className="min-w-[92px] rounded-full bg-slate-950 px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-[0.24em] text-white">
-        {label}
-      </div>
-      <p className="text-sm leading-6 text-slate-600">{detail}</p>
-    </div>
-  );
-}
-
-function MiniPill({ label }: { label: string }) {
-  return <div className="rounded-full border border-white bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</div>;
-}
-
-function NotificationRow({ tone, title, detail }: { tone: string; title: string; detail: string }) {
-  return (
-    <div className="flex items-center gap-3 rounded-[18px] border border-slate-100 bg-white px-3 py-3 shadow-[0_6px_18px_rgba(15,23,42,0.04)]">
-      <div className={`flex h-10 w-10 items-center justify-center rounded-[14px] ${tone}`}>
-        {title === "Weather update" ? <MapPinned className="h-4 w-4" /> : title === "Ride closure" ? <NotebookPen className="h-4 w-4" /> : <BellRing className="h-4 w-4" />}
-      </div>
-      <div>
-        <p className="text-sm font-semibold text-slate-950">{title}</p>
-        <p className="text-sm text-slate-500">{detail}</p>
-      </div>
-    </div>
-  );
-}
 
 
 

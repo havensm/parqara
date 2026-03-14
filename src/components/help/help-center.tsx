@@ -126,7 +126,7 @@ export function HelpCenter({ user }: HelpCenterProps) {
     <div className="space-y-5">
       <Card className="overflow-hidden p-0">
         <div className="grid gap-0 xl:grid-cols-[1.15fr_0.85fr]">
-          <div className="bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.16),transparent_28%),linear-gradient(180deg,rgba(248,252,255,0.98),rgba(255,255,255,0.98))] px-6 py-5 sm:px-7 sm:py-6">
+          <div className="bg-[linear-gradient(180deg,#f8fbff_0%,#ffffff_100%)] px-6 py-5 sm:px-7 sm:py-6">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-teal-100 text-teal-700">
                 <CircleHelp className="h-5 w-5" />
@@ -290,3 +290,4 @@ function readFileAsDataUrl(file: File) {
     reader.readAsDataURL(file);
   });
 }
+

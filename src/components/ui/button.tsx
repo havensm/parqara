@@ -5,20 +5,24 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 export const buttonStyles = cva(
-  "inline-flex items-center justify-center rounded-full border text-sm font-semibold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b6b63]/25 disabled:pointer-events-none disabled:opacity-55",
+  "inline-flex items-center justify-center gap-2 rounded-[18px] border font-semibold transition duration-200 active:translate-y-px active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] disabled:pointer-events-none disabled:opacity-55",
   {
     variants: {
       variant: {
         primary:
-          "border-transparent bg-[#1b6b63] !text-[#f7fffd] shadow-[0_16px_32px_rgba(27,107,99,0.18)] hover:translate-y-[-1px] hover:bg-[#165b55] hover:!text-[#f7fffd] visited:!text-[#f7fffd] [&_svg]:!text-[#f7fffd]",
+          "border-[rgba(13,48,69,0.18)] bg-[linear-gradient(180deg,#1a4258_0%,#17677b_100%)] !text-white shadow-[0_12px_28px_rgba(12,20,37,0.16)] [text-shadow:0_1px_0_rgba(8,17,30,0.18)] hover:-translate-y-0.5 hover:border-[rgba(13,48,69,0.24)] hover:shadow-[0_16px_34px_rgba(12,20,37,0.18)] [&_svg]:text-white",
         secondary:
-          "border-[rgba(18,37,31,0.12)] bg-white text-[#12251f] shadow-[0_6px_18px_rgba(24,41,36,0.04)] hover:border-[#1b6b63]/24 hover:bg-[#faf7f1]",
-        ghost: "border-transparent text-[#17312b] hover:bg-[#edf2ec] hover:text-[#10241f]",
+          "border-[var(--card-border-strong)] bg-white text-[var(--foreground)] shadow-[0_10px_24px_rgba(12,20,37,0.06)] hover:-translate-y-0.5 hover:border-[rgba(18,109,100,0.18)] hover:bg-[rgba(248,251,255,0.96)]",
+        ghost:
+          "border-transparent bg-transparent text-[var(--muted-strong)] hover:bg-white/72 hover:text-[var(--foreground)]",
+        accent:
+          "border-[rgba(236,139,89,0.22)] bg-[linear-gradient(180deg,#f0a55f_0%,#ec8b59_100%)] text-white shadow-[0_12px_28px_rgba(236,139,89,0.18)] hover:-translate-y-0.5 hover:border-[rgba(236,139,89,0.28)] hover:shadow-[0_16px_34px_rgba(236,139,89,0.22)] [&_svg]:text-white",
       },
       size: {
-        default: "h-11 px-5",
+        default: "h-11 px-5 text-sm",
         sm: "h-9 px-4 text-xs",
         lg: "h-12 px-6 text-sm",
+        xl: "h-14 px-7 text-base",
       },
     },
     defaultVariants: {

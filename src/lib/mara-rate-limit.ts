@@ -11,12 +11,16 @@ const ONE_HOUR_MS = 60 * ONE_MINUTE_MS;
 const ONE_DAY_MS = 24 * ONE_HOUR_MS;
 
 export const MARA_RATE_LIMIT_RULES: Record<SubscriptionTierValue, MaraRateLimitRule[]> = {
-  FREE: [{ key: "2 requests per minute", maxRequests: 2, windowMs: ONE_MINUTE_MS }],
-  PLUS: [{ key: "2 requests per minute", maxRequests: 2, windowMs: ONE_MINUTE_MS }],
+  FREE: [{ key: "1 request per minute", maxRequests: 1, windowMs: ONE_MINUTE_MS }],
+  PLUS: [
+    { key: "6 requests per minute", maxRequests: 6, windowMs: ONE_MINUTE_MS },
+    { key: "60 requests per hour", maxRequests: 60, windowMs: ONE_HOUR_MS },
+    { key: "250 requests per day", maxRequests: 250, windowMs: ONE_DAY_MS },
+  ],
   PRO: [
-    { key: "4 requests per minute", maxRequests: 4, windowMs: ONE_MINUTE_MS },
-    { key: "40 requests per hour", maxRequests: 40, windowMs: ONE_HOUR_MS },
-    { key: "150 requests per day", maxRequests: 150, windowMs: ONE_DAY_MS },
+    { key: "10 requests per minute", maxRequests: 10, windowMs: ONE_MINUTE_MS },
+    { key: "120 requests per hour", maxRequests: 120, windowMs: ONE_HOUR_MS },
+    { key: "500 requests per day", maxRequests: 500, windowMs: ONE_DAY_MS },
   ],
 };
 
@@ -36,6 +40,6 @@ export function formatMaraRetryAfter(retryAfterSeconds: number) {
   return `${Math.ceil(retryAfterSeconds / 3_600)}h`;
 }
 
-export function buildMaraRateLimitMessage(rule: MaraRateLimitRule, retryAfterSeconds: number) {
-  return `You have hit the Mara limit of ${rule.key}. Try again in about ${formatMaraRetryAfter(retryAfterSeconds)}.`;
+export function buildMaraRateLimitMessage(_: MaraRateLimitRule, retryAfterSeconds: number) {
+  return `Mara has reached the current fair-use guardrail for your plan. Try again in about ${formatMaraRetryAfter(retryAfterSeconds)}.`;
 }

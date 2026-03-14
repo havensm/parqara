@@ -3,19 +3,19 @@ import Link from "next/link";
 import { format } from "date-fns";
 import {
   CalendarDays,
-  Clock3,
-  Footprints,
   MapPinned,
   Route,
   Sparkles,
 } from "lucide-react";
 
 import type { TripDetailDto } from "@/lib/contracts";
+import { generatedVisuals } from "@/lib/generated-assets";
 import { formatTripPlannerStatusLabel } from "@/lib/trip-planner-agent";
 
 import { Badge } from "@/components/ui/badge";
 import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { VisualShowcase } from "@/components/ui/visual-showcase";
 
 function getOverviewCopy(trip: TripDetailDto) {
   if (trip.latestPlanSummary) {
@@ -71,20 +71,20 @@ export function DetailedItineraryView({ trip }: { trip: TripDetailDto }) {
 
   return (
     <div className="space-y-6">
-      <Card className="p-6 sm:p-8 lg:p-10">
-        <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr] xl:items-start">
-          <div>
+      <Card className="overflow-hidden p-0">
+        <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_minmax(340px,0.94fr)]">
+          <div className="px-6 py-6 sm:px-8 sm:py-8 lg:px-10">
             <div className="flex flex-wrap gap-2">
               <Badge variant="info">Detailed itinerary</Badge>
               <Badge variant={trip.status === "COMPLETED" ? "success" : trip.status === "LIVE" ? "warning" : "info"}>
                 {formatTripPlannerStatusLabel(trip.status)}
               </Badge>
             </div>
-            <h1 className="mt-5 font-[family-name:var(--font-space-grotesk)] text-3xl font-semibold text-slate-950 sm:text-4xl lg:text-5xl">
+            <h1 className="mt-5 font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--foreground)] sm:text-4xl lg:text-5xl">
               {trip.name}
             </h1>
-            <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">{getOverviewCopy(trip)}</p>
-            <div className="mt-6 flex flex-wrap gap-3 text-sm text-slate-500">
+            <p className="mt-4 max-w-3xl text-lg leading-8 text-[var(--muted)]">{getOverviewCopy(trip)}</p>
+            <div className="mt-6 flex flex-wrap gap-3 text-sm text-[var(--muted)]">
               <span>{trip.park.name}</span>
               <span>{format(new Date(trip.visitDate), "EEEE, MMM d")}</span>
               <span>{trip.partyProfile.partySize} guests</span>
@@ -100,17 +100,17 @@ export function DetailedItineraryView({ trip }: { trip: TripDetailDto }) {
               </Link>
             </div>
           </div>
-
-          <div className="rounded-[30px] border border-sky-100 bg-cyan-50 p-5">
-            <p className="text-xs uppercase tracking-[0.28em] text-teal-700/80">Route overview</p>
-            <h2 className="mt-3 text-2xl font-semibold text-slate-950">{primaryAction.title}</h2>
-            <p className="mt-3 text-sm leading-7 text-slate-600">{primaryAction.description}</p>
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <MetricTile label="Avg predicted wait" value={`${averageWait}m`} icon={<Clock3 className="h-4 w-4" />} />
-              <MetricTile label="Estimated walking" value={`${totalWalking}m`} icon={<Footprints className="h-4 w-4" />} />
-              <MetricTile label="Dining stops" value={String(diningStops)} icon={<CalendarDays className="h-4 w-4" />} />
-              <MetricTile label="Kid-friendly slots" value={String(kidFriendlyStops)} icon={<Sparkles className="h-4 w-4" />} />
-            </div>
+          <div className="border-t border-[var(--card-border)] p-4 xl:border-l xl:border-t-0">
+            <VisualShowcase
+              src={generatedVisuals.planners.studio}
+              alt="Parqara itinerary visual"
+              eyebrow="Route overview"
+              title={primaryAction.title}
+              description={primaryAction.description}
+              chips={[`${averageWait}m avg wait`, `${totalWalking}m walking`, `${diningStops} dining`]}
+              aspect="square"
+              className="h-full"
+            />
           </div>
         </div>
       </Card>
@@ -119,40 +119,40 @@ export function DetailedItineraryView({ trip }: { trip: TripDetailDto }) {
         <Card className="p-6 sm:p-7">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.28em] text-teal-700/80">Itinerary timeline</p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-950">Ordered route for the day</h2>
+              <p className="text-[11px] uppercase tracking-[0.28em] text-[var(--muted)]">Itinerary timeline</p>
+              <h2 className="mt-2 text-2xl font-semibold text-[var(--foreground)]">Ordered route for the day</h2>
             </div>
-            <p className="text-sm text-slate-500">Arrival windows, expected waits, and route context are attached to each stop.</p>
+            <p className="text-sm text-[var(--muted)]">Arrival windows, expected waits, and route context are attached to each stop.</p>
           </div>
 
           <div className="mt-6 space-y-5">
             {trip.itinerary.map((item, index) => (
               <div key={item.id} className="relative pl-10">
                 {index < trip.itinerary.length - 1 ? (
-                  <div className="absolute left-[15px] top-12 h-[calc(100%+1.5rem)] w-px bg-[#d7ddd4]" />
+                  <div className="absolute left-[15px] top-12 h-[calc(100%+1.5rem)] w-px bg-[rgba(124,149,182,0.22)]" />
                 ) : null}
-                <div className="absolute left-0 top-5 flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-950">
+                <div className="absolute left-0 top-5 flex h-8 w-8 items-center justify-center rounded-full border border-[var(--card-border)] bg-white text-sm font-semibold text-[var(--foreground)]">
                   {index + 1}
                 </div>
-                <div className="rounded-[28px] border border-slate-200 bg-white p-5 sm:p-6">
+                <div className="rounded-[30px] border border-[var(--card-border)] bg-white p-5 shadow-[0_12px_28px_rgba(12,20,37,0.06)] sm:p-6">
                   <div className="grid gap-5 xl:grid-cols-[150px_minmax(0,1fr)_220px]">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Timing</p>
-                      <p className="mt-3 text-xl font-semibold text-slate-950">{format(new Date(item.startTime), "h:mm a")}</p>
-                      <p className="mt-1 text-sm text-slate-500">to {format(new Date(item.endTime), "h:mm a")}</p>
-                      <p className="mt-4 text-xs uppercase tracking-[0.22em] text-slate-400">Arrive by {format(new Date(item.arrivalWindowStart), "h:mm a")}</p>
+                      <p className="text-xs uppercase tracking-[0.24em] text-[var(--muted)]">Timing</p>
+                      <p className="mt-3 text-xl font-semibold text-[var(--foreground)]">{format(new Date(item.startTime), "h:mm a")}</p>
+                      <p className="mt-1 text-sm text-[var(--muted)]">to {format(new Date(item.endTime), "h:mm a")}</p>
+                      <p className="mt-4 text-xs uppercase tracking-[0.22em] text-[var(--muted)]">Arrive by {format(new Date(item.arrivalWindowStart), "h:mm a")}</p>
                     </div>
 
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-xl font-semibold text-slate-950">{item.title}</h3>
+                        <h3 className="text-xl font-semibold text-[var(--foreground)]">{item.title}</h3>
                         <Badge variant={item.type === "DINING" ? "success" : item.type === "BREAK" ? "warning" : "neutral"}>
                           {item.type}
                         </Badge>
                         {item.kidFriendly ? <Badge variant="info">Kid-friendly</Badge> : null}
                       </div>
-                      <p className="mt-3 text-sm leading-7 text-slate-600">{item.explanation}</p>
-                      <div className="mt-4 flex flex-wrap gap-3 text-sm text-slate-500">
+                      <p className="mt-3 text-sm leading-7 text-[var(--muted)]">{item.explanation}</p>
+                      <div className="mt-4 flex flex-wrap gap-3 text-sm text-[var(--muted)]">
                         <span>{item.predictedWaitMinutes} min wait</span>
                         <span>{item.walkingMinutes} min walk</span>
                         {item.zone ? <span>{item.zone}</span> : null}
@@ -160,10 +160,10 @@ export function DetailedItineraryView({ trip }: { trip: TripDetailDto }) {
                       </div>
                     </div>
 
-                    <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
-                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Why this stop</p>
-                      <p className="mt-3 text-sm leading-7 text-slate-600">{item.reason}</p>
-                      <p className="mt-4 text-xs uppercase tracking-[0.22em] text-teal-700/80">Confidence {item.confidence}%</p>
+                    <div className="rounded-[24px] border border-[var(--card-border)] bg-[var(--surface-muted)] p-4">
+                      <p className="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">Why this stop</p>
+                      <p className="mt-3 text-sm leading-7 text-[var(--muted)]">{item.reason}</p>
+                      <p className="mt-4 text-xs uppercase tracking-[0.22em] text-[var(--teal-700)]">Confidence {item.confidence}%</p>
                     </div>
                   </div>
                 </div>
@@ -174,8 +174,8 @@ export function DetailedItineraryView({ trip }: { trip: TripDetailDto }) {
 
         <div className="space-y-6 xl:sticky xl:top-28 xl:self-start">
           <Card className="p-6">
-            <p className="text-xs uppercase tracking-[0.28em] text-teal-700/80">Strategy notes</p>
-            <div className="mt-5 space-y-3 text-sm leading-7 text-slate-600">
+            <p className="text-[11px] uppercase tracking-[0.28em] text-[var(--muted)]">Strategy notes</p>
+            <div className="mt-5 space-y-3 text-sm leading-7 text-[var(--muted)]">
               <InsightRow title="Queue timing" detail="Morning headliners and lower-friction routing get prioritized before mid-day waits harden." />
               <InsightRow title="Family fit" detail="Attractions that clash with kid ages or thrill tolerance are downgraded or omitted." />
               <InsightRow title="Break protection" detail="Meal and recovery windows are treated as real constraints so the plan stays sustainable." />
@@ -183,7 +183,7 @@ export function DetailedItineraryView({ trip }: { trip: TripDetailDto }) {
           </Card>
 
           <Card className="p-6">
-            <p className="text-xs uppercase tracking-[0.28em] text-teal-700/80">Preference snapshot</p>
+            <p className="text-[11px] uppercase tracking-[0.28em] text-[var(--muted)]">Preference snapshot</p>
             <div className="mt-5 space-y-4">
               <PreferenceBlock label="Preferred ride types" values={trip.partyProfile.preferredRideTypes} emptyLabel="No ride types selected" />
               <PreferenceBlock label="Dining preferences" values={trip.partyProfile.diningPreferences} emptyLabel="No dining preferences selected" />
@@ -191,11 +191,12 @@ export function DetailedItineraryView({ trip }: { trip: TripDetailDto }) {
           </Card>
 
           <Card className="p-6">
-            <p className="text-xs uppercase tracking-[0.28em] text-teal-700/80">Day context</p>
+            <p className="text-[11px] uppercase tracking-[0.28em] text-[var(--muted)]">Day context</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
               <ContextTile icon={<CalendarDays className="h-4 w-4" />} label="Visit date" value={format(new Date(trip.visitDate), "EEEE, MMM d")} />
               <ContextTile icon={<MapPinned className="h-4 w-4" />} label="Park" value={trip.park.name} />
               <ContextTile icon={<Route className="h-4 w-4" />} label="Planned stops" value={String(trip.itinerary.length)} />
+              <ContextTile icon={<Sparkles className="h-4 w-4" />} label="Kid-friendly slots" value={String(kidFriendlyStops)} />
             </div>
           </Card>
         </div>
@@ -206,12 +207,12 @@ export function DetailedItineraryView({ trip }: { trip: TripDetailDto }) {
 
 function ContextTile({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
-    <div className="rounded-[24px] border border-slate-200 bg-white p-4">
-      <div className="flex items-center gap-3 text-slate-950">
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-50 text-teal-700">{icon}</div>
+    <div className="rounded-[24px] border border-[var(--card-border)] bg-white p-4">
+      <div className="flex items-center gap-3 text-[var(--foreground)]">
+        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[rgba(238,253,249,0.9)] text-[var(--teal-700)]">{icon}</div>
         <div>
-          <p className="text-xs uppercase tracking-[0.22em] text-slate-400">{label}</p>
-          <p className="mt-1 text-sm font-semibold text-slate-950">{value}</p>
+          <p className="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">{label}</p>
+          <p className="mt-1 text-sm font-semibold text-[var(--foreground)]">{value}</p>
         </div>
       </div>
     </div>
@@ -220,31 +221,17 @@ function ContextTile({ icon, label, value }: { icon: ReactNode; label: string; v
 
 function InsightRow({ title, detail }: { title: string; detail: string }) {
   return (
-    <div className="rounded-[24px] border border-slate-200 bg-white p-4">
-      <p className="font-semibold text-slate-950">{title}</p>
-      <p className="mt-2 text-sm leading-7 text-slate-600">{detail}</p>
-    </div>
-  );
-}
-
-function MetricTile({ label, value, icon }: { label: string; value: string; icon: ReactNode }) {
-  return (
-    <div className="rounded-[26px] border border-slate-200 bg-white p-5">
-      <div className="flex items-center gap-3 text-slate-950">
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-50 text-teal-700">{icon}</div>
-        <div>
-          <p className="text-xs uppercase tracking-[0.22em] text-slate-400">{label}</p>
-          <p className="mt-1 text-2xl font-semibold text-slate-950">{value}</p>
-        </div>
-      </div>
+    <div className="rounded-[24px] border border-[var(--card-border)] bg-white p-4">
+      <p className="font-semibold text-[var(--foreground)]">{title}</p>
+      <p className="mt-2 text-sm leading-7 text-[var(--muted)]">{detail}</p>
     </div>
   );
 }
 
 function PreferenceBlock({ label, values, emptyLabel }: { label: string; values: string[]; emptyLabel: string }) {
   return (
-    <div className="rounded-[24px] border border-slate-200 bg-white p-4">
-      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">{label}</p>
+    <div className="rounded-[24px] border border-[var(--card-border)] bg-white p-4">
+      <p className="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">{label}</p>
       {values.length ? (
         <div className="mt-3 flex flex-wrap gap-2">
           {values.map((value) => (
@@ -254,8 +241,10 @@ function PreferenceBlock({ label, values, emptyLabel }: { label: string; values:
           ))}
         </div>
       ) : (
-        <p className="mt-3 text-sm text-slate-500">{emptyLabel}</p>
+        <p className="mt-3 text-sm text-[var(--muted)]">{emptyLabel}</p>
       )}
     </div>
   );
 }
+
+

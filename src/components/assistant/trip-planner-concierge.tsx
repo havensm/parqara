@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { CornerDownLeft, Info, LoaderCircle, RotateCcw, SendHorizontal, Sparkles, X } from "lucide-react";
 
 import { canAccessBillingFeature, getMaraStarterPreviewState, getPlanByTier } from "@/lib/billing";
@@ -25,9 +26,12 @@ type TripPlannerConciergeProps = {
   currentTier: SubscriptionTierValue;
   maraStarterRepliesUsed?: number;
   firstName?: string | null;
+  tripId?: string;
   tripContext?: TripPlannerTripContext;
   questions?: string[];
   priorityMode?: boolean;
+  onMessagesChange?: (messages: TripPlannerChatMessage[]) => void;
+  refreshOnReply?: boolean;
 };
 
 type MaraWorkflowExample = {
@@ -88,23 +92,28 @@ export function TripPlannerConcierge({
   currentTier,
   maraStarterRepliesUsed = 0,
   firstName,
+  tripId,
   tripContext,
   questions = [],
   priorityMode = false,
+  onMessagesChange,
+  refreshOnReply = false,
 }: TripPlannerConciergeProps) {
+  const router = useRouter();
   const [messages, setMessages] = useState<TripPlannerChatMessage[]>(() => buildInitialMessages(firstName, tripContext));
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [starterRepliesUsed, setStarterRepliesUsed] = useState(maraStarterRepliesUsed);
   const [showInfoDialog, setShowInfoDialog] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const threadEndRef = useRef<HTMLDivElement | null>(null);
+  const threadScrollRef = useRef<HTMLDivElement | null>(null);
 
   const hasFullAccess = canAccessBillingFeature(currentTier, "aiConcierge");
   const starterPreview = getMaraStarterPreviewState(currentTier, starterRepliesUsed);
   const isStarterPreview = !hasFullAccess && starterPreview.included;
   const isLocked = !hasFullAccess && !starterPreview.canSend;
   const currentPlan = getPlanByTier(currentTier);
+  const plannerChatTargetId = tripId ?? tripContext?.id;
   const isGenericKickoff = !tripContext;
   const workflowExamples = tripContext ? tripWorkflowExamples : generalWorkflowExamples;
 
@@ -113,7 +122,11 @@ export function TripPlannerConcierge({
     setDraft("");
     setError(null);
     setStarterRepliesUsed(maraStarterRepliesUsed);
-  }, [firstName, maraStarterRepliesUsed, tripContext]);
+  }, [firstName, maraStarterRepliesUsed, tripContext, tripId]);
+
+  useEffect(() => {
+    onMessagesChange?.(messages);
+  }, [messages, onMessagesChange]);
 
   useEffect(() => {
     if (!showInfoDialog) {
@@ -131,7 +144,15 @@ export function TripPlannerConcierge({
   }, [showInfoDialog]);
 
   useEffect(() => {
-    threadEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    const thread = threadScrollRef.current;
+    if (!thread) {
+      return;
+    }
+
+    thread.scrollTo({
+      top: thread.scrollHeight,
+      behavior: "smooth",
+    });
   }, [isPending, messages]);
 
   function resetConversation() {
@@ -164,7 +185,7 @@ export function TripPlannerConcierge({
           },
           body: JSON.stringify({
             messages: nextMessages,
-            tripId: tripContext?.id,
+            tripId: plannerChatTargetId,
           }),
         });
 
@@ -182,7 +203,12 @@ export function TripPlannerConcierge({
           throw new Error(result.error || "Mara could not respond right now.");
         }
 
-        setMessages([...nextMessages, { role: "assistant", content: result.reply }]);
+        const resolvedMessages: TripPlannerChatMessage[] = [...nextMessages, { role: "assistant", content: result.reply }];
+        setMessages(resolvedMessages);
+
+        if (refreshOnReply && plannerChatTargetId) {
+          router.refresh();
+        }
       } catch (submitError) {
         setError(submitError instanceof Error ? submitError.message : "Mara could not respond right now.");
       }
@@ -192,19 +218,20 @@ export function TripPlannerConcierge({
   const visibleQuestions = (questions.length ? questions : getTripPlannerStarterPrompts(tripContext)).slice(0, 2);
   const compactExamples = workflowExamples.slice(0, priorityMode ? 3 : workflowExamples.length);
   const starterReplyLabel = starterPreview.remainingReplies === 1 ? "reply" : "replies";
-  const showFollowUpPrompts = !priorityMode || !isGenericKickoff;
+  const showFollowUpPrompts = hasFullAccess && (!priorityMode || !isGenericKickoff);
 
   return (
     <>
       <Card
+        tone={priorityMode ? "solid" : "default"}
         className={cn(
           "overflow-hidden p-5 sm:p-6",
           priorityMode &&
-            "border-[#cfe4dc] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(249,252,251,0.98))] shadow-[0_22px_56px_rgba(15,23,42,0.06)]"
+            "border-[#d6e7e2] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.05)]"
         )}
       >
         {priorityMode ? (
-          <div className="-mx-5 -mt-5 mb-5 border-b border-[#d7e7e1] bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.14),transparent_28%),linear-gradient(180deg,rgba(244,252,250,0.98),rgba(255,255,255,0.98))] px-5 py-5 sm:-mx-6 sm:-mt-6 sm:px-6 sm:py-6">
+          <div className="-mx-5 -mt-5 mb-5 border-b border-[#d7e7e1] bg-[linear-gradient(180deg,#f8fcfb_0%,#ffffff_100%)] px-5 py-5 sm:-mx-6 sm:-mt-6 sm:px-6 sm:py-6">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex items-start gap-4">
                 <MaraPortrait size="md" className="shrink-0" />
@@ -228,16 +255,18 @@ export function TripPlannerConcierge({
                   <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 sm:text-[15px]">
                     {tripContext
                       ? "Use Mara first for changes, tradeoffs, missing details, and next steps. The planner below is the follow-through layer."
-                      : "Give Mara the destination, the vibe, or the must-dos. She will ask for the next one or two details and shape the draft."}
+                      : isStarterPreview
+                        ? "Free includes one Mara preview. Save the planner basics, ask for the preview, and then upgrade to Plus if you want full back-and-forth planning."
+                        : "Give Mara the destination, the vibe, or the must-dos. She will ask for the next one or two details and shape the draft."}
                   </p>
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-2 xl:justify-end">
-                {hasFullAccess ? <PlanBadge tier="PRO" /> : <PlanBadge tier={currentTier} label="Starter preview" />}
+                {hasFullAccess ? <PlanBadge tier={currentTier} /> : <PlanBadge tier={currentTier} label="Free preview" />}
                 {isStarterPreview ? (
                   <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                    {starterPreview.remainingReplies} {starterReplyLabel} left
+                    {starterPreview.remainingReplies} preview {starterReplyLabel} left
                   </span>
                 ) : null}
                 <Button type="button" variant="secondary" onClick={resetConversation} disabled={isPending} className="rounded-full">
@@ -252,10 +281,10 @@ export function TripPlannerConcierge({
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <PlannerSectionKicker emoji="✨" label="Mara" tone="teal" />
-                {hasFullAccess ? <PlanBadge tier="PRO" /> : <PlanBadge tier={currentTier} label="Starter preview" />}
+                {hasFullAccess ? <PlanBadge tier={currentTier} /> : <PlanBadge tier={currentTier} label="Free preview" />}
                 {isStarterPreview ? (
                   <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
-                    {starterPreview.remainingReplies} {starterReplyLabel} left
+                    {starterPreview.remainingReplies} preview {starterReplyLabel} left
                   </span>
                 ) : null}
               </div>
@@ -278,7 +307,9 @@ export function TripPlannerConcierge({
               <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
                 {tripContext
                   ? `Focused on ${tripContext.name} at ${tripContext.parkName} on ${tripContext.visitDate}. Ask Mara to tighten the plan or make changes here.`
-                  : "Start with the destination, vibe, or must-dos. Mara will ask for the next one or two details."}
+                  : isStarterPreview
+                    ? "Free includes one Mara preview here. Save enough basics to give Mara context, then ask for a starter recommendation and sample day."
+                    : "Start with the destination, vibe, or must-dos. Mara will ask for the next one or two details."}
               </p>
             </div>
             <Button type="button" variant="secondary" onClick={resetConversation} disabled={isPending}>
@@ -292,36 +323,37 @@ export function TripPlannerConcierge({
           className={cn(
             "mt-5 rounded-[26px] border border-slate-200 bg-white p-4 sm:p-5",
             priorityMode &&
-              "relative overflow-hidden border-[#c8ddd6] bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.16),transparent_32%),linear-gradient(180deg,rgba(246,252,250,0.99),rgba(255,255,255,0.99))] p-5 shadow-[0_28px_64px_rgba(15,23,42,0.1)] sm:p-6"
+              "relative overflow-hidden border-transparent bg-transparent p-0 shadow-none"
           )}
         >
-          {priorityMode ? <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_88%_18%,rgba(96,165,250,0.12),transparent_22%)]" /> : null}
           <div className="relative z-10">
             <div className={cn("flex flex-col gap-3", priorityMode && "gap-4") }>
-              <div className={cn("flex flex-col gap-3", priorityMode && "rounded-[24px] border border-white/80 bg-white/78 p-4 shadow-[0_18px_44px_rgba(15,23,42,0.05)] sm:p-5") }>
-                <div className={cn("flex flex-col gap-3", priorityMode && "lg:flex-row lg:items-start lg:justify-between") }>
+              <div className={cn("flex flex-col gap-3", priorityMode && "overflow-hidden rounded-[28px] border border-[#d6e7e2] bg-[linear-gradient(180deg,#fcfefd_0%,#ffffff_100%)] shadow-[0_16px_32px_rgba(15,23,42,0.05)]")}>
+                <div className={cn("flex flex-col gap-3", priorityMode && "px-4 pt-4 sm:px-5 sm:pt-5 lg:flex-row lg:items-start lg:justify-between")}>
                   <div className="max-w-3xl">
                     {priorityMode ? <PlannerSectionKicker emoji="💬" label="Main way to steer the planner" tone="teal" /> : null}
                     <label className={cn("block text-sm font-medium text-slate-700", priorityMode && "mt-3 text-lg font-semibold text-slate-950")} htmlFor="trip-planner-message">
-                      {tripContext ? "Tell Mara what to change next." : "Start planning with Mara."}
+                      {tripContext ? "Tell Mara what to change next." : isStarterPreview ? "Ask for the Mara preview." : "Start planning with Mara."}
                     </label>
                     <p className={cn("mt-2 text-sm leading-6 text-slate-600", priorityMode && "max-w-3xl text-[15px] leading-7 text-slate-600")}>
                       {tripContext
                         ? "Start with the change, tradeoff, or question. Mara should be the first place you steer this planner."
-                        : "Start with the destination, the kind of adventure, or the must-dos. Mara will ask for the next one or two details from there."}
+                        : isStarterPreview
+                          ? "Use the Free preview to get one starter recommendation, a rough budget range, and a sample day before deciding on Plus."
+                          : "Start with the destination, the kind of adventure, or the must-dos. Mara will ask for the next one or two details from there."}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2 lg:justify-end">
-                    <p className={cn("flex items-center gap-2 text-xs text-slate-500", priorityMode && "rounded-full border border-white/80 bg-white/92 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500") }>
+                    <p className={cn("flex items-center gap-2 text-xs text-slate-500", priorityMode && "rounded-full border border-slate-200/80 bg-white/88 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500") }>
                       <CornerDownLeft className="h-3.5 w-3.5" />
                       {hasFullAccess
                         ? "Enter sends"
                         : isLocked
-                          ? `${starterPreview.replyLimit} starter replies used`
-                          : `${starterPreview.remainingReplies} ${starterReplyLabel} left`}
+                          ? "Free preview used"
+                          : "One preview included"}
                     </p>
                     {priorityMode ? (
-                      <div className="flex items-center gap-2 rounded-full border border-white/80 bg-white/92 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      <div className="flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/88 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
                         <Sparkles className="h-3.5 w-3.5 text-teal-600" />
                         Ask in plain language
                       </div>
@@ -329,8 +361,8 @@ export function TripPlannerConcierge({
                   </div>
                 </div>
 
-                <div className={cn("mt-4 rounded-[24px] border border-slate-200 bg-slate-50/90 p-3 sm:p-4", priorityMode && "border-[#d6e7e2] bg-white/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]")}>
-                  <div className={cn("flex max-h-[300px] flex-col gap-3 overflow-y-auto pr-1 sm:max-h-[340px]", priorityMode && "max-h-[360px]")}>
+                <div className={cn("mt-4 rounded-[24px] border border-slate-200 bg-slate-50/90 p-3 sm:p-4", priorityMode && "mt-0 border-0 border-t border-[#d6e7e2] bg-transparent p-0 shadow-none")}>
+                  <div ref={threadScrollRef} className={cn("flex max-h-[300px] flex-col gap-3 overflow-y-auto pr-1 sm:max-h-[340px]", priorityMode && "min-h-[190px] max-h-[320px] px-4 py-4 sm:px-5")}>
                     {messages.map((message, index) => (
                       <div key={`${message.role}-${index}-${message.content.slice(0, 24)}`} className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}>
                         <div
@@ -364,7 +396,6 @@ export function TripPlannerConcierge({
                         </div>
                       </div>
                     ) : null}
-                    <div ref={threadEndRef} />
                   </div>
                 </div>
 
@@ -373,15 +404,17 @@ export function TripPlannerConcierge({
                   className={cn(
                     `${textareaClassName}`,
                     priorityMode &&
-                      "min-h-[120px] rounded-[30px] border-[#b9d0c8] bg-white px-5 py-4 text-base shadow-[0_18px_36px_rgba(15,23,42,0.05)]"
+                      "min-h-[112px] rounded-none border-x-0 border-b-0 border-t border-[#d6e7e2] bg-white px-5 py-4 text-base shadow-none focus:border-[#d6e7e2]"
                   )}
                   disabled={isLocked || isPending}
                   placeholder={
                     isLocked
-                      ? `You have used the ${starterPreview.replyLimit} Mara starter replies included on ${currentPlan.name}. Upgrade to Pro to keep planning with Mara.`
+                      ? `You have already used the Mara preview included on ${currentPlan.name}. Upgrade to Plus to keep planning with unlimited Mara.`
                       : tripContext
                         ? "Example: Review this plan, make lunch easier, and ask me the next one or two details you still need."
-                        : "Example: I want to plan a Saturday adventure for two adults and one 8-year-old. Ask me the first one or two details you need."
+                        : isStarterPreview
+                          ? "Example: Preview a Saturday trip for two adults and one 8-year-old, with one signature ride and an easy lunch window."
+                          : "Example: I want to plan a Saturday adventure for two adults and one 8-year-old. Ask me the first one or two details you need."
                   }
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
@@ -393,7 +426,7 @@ export function TripPlannerConcierge({
                   }}
                 />
 
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className={cn("flex flex-col gap-3 md:flex-row md:items-center md:justify-between", priorityMode && "px-4 pb-4 sm:px-5 sm:pb-5")}>
                   <div className="flex flex-wrap gap-2">
                     {(tripContext
                       ? ["Adjust pacing", "Protect must-dos", "Rework lunch"]
@@ -417,7 +450,7 @@ export function TripPlannerConcierge({
                     className={cn(priorityMode && "h-12 rounded-full px-7 text-sm shadow-[0_18px_38px_rgba(15,23,42,0.14)]")}
                   >
                     <SendHorizontal className="mr-2 h-4 w-4" />
-                    {priorityMode ? "Send to Mara" : "Send"}
+                    {isStarterPreview ? "Get Mara preview" : priorityMode ? "Send to Mara" : "Send"}
                   </Button>
                 </div>
               </div>
@@ -426,7 +459,7 @@ export function TripPlannerConcierge({
         </div>
 
         {isGenericKickoff ? (
-          <div className={cn("mt-5", priorityMode && "rounded-[24px] border border-slate-200/80 bg-white/72 p-4 sm:p-5")}>
+          <div className={cn("mt-5", priorityMode && "rounded-[24px] border border-slate-200/80 bg-[linear-gradient(180deg,#fbfdff_0%,#ffffff_100%)] p-4 sm:p-5")}>
             <PlannerSectionKicker emoji="🗺️" label={priorityMode ? "Need a faster start?" : "Start here"} tone="sky" />
             {priorityMode ? <p className="mt-2 text-sm text-slate-600">Tap one and Mara will take it from there.</p> : null}
             <div className="mt-3 grid gap-2.5 md:grid-cols-3">
@@ -512,7 +545,7 @@ function MaraInfoDialog({ tripContext, onClose }: { tripContext?: TripPlannerTri
         role="dialog"
         aria-modal="true"
         aria-labelledby="mara-info-title"
-        className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-[30px] border border-white/70 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.14),transparent_22%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,250,252,0.98))] p-6 shadow-[0_32px_90px_rgba(15,23,42,0.24)] sm:p-7"
+        className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-[30px] border border-white/70 bg-[linear-gradient(180deg,#ffffff_0%,#f7fafc_100%)] p-6 shadow-[0_32px_90px_rgba(15,23,42,0.24)] sm:p-7"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4">
@@ -612,3 +645,18 @@ function WorkflowExampleCard({ item }: { item: MaraWorkflowExample }) {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

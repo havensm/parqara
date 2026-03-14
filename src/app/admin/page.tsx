@@ -1,6 +1,7 @@
 import { Activity, KeyRound, ShieldCheck, Sparkles } from "lucide-react";
 
 import { requireAdminUser } from "@/lib/auth/guards";
+import { getUserBillingState } from "@/lib/billing";
 import { getAdminAccessAccounts } from "@/lib/admin";
 import { getAdminDashboardMetrics } from "@/server/services/admin-service";
 import { getAdminFeedbackSnapshot } from "@/server/services/feedback-service";
@@ -11,6 +12,7 @@ import { AdminDashboard } from "@/components/admin/admin-dashboard";
 
 export default async function AdminPage() {
   const user = await requireAdminUser();
+  const billing = getUserBillingState(user);
   const metrics = await getAdminDashboardMetrics();
   const feedback = await getAdminFeedbackSnapshot();
   const integrations = getAdminIntegrationsSnapshot();
@@ -24,6 +26,8 @@ export default async function AdminPage() {
       actionHref="/dashboard"
       actionLabel="Back to dashboard"
       icon={<ShieldCheck className="h-6 w-6" />}
+      currentTier={billing.currentTier}
+      adminEnabled
       highlights={[
         { icon: <Activity className="h-4 w-4" />, label: "Live usage and revenue metrics" },
         { icon: <KeyRound className="h-4 w-4" />, label: "Integration readiness by environment" },
@@ -66,3 +70,5 @@ function AdminVisualCard({ label, value, tone }: { label: string; value: string;
     </div>
   );
 }
+
+
