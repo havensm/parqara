@@ -16,6 +16,7 @@
     "test:watch": "vitest",
     "test:homepage-ui": "node scripts/homepage-ui-check.mjs",
     "test:ui-regression": "node scripts/ui-regression-check.mjs",
+    "pr:create": "node scripts/create-pr.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "generate:ui-assets": "node scripts/generate-ui-assets.mjs",

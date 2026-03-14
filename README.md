@@ -65,6 +65,7 @@ npm run dev
 npm run lint
 npm run test
 npm run build
+npm run pr:create -- --title "My PR title"
 npm run bundle:eb
 npm run db:generate
 npm run db:migrate:deploy
@@ -72,6 +73,27 @@ npm run db:seed
 npm run db:bootstrap
 npm run prisma:studio
 ```
+
+## Programmatic pull requests
+
+Parqara includes a local helper to create GitHub pull requests without using the browser:
+
+```bash
+npm run pr:create -- --title "Modernize product UI" --body-file .github/pr-body.md
+```
+
+How it works:
+
+- infers the current branch from git
+- infers the repo from the `origin` remote
+- defaults the base branch to `main`
+- returns the existing PR URL instead of creating a duplicate when one is already open
+
+Local setup:
+
+1. Add a GitHub token to `.env.local`, `.env`, or your shell as `GH_TOKEN` or `GITHUB_TOKEN`.
+2. Give the token `Pull requests: Read and write` access to `havensm/parqara`.
+3. Run `npm run pr:create -- --help` to see the available flags.
 
 ## Bootstrap data
 
