@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import type { Prisma } from "@prisma/client/index";
+import { Prisma } from "@prisma/client/index";
 
 import { isAdminEmail } from "@/lib/admin";
 import { db, isDatabaseUnavailableError } from "@/lib/db";
@@ -37,7 +37,11 @@ export async function getCurrentUserStateIfAvailable(): Promise<SessionUserState
   try {
     return await loadCurrentUserState();
   } catch (error) {
-    if (isDatabaseUnavailableError(error)) {
+    if (
+      isDatabaseUnavailableError(error) ||
+      (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2022")
+    ) {
+      // Public routes should fall back to signed-out if prod schema drift or DB reachability breaks optional session hydration.
       return null;
     }
 
