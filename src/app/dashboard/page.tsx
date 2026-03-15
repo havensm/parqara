@@ -16,7 +16,6 @@ import {
 import { getPlannerLimitState } from "@/server/services/planner-entitlement-service";
 import {
   createDefaultDraftTrip,
-  findOrCreateDraftTrip,
   getDefaultParkSummary,
   getParkCatalog,
   getTripDetail,
@@ -27,6 +26,7 @@ import { ParksUnavailableState } from "@/components/app/parks-unavailable-state"
 import { FirstTimePlannerTour } from "@/components/onboarding/first-time-planner-tour";
 import { MaraPlannerFocus } from "@/components/trip/mara-planner-focus";
 import { PlannerDashboardDetails } from "@/components/trip/planner-dashboard-details";
+import { PlannerEmptyState } from "@/components/trip/planner-empty-state";
 import { PlannerWorkspaceShell } from "@/components/trip/planner-workspace-shell";
 import { PlannerWorkspaceTabs } from "@/components/trip/planner-workspace-tabs";
 
@@ -69,37 +69,49 @@ export default async function DashboardPage({
   const billing = getUserBillingState(user);
   const adminEnabled = isAdminEmail(user.email);
   const defaultVisitDate = addDays(new Date(), 7).toISOString().slice(0, 10);
-  const [{ tour, tourPreview, tripId, create }, defaultPark] = await Promise.all([searchParams, getDefaultParkSummary()]);
+  const [{ tour, tourPreview, tripId, create }, defaultPark, plannerLimitState] = await Promise.all([
+    searchParams,
+    getDefaultParkSummary(),
+    getPlannerLimitState(user.id),
+  ]);
   const showFirstTimeTour = tour === "1";
   const previewFirstTimeTour = tourPreview === "1";
   const preservedDashboardParams = {
     tour,
     tourPreview,
   } satisfies Pick<DashboardSearchParams, "tour" | "tourPreview">;
-  let trips = await listDashboardTrips(user.id);
+  const createPlannerHref = plannerLimitState.canCreate
+    ? defaultPark
+      ? buildDashboardHref({ create: "1", ...preservedDashboardParams })
+      : "/trips/new?fresh=1"
+    : billing.currentTier === "FREE"
+      ? "/pricing"
+      : "/billing";
+  const trips = await listDashboardTrips(user.id);
 
   if (!trips.length && !defaultPark) {
     return <ParksUnavailableState />;
   }
 
   if (create === "1") {
-    const initialPlannerLimitState = await getPlannerLimitState(user.id);
-
-    if (initialPlannerLimitState.canCreate && defaultPark) {
+    if (plannerLimitState.canCreate && defaultPark) {
       const trip = await createDefaultDraftTrip(user.id, defaultPark.slug, defaultVisitDate);
       redirect(buildDashboardHref({ tripId: trip.id, ...preservedDashboardParams }));
     }
 
-    redirect(initialPlannerLimitState.canCreate ? "/trips/new" : billing.currentTier === "FREE" ? "/pricing" : "/billing");
+    redirect(createPlannerHref);
   }
 
+  // Empty planner state is explicit now so deleting the last planner does not silently recreate one.
   if (!trips.length) {
-    const starterTrip = await findOrCreateDraftTrip(user.id, defaultPark!.slug, defaultVisitDate);
-    trips = await listDashboardTrips(user.id);
-
-    if (!tripId) {
-      redirect(buildDashboardHref({ tripId: starterTrip.id, ...preservedDashboardParams }));
-    }
+    return (
+      <PlannerEmptyState
+        currentTier={billing.currentTier}
+        adminEnabled={adminEnabled}
+        plannerLimitState={plannerLimitState}
+        createHref={createPlannerHref}
+      />
+    );
   }
 
   const selectedTrip = (tripId ? trips.find((trip) => trip.id === tripId) : undefined) ?? pickDefaultTrip(trips);
@@ -108,10 +120,7 @@ export default async function DashboardPage({
     throw new Error("No trip available.");
   }
 
-  const [activeTrip, plannerLimitState] = await Promise.all([
-    getTripDetail(user.id, selectedTrip.id),
-    getPlannerLimitState(user.id),
-  ]);
+  const activeTrip = await getTripDetail(user.id, selectedTrip.id);
   const isStarterDraft = isPlannerKickoffDraft({
     status: activeTrip.status,
     currentStep: activeTrip.currentStep,
@@ -125,13 +134,6 @@ export default async function DashboardPage({
     href: buildDashboardHref({ tripId: tab.id, ...preservedDashboardParams }),
     isActive: tab.id === activeTrip.id,
   }));
-  const createPlannerHref = plannerLimitState.canCreate
-    ? defaultPark
-      ? buildDashboardHref({ create: "1", ...preservedDashboardParams })
-      : "/trips/new"
-    : billing.currentTier === "FREE"
-      ? "/pricing"
-      : "/billing";
 
   return (
     <>

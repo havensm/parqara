@@ -18,7 +18,6 @@ import {
 import { getPlannerLimitState } from "@/server/services/planner-entitlement-service";
 import {
   createDefaultDraftTrip,
-  findOrCreateDraftTrip,
   getDefaultParkSummary,
   getParkCatalog,
   getTripDetail,
@@ -46,11 +45,13 @@ export default async function NewTripPage({ searchParams }: { searchParams: Prom
     shouldReuseExistingPlanner ? listDashboardTrips(user.id) : Promise.resolve([]),
   ]);
 
-  if (shouldReuseExistingPlanner && existingTrips.length) {
+  if (shouldReuseExistingPlanner) {
     const existingTrip = pickDefaultTrip(existingTrips);
     if (existingTrip) {
       redirect(getTripWorkspaceHref(existingTrip));
     }
+
+    redirect("/dashboard");
   }
 
   if (fresh === "1" && !tripId && !plannerLimitState.canCreate) {
@@ -70,15 +71,15 @@ export default async function NewTripPage({ searchParams }: { searchParams: Prom
     redirect(`/trips/new?tripId=${trip.id}`);
   }
 
-  const draftTrip = tripId
-    ? await getTripDetail(user.id, tripId)
-    : defaultPark
-      ? await findOrCreateDraftTrip(user.id, defaultPark.slug, defaultVisitDate)
-      : null;
+  if (!tripId) {
+    if (!defaultPark) {
+      return <ParksUnavailableState />;
+    }
 
-  if (!draftTrip) {
-    return <ParksUnavailableState />;
+    redirect("/dashboard");
   }
+
+  const draftTrip = await getTripDetail(user.id, tripId);
 
   if (draftTrip.status !== "DRAFT") {
     redirect(`/trips/${draftTrip.id}`);

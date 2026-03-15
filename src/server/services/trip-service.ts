@@ -1,4 +1,4 @@
-import type { PartyProfile, Trip } from "@prisma/client/index";
+import { Prisma, type PartyProfile, type Trip } from "@prisma/client/index";
 import { format } from "date-fns";
 
 import type {
@@ -780,28 +780,6 @@ export async function createDefaultDraftTrip(userId: string, parkSlug: string, d
   return getTripDetail(userId, trip.tripId);
 }
 
-export async function findOrCreateDraftTrip(userId: string, parkSlug: string, defaultVisitDate: string) {
-  const existingDraft = await db.trip.findFirst({
-    where: {
-      userId,
-      plannerStatus: "ACTIVE",
-      status: "DRAFT",
-      park: {
-        slug: parkSlug,
-      },
-    },
-    orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
-    select: {
-      id: true,
-    },
-  });
-
-  if (existingDraft) {
-    return getTripDetail(userId, existingDraft.id);
-  }
-
-  return createDefaultDraftTrip(userId, parkSlug, defaultVisitDate);
-}
 
 function serializeDashboardTrip(
   trip: {
@@ -878,8 +856,6 @@ export async function listArchivedTrips(userId: string): Promise<DashboardTripDt
 }
 
 export async function createTrip(userId: string, input: import("zod").infer<typeof tripSetupSchema>) {
-  await ensurePlannerCanBeCreated(userId);
-
   const providers = createProviderSuite();
   const park = await providers.metadata.getParkBySlug(input.parkSlug);
   if (!park) {
@@ -887,36 +863,43 @@ export async function createTrip(userId: string, input: import("zod").infer<type
   }
 
   const visitDateTime = resolveVisitDateTime(input.visitDate, input.startTime);
-  const trip = await db.trip.create({
-    data: {
-      userId,
-      parkId: park.park.id,
-      name: input.name?.trim() || `${park.park.name} ${format(new Date(input.visitDate), "MMM d")}`,
-      startingLocation: input.startingLocation ?? null,
-      visitDate: visitDateTime,
-      status: "DRAFT",
-      plannerStatus: "ACTIVE",
-      archivedAt: null,
-      simulatedTime: visitDateTime,
-      summary: {
-        replanCount: 0,
-      },
-      partyProfile: {
-        create: {
-          partySize: input.partySize,
-          kidsAges: input.kidsAges,
-          thrillTolerance: input.thrillTolerance,
-          walkingTolerance: input.walkingTolerance,
-          preferredRideTypes: input.preferredRideTypes,
-          mustDoRideIds: input.mustDoRideIds,
-          diningPreferences: input.diningPreferences,
-          startTime: input.startTime,
-          breakStart: input.breakStart,
-          breakEnd: input.breakEnd,
+  const trip = await db.$transaction(
+    async (tx) => {
+      await ensurePlannerCanBeCreated(userId, tx);
+
+      return tx.trip.create({
+        data: {
+          userId,
+          parkId: park.park.id,
+          name: input.name?.trim() || `${park.park.name} ${format(new Date(input.visitDate), "MMM d")}`,
+          startingLocation: input.startingLocation ?? null,
+          visitDate: visitDateTime,
+          status: "DRAFT",
+          plannerStatus: "ACTIVE",
+          archivedAt: null,
+          simulatedTime: visitDateTime,
+          summary: {
+            replanCount: 0,
+          },
+          partyProfile: {
+            create: {
+              partySize: input.partySize,
+              kidsAges: input.kidsAges,
+              thrillTolerance: input.thrillTolerance,
+              walkingTolerance: input.walkingTolerance,
+              preferredRideTypes: input.preferredRideTypes,
+              mustDoRideIds: input.mustDoRideIds,
+              diningPreferences: input.diningPreferences,
+              startTime: input.startTime,
+              breakStart: input.breakStart,
+              breakEnd: input.breakEnd,
+            },
+          },
         },
-      },
+      });
     },
-  });
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+  );
 
   await recordPlannerVersion(userId, trip.id, "Planner created");
 
@@ -998,17 +981,22 @@ export async function archiveTrip(userId: string, tripId: string) {
 }
 
 export async function restoreTrip(userId: string, tripId: string) {
-  await ensurePlannerCanBeCreated(userId);
-
   const trip = await getManageableTrip(userId, tripId, "Only the trip owner can restore this planner.");
 
-  await db.trip.update({
-    where: { id: trip.id },
-    data: {
-      plannerStatus: "ACTIVE",
-      archivedAt: null,
+  await db.$transaction(
+    async (tx) => {
+      await ensurePlannerCanBeCreated(userId, tx);
+
+      await tx.trip.update({
+        where: { id: trip.id },
+        data: {
+          plannerStatus: "ACTIVE",
+          archivedAt: null,
+        },
+      });
     },
-  });
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+  );
 
   await recordPlannerVersion(userId, trip.id, "Planner restored");
 
@@ -1016,12 +1004,12 @@ export async function restoreTrip(userId: string, tripId: string) {
 }
 
 export async function duplicateTrip(userId: string, tripId: string) {
-  await ensurePlannerCanBeCreated(userId);
-
   const trip = await getAccessibleTrip(userId, tripId);
   requirePartyProfile(trip);
 
   const duplicatedTrip = await db.$transaction(async (tx) => {
+    await ensurePlannerCanBeCreated(userId, tx);
+
     const createdTrip = await tx.trip.create({
       data: {
         userId,
@@ -1078,7 +1066,7 @@ export async function duplicateTrip(userId: string, tripId: string) {
     }
 
     return createdTrip;
-  });
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
   await recordPlannerVersion(userId, duplicatedTrip.id, `Duplicated from ${trip.name}`);
 
@@ -1776,6 +1764,8 @@ export async function getTripSummary(userId: string, tripId: string): Promise<Su
     latestPlanSummary: trip.latestPlanSummary,
   };
 }
+
+
 
 
 

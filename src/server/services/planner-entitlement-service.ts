@@ -4,16 +4,18 @@ import { formatIsoDate } from "@/lib/date-utils";
 import { db } from "@/lib/db";
 import { HttpError } from "@/lib/http-error";
 
-export async function getOwnedPlannerUsage(userId: string) {
+type PlannerUsageDbClient = Pick<typeof db, "user" | "trip">;
+
+export async function getOwnedPlannerUsage(userId: string, dbClient: PlannerUsageDbClient = db) {
   const [user, activePlannerCount] = await Promise.all([
-    db.user.findUnique({
+    dbClient.user.findUnique({
       where: { id: userId },
       select: {
         subscriptionTier: true,
         subscriptionStatus: true,
       },
     }),
-    db.trip.count({
+    dbClient.trip.count({
       where: {
         userId,
         plannerStatus: "ACTIVE",
@@ -103,8 +105,8 @@ export function buildPlannerLimitMessage(currentTier: PlannerLimitStateDto["curr
   return `Your ${planName} plan includes ${plannerLimit} ${plannerLabel}. Archive an existing planner or upgrade to keep creating new ones.`;
 }
 
-export async function ensurePlannerCanBeCreated(userId: string) {
-  const usage = await getOwnedPlannerUsage(userId);
+export async function ensurePlannerCanBeCreated(userId: string, dbClient: PlannerUsageDbClient = db) {
+  const usage = await getOwnedPlannerUsage(userId, dbClient);
 
   if (usage.canCreate) {
     return usage;
