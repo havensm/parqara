@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { CirclePlus, LoaderCircle, Mail, Settings2, ShieldAlert, ShieldCheck, Trash2, UserRound, X } from "lucide-react";
+import { CirclePlus, LoaderCircle, Mail, PencilLine, ShieldAlert, ShieldCheck, Trash2, UserRound, X } from "lucide-react";
 
 import { canAccessBillingFeature } from "@/lib/billing";
 import type { SubscriptionTierValue, TripCollaboratorStateDto } from "@/lib/contracts";
@@ -20,11 +20,13 @@ export function TripPlannerSettingsDialog({
   tripId,
   tripName,
   isOwner,
+  triggerMode = "button",
 }: {
   currentTier: SubscriptionTierValue;
   tripId: string;
   tripName: string;
   isOwner: boolean;
+  triggerMode?: "button" | "icon";
 }) {
   const router = useRouter();
   const previousTripIdRef = useRef(tripId);
@@ -271,22 +273,36 @@ export function TripPlannerSettingsDialog({
 
   return (
     <>
-      <Button type="button" variant="secondary" className="gap-2" onClick={openDialog}>
-        <Settings2 className="h-4 w-4" />
-        Edit planner
-      </Button>
+      {triggerMode === "icon" ? (
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="h-10 w-10 rounded-full px-0"
+          onClick={openDialog}
+          aria-label="Edit planner"
+        >
+          <PencilLine className="h-4 w-4" />
+        </Button>
+      ) : (
+        <Button type="button" variant="secondary" className="gap-2" onClick={openDialog}>
+          <PencilLine className="h-4 w-4" />
+          Edit planner
+        </Button>
+      )}
 
       {isOpen
         ? createPortal(
-            <div className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto bg-slate-950/40 px-4 py-6 sm:items-center" onClick={closeDialog}>
+            <div className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto bg-slate-950/30 px-4 py-4 backdrop-blur-[4px] sm:items-center sm:py-6" onClick={closeDialog}>
               <div
                 role="dialog"
                 aria-modal="true"
                 aria-label="Edit planner"
-                className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[30px] border border-white/60 bg-[linear-gradient(180deg,#fdfefe_0%,#f8fafc_100%)] p-6 shadow-[0_30px_90px_rgba(15,23,42,0.24)] sm:p-7"
+                className="w-full max-w-3xl overflow-hidden rounded-[32px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,251,255,0.96))] shadow-[0_30px_90px_rgba(15,23,42,0.2)]"
                 onClick={(event) => event.stopPropagation()}
               >
-            <div className="flex items-start justify-between gap-4">
+                <div className="dialog-scroll soft-scrollbar max-h-[90vh] overflow-y-auto p-6 sm:p-7">
+                  <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700/70">Planner settings</p>
                 <h2 className="mt-3 font-[family-name:var(--font-space-grotesk)] text-3xl font-semibold tracking-tight text-slate-950">
@@ -307,7 +323,7 @@ export function TripPlannerSettingsDialog({
             </div>
 
             <div className="mt-8 space-y-6">
-              <section className="rounded-[26px] border border-slate-200 bg-white p-5">
+              <section className="rounded-[28px] border border-[var(--card-border)] bg-[linear-gradient(180deg,#ffffff_0%,#fbfdff_100%)] p-5 shadow-[0_10px_24px_rgba(12,20,37,0.04)]">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Planner details</p>
@@ -354,7 +370,7 @@ export function TripPlannerSettingsDialog({
                 </form>
               </section>
 
-              <section className="rounded-[26px] border border-slate-200 bg-white p-5">
+              <section className="rounded-[28px] border border-[var(--card-border)] bg-[linear-gradient(180deg,#ffffff_0%,#fbfdff_100%)] p-5 shadow-[0_10px_24px_rgba(12,20,37,0.04)]">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Shared access</p>
@@ -487,7 +503,7 @@ export function TripPlannerSettingsDialog({
               <PlannerWorkflowPanel currentTier={currentTier} tripId={tripId} tripName={draftName.trim() || tripName} isOwner={isOwner} />
 
               {isOwner ? (
-                <section className="rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-4">
+                <section className="rounded-[24px] border border-[var(--card-border)] bg-[rgba(247,250,255,0.96)] px-4 py-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                       <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Danger zone</p>
@@ -511,6 +527,7 @@ export function TripPlannerSettingsDialog({
             </div>
 
             {error ? <p className="mt-6 rounded-[22px] border border-[#efc1bc] bg-[#fff0ee] px-4 py-3 text-sm text-[#b14b41]">{error}</p> : null}
+                </div>
               </div>
             </div>,
             document.body

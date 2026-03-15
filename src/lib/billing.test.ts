@@ -5,10 +5,8 @@ import {
   canCreatePlanner,
   canUseFreePreview,
   getEffectiveSubscriptionTier,
-  getMaraStarterPreviewState,
   getPlannerLimitForTier,
   getUserBillingState,
-  MARA_STARTER_REPLY_LIMIT,
   BILLING_FEATURES,
   BILLING_PLANS,
 } from "@/lib/billing";
@@ -27,28 +25,11 @@ describe("billing access", () => {
   it("enforces feature thresholds", () => {
     expect(canAccessBillingFeature("FREE", "liveDashboard")).toBe(false);
     expect(canAccessBillingFeature("PLUS", "liveDashboard")).toBe(true);
+    expect(canAccessBillingFeature("FREE", "aiConcierge")).toBe(true);
     expect(canAccessBillingFeature("PLUS", "aiConcierge")).toBe(true);
     expect(canAccessBillingFeature("PRO", "aiConcierge")).toBe(true);
     expect(canAccessBillingFeature("PLUS", "plannerDuplication")).toBe(false);
     expect(canAccessBillingFeature("PRO", "plannerDuplication")).toBe(true);
-  });
-
-  it("keeps the Mara preview only on Free", () => {
-    expect(getMaraStarterPreviewState("FREE", 0)).toEqual({
-      included: true,
-      replyLimit: MARA_STARTER_REPLY_LIMIT,
-      usedReplies: 0,
-      remainingReplies: MARA_STARTER_REPLY_LIMIT,
-      canSend: true,
-    });
-
-    expect(getMaraStarterPreviewState("PLUS", MARA_STARTER_REPLY_LIMIT)).toEqual({
-      included: false,
-      replyLimit: MARA_STARTER_REPLY_LIMIT,
-      usedReplies: 0,
-      remainingReplies: 0,
-      canSend: false,
-    });
   });
 
   it("tracks planner limits by tier", () => {
@@ -59,39 +40,8 @@ describe("billing access", () => {
     expect(canCreatePlanner({ currentTier: "FREE", activePlannerCount: 1 })).toBe(false);
   });
 
-  it("allows the free preview only while the preview remains and the planner is active", () => {
-    expect(
-      canUseFreePreview(
-        {
-          subscriptionTier: "FREE",
-          subscriptionStatus: "INACTIVE",
-          maraPreviewRepliesUsed: 0,
-        },
-        { plannerStatus: "ACTIVE" }
-      )
-    ).toBe(true);
-
-    expect(
-      canUseFreePreview(
-        {
-          subscriptionTier: "FREE",
-          subscriptionStatus: "INACTIVE",
-          maraPreviewRepliesUsed: 1,
-        },
-        { plannerStatus: "ACTIVE" }
-      )
-    ).toBe(false);
-
-    expect(
-      canUseFreePreview(
-        {
-          subscriptionTier: "FREE",
-          subscriptionStatus: "INACTIVE",
-          maraPreviewRepliesUsed: 0,
-        },
-        { plannerStatus: "ARCHIVED" }
-      )
-    ).toBe(false);
+  it("keeps the legacy preview helper off", () => {
+    expect(canUseFreePreview()).toBe(false);
   });
 
   it("summarizes the current plan and entitlements", () => {
@@ -111,9 +61,9 @@ describe("billing access", () => {
   });
 
   it("keeps plan copy aligned with shipped tier boundaries", () => {
-    expect(BILLING_PLANS.FREE.features).toContain("Calendar view, private trip feed, and notifications");
+    expect(BILLING_PLANS.FREE.features).toContain("Full Mara on 1 active planner");
     expect(BILLING_PLANS.FREE.features.join(" ")).not.toMatch(/share|collaborator|invite/i);
-    expect(BILLING_PLANS.PLUS.summary).not.toMatch(/export|itinerary generation/i);
+    expect(BILLING_PLANS.PLUS.summary).toMatch(/three active planners|live mode/i);
     expect(BILLING_PLANS.PRO.features).toContain("Collaborator invites and shared planner management");
     expect(BILLING_FEATURES.tripCollaboration.label).toBe("Shared planner collaboration");
     expect(BILLING_FEATURES.professionalExports.label).toBe("Future export tools");

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Archive, ArrowUpRight, Compass, FolderArchive } from "lucide-react";
 
-import { getMaraStarterPreviewState, getPlanByTier } from "@/lib/billing";
+import { getPlanByTier } from "@/lib/billing";
 import type { DashboardTripDto, PlannerLimitStateDto, SubscriptionTierValue, TripStatusValue } from "@/lib/contracts";
 import type { TripWorkspaceTab } from "@/lib/trip-workspace";
 import { cn } from "@/lib/utils";
@@ -21,13 +21,11 @@ const statusAccent: Record<TripStatusValue, string> = {
 
 export function PlannerWorkspaceRail({
   currentTier,
-  maraStarterRepliesUsed = 0,
   plannerLimitState,
   tabs,
   activeTrip,
 }: {
   currentTier: SubscriptionTierValue;
-  maraStarterRepliesUsed?: number;
   plannerLimitState: PlannerLimitStateDto;
   tabs: Array<TripWorkspaceTab & { isActive?: boolean }>;
   activeTrip: {
@@ -38,7 +36,6 @@ export function PlannerWorkspaceRail({
   };
 }) {
   const currentPlan = getPlanByTier(currentTier);
-  const previewState = getMaraStarterPreviewState(currentTier, maraStarterRepliesUsed);
   const usagePercent = Math.min(
     100,
     Math.round((plannerLimitState.activePlannerCount / Math.max(plannerLimitState.plannerLimit, 1)) * 100)
@@ -57,25 +54,14 @@ export function PlannerWorkspaceRail({
           <h2 className="mt-4 text-2xl font-semibold text-[var(--foreground)]">Workspace access</h2>
           <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
             {currentTier === "FREE"
-              ? previewState.canSend
-                ? "Manual planning stays fully open, and one intentional Mara preview is ready when the basics are in place."
-                : "The included Mara preview has been used. Upgrade to Plus to keep planning with unlimited Mara."
+              ? "Free keeps Mara open on one active planner at a time."
               : currentTier === "PLUS"
-                ? "Plus keeps Mara open for full planning, revisions, live mode, and the normal three-planner working set."
-                : "Pro keeps everything in Plus and adds the scale, organization, and repeat-workflow tools built for power users."}
+                ? "Plus keeps Mara open across three active planners, with live mode and replans included."
+                : "Pro keeps everything in Plus and adds more room, stronger organization, and shared planning tools."}
           </p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
             <MetricPill label="Active planners" value={`${plannerLimitState.activePlannerCount}/${plannerLimitState.plannerLimit}`} />
-            <MetricPill
-              label="Mara mode"
-              value={
-                currentTier === "FREE"
-                  ? previewState.canSend
-                    ? `${previewState.remainingReplies} preview left`
-                    : "Upgrade for unlimited"
-                  : "Unlimited Mara"
-              }
-            />
+            <MetricPill label="Mara" value="Included" />
           </div>
           <div className="mt-5">
             <div className="flex items-center justify-between gap-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
@@ -87,7 +73,7 @@ export function PlannerWorkspaceRail({
         </div>
         <div className="flex flex-wrap gap-3 px-5 py-4">
           <Link href={currentTier === "FREE" ? "/pricing" : "/billing"} className={buttonStyles({ variant: "primary", size: "default" }) + " flex-1 justify-center sm:flex-none"}>
-            {currentTier === "FREE" ? "Unlock Plus" : "Open billing"}
+            {currentTier === "FREE" ? "See Plus" : "Open billing"}
             <ArrowUpRight className="ml-2 h-4 w-4" />
           </Link>
           <Link href="/trips/new?fresh=1" className={buttonStyles({ variant: "secondary", size: "default" }) + " flex-1 justify-center sm:flex-none"}>

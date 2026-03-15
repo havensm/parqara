@@ -52,7 +52,7 @@ export const HELP_FAQ_ITEMS: HelpFaqItem[] = [
     id: "plans",
     question: "How do the plans differ?",
     answer:
-      "Free gives you the core planner plus one Mara preview. Plus unlocks unlimited Mara, live mode, and replans. Pro adds more active planners, templates, version history, duplication, and collaborator access.",
+      "Every plan includes Mara. Free gives you one active planner, Plus gives you three plus live mode and replans, and Pro gives you ten plus templates, version history, duplication, and collaborator access.",
     tags: ["billing", "plans", "pricing"],
   },
   {
@@ -63,3 +63,4 @@ export const HELP_FAQ_ITEMS: HelpFaqItem[] = [
     tags: ["feedback", "support", "bugs"],
   },
 ];
+

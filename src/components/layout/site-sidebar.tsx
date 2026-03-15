@@ -6,20 +6,16 @@ import { isAdminEmail } from "@/lib/admin";
 import { getCurrentUserStateIfAvailable } from "@/lib/auth/guards";
 import { getUserBillingState } from "@/lib/billing";
 import { generatedVisuals } from "@/lib/generated-assets";
-import { getNotificationPreview } from "@/server/services/notification-service";
 
-import { PlanBadge } from "@/components/billing/plan-badge";
 import { SidebarNav } from "@/components/app/sidebar-nav";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { SignOutButton } from "@/components/layout/sign-out-button";
-import { NotificationCenterButton } from "@/components/notifications/notification-center-button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { buttonStyles } from "@/components/ui/button";
 
 const marketingLinks = [
   { href: "/", label: "Home" },
   { href: "/#how-it-works", label: "How it works" },
-  { href: "/#planner-examples", label: "Planner examples" },
   { href: "/pricing", label: "Pricing" },
   { href: "/contact", label: "Contact" },
 ] as const;
@@ -42,57 +38,38 @@ export async function SiteSidebar() {
 
   const billing = getUserBillingState(user);
   const adminEnabled = isAdminEmail(user.email);
-  const notificationPreview = await getNotificationPreview(user.id);
   const displayName = user.firstName ?? user.name ?? user.email ?? "Parqara";
   const initials = getInitials(displayName || "P");
 
   return (
-    <div className="space-y-3 xl:space-y-4">
-      <div className="surface-shell relative overflow-hidden rounded-[30px] p-3.5 xl:p-4">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(99,167,255,0.14),transparent_24%),radial-gradient(circle_at_82%_18%,rgba(28,198,170,0.12),transparent_22%)]" />
-        <div className="relative rounded-[24px] border border-white/70 bg-white/78 p-4 shadow-[0_14px_30px_rgba(12,20,37,0.08)]">
-          <div className="flex items-start gap-3">
-            <Link href="/profile" className="flex min-w-0 flex-1 items-start gap-3 rounded-[20px] p-1 transition hover:bg-white/84">
-              <Avatar className="h-12 w-12">
-                {user.profileImageDataUrl ? <AvatarImage src={user.profileImageDataUrl} alt={`${displayName} profile photo`} /> : null}
-                <AvatarFallback>{initials}</AvatarFallback>
-              </Avatar>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-[var(--foreground)]">{displayName}</p>
-                <p className="mt-1 truncate text-xs text-[var(--muted)]">{user.email}</p>
-              </div>
-            </Link>
-            <PlanBadge tier={billing.currentTier} className="px-2.5 py-0.5 text-[10px]" />
+    <div className="space-y-4">
+      <div className="rounded-[28px] border border-white/72 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(246,250,255,0.94))] p-4 shadow-[0_18px_36px_rgba(12,20,37,0.08)]">
+        <Link href="/profile" className="flex min-w-0 items-center gap-3 rounded-[18px] p-1 transition hover:bg-white/72">
+          <Avatar className="h-12 w-12 ring-2 ring-white/70 shadow-[0_10px_22px_rgba(12,20,37,0.10)]">
+            {user.profileImageDataUrl ? <AvatarImage src={user.profileImageDataUrl} alt={`${displayName} profile photo`} /> : null}
+            <AvatarFallback>{initials}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-[var(--foreground)]">{displayName}</p>
+            <p className="mt-1 truncate text-xs text-[var(--muted)]">{user.email}</p>
           </div>
+        </Link>
 
-          <div className="mt-4 flex items-center gap-2">
-            <NotificationCenterButton initialCenter={notificationPreview} />
-            <Link
-              href="/help"
-              aria-label="Help and FAQ"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/70 bg-white/84 text-[var(--muted)] shadow-[0_10px_24px_rgba(12,20,37,0.06)] transition hover:text-[var(--foreground)]"
-            >
-              <CircleHelp className="h-4.5 w-4.5" />
-            </Link>
-            <Link href="/profile" className={buttonStyles({ variant: "secondary", size: "sm" }) + " ml-auto"}>
-              Account
-            </Link>
+        <div className="mt-4 flex items-center justify-between gap-3 rounded-[18px] border border-[var(--card-border)] bg-[var(--surface-muted)] px-3.5 py-3 text-sm">
+          <div>
+            <p className="font-semibold text-[var(--foreground)]">{billing.currentPlan.name}</p>
+            <p className="mt-1 text-xs text-[var(--muted)]">Account and billing live in Profile.</p>
           </div>
+          <Link href="/profile" className={buttonStyles({ variant: "secondary", size: "sm" })}>
+            Account
+          </Link>
+        </div>
 
-          <div className="mt-4 rounded-[20px] border border-[var(--card-border)] bg-[var(--surface-muted)] px-4 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Pinned tools</p>
-            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              Core navigation, notifications, support, and account actions stay on the left so the planner itself can breathe.
-            </p>
-          </div>
-
-          <div className="mt-4 flex justify-end">
-            <SignOutButton />
-          </div>
+        <div className="mt-4 flex justify-end">
+          <SignOutButton />
         </div>
       </div>
 
-      {/* Keep the account card above navigation so the signed-in identity/actions stay visible without scrolling. */}
       <SidebarNav adminEnabled={adminEnabled} currentTier={billing.currentTier} />
     </div>
   );
@@ -174,5 +151,3 @@ function MarketingSidebar() {
     </div>
   );
 }
-
-

@@ -69,7 +69,7 @@ export function PlannerWorkspaceShell({
         data-testid="planner-module-strip"
         className={cn(
           boardMode
-            ? "overflow-hidden rounded-[30px] border border-[var(--card-border)] bg-[linear-gradient(180deg,#fbfdff_0%,#f5f9ff_100%)] p-4 sm:p-5"
+            ? "overflow-hidden rounded-[30px] border border-[var(--card-border)] bg-[linear-gradient(135deg,rgba(255,248,236,0.72),rgba(246,250,255,0.88)_52%,rgba(236,252,247,0.78))] p-4 sm:p-5"
             : "surface-shell overflow-hidden rounded-[34px] p-4 sm:p-5"
         )}
       >
@@ -165,9 +165,9 @@ export function PlannerWorkspaceShell({
       <AppFrame adminEnabled={adminEnabled} currentTier={currentTier} plannerTabs={plannerTabs}>
         <div data-testid="planner-workspace-shell" className="space-y-6 lg:space-y-7">
           {boardMode ? (
-            <section className="overflow-hidden rounded-[34px] border border-[var(--card-border)] bg-white shadow-[0_22px_56px_rgba(12,20,37,0.08)]">
-              {boardTabs ? <div className="border-b border-[var(--card-border)] bg-[linear-gradient(180deg,#f7fbff_0%,#ffffff_100%)] px-4 pt-4 sm:px-5 sm:pt-5 lg:px-6 lg:pt-6">{boardTabs}</div> : null}
-              <div className="space-y-6 bg-white p-4 sm:p-5 lg:p-6">{renderWorkspaceContent()}</div>
+            <section className="overflow-hidden rounded-[34px] border border-[var(--card-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(246,250,255,0.94))] shadow-[0_24px_60px_rgba(12,20,37,0.10)]">
+              {boardTabs ? <div className="border-b border-[var(--card-border)] bg-[linear-gradient(135deg,rgba(255,247,232,0.82),rgba(246,250,255,0.92)_54%,rgba(236,252,247,0.82))] px-4 pt-4 sm:px-5 sm:pt-5 lg:px-6 lg:pt-6">{boardTabs}</div> : null}
+              <div className="space-y-6 bg-transparent p-4 sm:p-5 lg:p-6">{renderWorkspaceContent()}</div>
             </section>
           ) : (
             renderWorkspaceContent()
@@ -198,3 +198,4 @@ export function PlannerWorkspaceShell({
     </>
   );
 }
+

@@ -3,6 +3,8 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 
+import { generatedVisuals } from "@/lib/generated-assets";
+
 const marketingRoutes = [
   "/",
   "/about",
@@ -55,9 +57,21 @@ export function RootChrome({
 
   return (
     <div className="relative isolate min-h-screen overflow-x-clip">
-      <div className="mx-auto grid w-full max-w-[108rem] gap-4 px-3 py-3 sm:px-5 sm:py-5 lg:grid-cols-[18.5rem_minmax(0,1fr)] lg:gap-5 lg:px-6 xl:grid-cols-[20rem_minmax(0,1fr)] xl:gap-6 xl:px-8">
-        <aside className="hidden lg:block lg:sticky lg:top-4 lg:self-start">{sidebar}</aside>
-        <div className="min-w-0 lg:pt-1">
+      <div aria-hidden className="app-shell-scene">
+        <div className="app-shell-scene__wash" />
+        <div
+          className="app-shell-scene__wallpaper"
+          style={{
+            backgroundImage: `url("${generatedVisuals.app.wallpaper}")`,
+          }}
+        />
+        <div className="app-shell-scene__texture" />
+        <div className="app-shell-scene__routes" />
+      </div>
+
+      <div className="relative z-[1] mx-auto grid w-full max-w-[108rem] gap-4 px-3 py-3 sm:px-5 sm:py-5 lg:grid-cols-[18.5rem_minmax(0,1fr)] lg:items-start lg:gap-5 lg:px-6 xl:grid-cols-[20rem_minmax(0,1fr)] xl:gap-6 xl:px-8">
+        <aside className="hidden lg:block lg:sticky lg:top-5 lg:self-start">{sidebar}</aside>
+        <div className="min-w-0">
           <main className="relative min-h-[calc(100vh-2rem)] pb-8 sm:pb-12">{children}</main>
           {footer}
         </div>

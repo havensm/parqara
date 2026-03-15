@@ -10,10 +10,10 @@ export default async function Home() {
   return (
     <PremiumHomepage
       currentTier={currentTier}
-      primaryHref={user ? "/app" : "/signup"}
-      primaryLabel={user ? "Open home" : "Get started"}
-      secondaryHref={user ? "/dashboard" : "/#how-it-works"}
-      secondaryLabel={user ? "Open planners" : "How it works"}
+      primaryHref={user ? "/dashboard" : "/signup"}
+      primaryLabel={user ? "Open Mara" : "Get started"}
+      secondaryHref={user ? "/calendar" : "/#how-it-works"}
+      secondaryLabel={user ? "Open calendar" : "How it works"}
       signedIn={Boolean(user)}
     />
   );

@@ -52,7 +52,6 @@ export default async function TripPage({ params }: { params: Promise<{ tripId: s
       leadPanel={
         <MaraPlannerFocus
           currentTier={billing.currentTier}
-          maraStarterRepliesUsed={billing.maraStarterPreview.usedReplies}
           tripId={trip.id}
           firstName={user.firstName ?? user.name ?? null}
           trip={trip}
@@ -116,7 +115,6 @@ export default async function TripPage({ params }: { params: Promise<{ tripId: s
       rail={
         <PlannerWorkspaceRail
           currentTier={billing.currentTier}
-          maraStarterRepliesUsed={billing.maraStarterPreview.usedReplies}
           plannerLimitState={plannerLimitState}
           tabs={plannerTabs}
           activeTrip={{
@@ -132,3 +130,4 @@ export default async function TripPage({ params }: { params: Promise<{ tripId: s
     </PlannerWorkspaceShell>
   );
 }
+

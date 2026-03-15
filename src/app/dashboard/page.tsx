@@ -69,7 +69,7 @@ export default async function DashboardPage({
   const adminEnabled = isAdminEmail(user.email);
   const defaultVisitDate = addDays(new Date(), 7).toISOString().slice(0, 10);
   const [{ tour, tourPreview, tripId, create }, defaultPark] = await Promise.all([searchParams, getDefaultParkSummary()]);
-  const showFirstTimeTour = user.isFirstTime || tour === "1";
+  const showFirstTimeTour = tour === "1";
   const previewFirstTimeTour = tourPreview === "1";
   const preservedDashboardParams = {
     tour,
@@ -117,9 +117,8 @@ export default async function DashboardPage({
     itineraryCount: activeTrip.itinerary.length,
   });
   const catalog = activeTrip.status === "DRAFT" ? await getParkCatalog(activeTrip.park.slug) : null;
-  const tripContext = isStarterDraft ? undefined : buildTripPlannerTripContext(activeTrip);
+  const tripContext = buildTripPlannerTripContext(activeTrip);
   const questions = isStarterDraft ? [] : buildTripPlannerNeededQuestions(activeTrip);
-  // Dashboard keeps planner switching inside /dashboard via tripId-backed tabs instead of bouncing between separate pages.
   const plannerTabs = buildTripWorkspaceTabs(trips).map((tab) => ({
     ...tab,
     href: buildDashboardHref({ tripId: tab.id, ...preservedDashboardParams }),
@@ -139,7 +138,7 @@ export default async function DashboardPage({
         currentTier={billing.currentTier}
         adminEnabled={adminEnabled}
         plannerTabs={plannerTabs}
-        mobileMaraLabel={isStarterDraft ? "Start with Mara" : "Ask Mara"}
+        mobileMaraLabel={isStarterDraft ? "Start with Mara" : "Open Mara"}
         boardMode
         boardTabs={
           <PlannerWorkspaceTabs
@@ -154,7 +153,6 @@ export default async function DashboardPage({
         leadPanel={
           <MaraPlannerFocus
             currentTier={billing.currentTier}
-            maraStarterRepliesUsed={billing.maraStarterPreview.usedReplies}
             tripId={activeTrip.id}
             firstName={user.firstName ?? user.name ?? null}
             trip={activeTrip}

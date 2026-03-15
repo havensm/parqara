@@ -56,34 +56,33 @@ describe("generateTripPlannerReply", () => {
   it("uses the deterministic fallback when no OpenAI key is configured", async () => {
     delete process.env.OPENAI_API_KEY;
 
-    const reply = await generateTripPlannerReply("user-1", [{ role: "user", content: "Help me plan a trip." }]);
+    const reply = await generateTripPlannerReply("user-1", [{ role: "user", content: "Help me plan a trip." }], "trip-123");
 
     expect(reply).toBe("fallback reply");
     expect(mockRunMaraAgent).not.toHaveBeenCalled();
-    expect(mockBuildFallbackReply).toHaveBeenCalledWith(sampleContext, [{ role: "user", content: "Help me plan a trip." }], "full");
+    expect(mockGetPlannerContext).toHaveBeenCalledWith("user-1", "trip-123");
+    expect(mockBuildFallbackReply).toHaveBeenCalledWith(sampleContext, [{ role: "user", content: "Help me plan a trip." }]);
   });
 
   it("returns the SDK reply when the run succeeds", async () => {
     process.env.OPENAI_API_KEY = "test-key";
     mockRunMaraAgent.mockResolvedValue("sdk reply");
 
-    const reply = await generateTripPlannerReply("user-1", [{ role: "user", content: "Help me plan a trip." }], undefined, {
-      replyMode: "preview",
-    });
+    const reply = await generateTripPlannerReply("user-1", [{ role: "user", content: "Help me plan a trip." }], "trip-123");
 
     expect(reply).toBe("sdk reply");
-    expect(mockRunMaraAgent).toHaveBeenCalledWith(sampleContext, [{ role: "user", content: "Help me plan a trip." }], "preview");
+    expect(mockGetPlannerContext).toHaveBeenCalledWith("user-1", "trip-123");
+    expect(mockRunMaraAgent).toHaveBeenCalledWith(sampleContext, [{ role: "user", content: "Help me plan a trip." }]);
   });
 
   it("falls back when the SDK run fails", async () => {
     process.env.OPENAI_API_KEY = "test-key";
     mockRunMaraAgent.mockRejectedValue(new Error("SDK failed"));
 
-    const reply = await generateTripPlannerReply("user-1", [{ role: "user", content: "Help me plan a trip." }], undefined, {
-      replyMode: "preview",
-    });
+    const reply = await generateTripPlannerReply("user-1", [{ role: "user", content: "Help me plan a trip." }], "trip-123");
 
     expect(reply).toBe("fallback reply");
-    expect(mockBuildFallbackReply).toHaveBeenCalledWith(sampleContext, [{ role: "user", content: "Help me plan a trip." }], "preview");
+    expect(mockGetPlannerContext).toHaveBeenCalledWith("user-1", "trip-123");
+    expect(mockBuildFallbackReply).toHaveBeenCalledWith(sampleContext, [{ role: "user", content: "Help me plan a trip." }]);
   });
 });

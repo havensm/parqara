@@ -11,16 +11,16 @@ describe("mapTripPlannerMessagesToAgentInputItems", () => {
 
     const items = mapTripPlannerMessagesToAgentInputItems(messages);
 
-    expect(items).toHaveLength(12);
+    expect(items).toHaveLength(8);
     expect(items[0]).toMatchObject({
       type: "message",
       role: "assistant",
-      content: [{ type: "output_text", text: "message 2" }],
+      content: [{ type: "output_text", text: "message 6" }],
     });
     expect(items[1]).toMatchObject({
       type: "message",
       role: "user",
-      content: [{ type: "input_text", text: "message 3" }],
+      content: [{ type: "input_text", text: "message 7" }],
     });
     expect(items.at(-1)).toMatchObject({
       type: "message",

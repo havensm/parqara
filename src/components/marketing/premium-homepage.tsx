@@ -1,13 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowRight,
-  CalendarRange,
-  Compass,
-  HeartHandshake,
-  Sparkles,
-  Users2,
-} from "lucide-react";
+import { ArrowRight, CalendarRange, Compass, HeartHandshake, Sparkles, Users2 } from "lucide-react";
 
 import type { SubscriptionTierValue } from "@/lib/contracts";
 import { generatedVisuals } from "@/lib/generated-assets";
@@ -29,8 +22,8 @@ type PremiumHomepageProps = {
 
 const featureCards = [
   {
-    title: "AI-led planning and suggestions",
-    detail: "Start with a rough idea and let Mara turn it into smarter suggestions, clearer tradeoffs, and a plan you can actually use.",
+    title: "Mara shapes the plan",
+    detail: "Bring the rough idea. Mara turns it into a plan you can actually use.",
     icon: Sparkles,
     image: generatedVisuals.planners.studio,
     imageAlt: "AI-led travel planning workspace illustration",
@@ -38,8 +31,8 @@ const featureCards = [
     tone: "bg-[rgba(238,253,249,0.9)] text-[var(--teal-700)]",
   },
   {
-    title: "Real-time itinerary for the day of",
-    detail: "Keep the plan moving with live timing, next-step guidance, and a cleaner itinerary when the day changes on you.",
+    title: "A live plan for the day",
+    detail: "Keep the day moving with live timing and a clear next step.",
     icon: CalendarRange,
     image: generatedVisuals.homepage.dayOf,
     imageAlt: "Day-of planning and itinerary scene",
@@ -47,8 +40,8 @@ const featureCards = [
     tone: "bg-[rgba(239,245,255,0.92)] text-[var(--sky-700)]",
   },
   {
-    title: "Shared calendar and plan",
-    detail: "Give everyone one source of truth with a shared plan, calendar visibility, and fewer handoffs across group messages.",
+    title: "One plan for everyone",
+    detail: "Keep everyone on the same page with one shared plan and calendar.",
     icon: Users2,
     image: generatedVisuals.settings.profile,
     imageAlt: "Shared planning and calendar coordination scene",
@@ -59,24 +52,20 @@ const featureCards = [
 
 const typicalUseCases = [
   {
-    eyebrow: "Typical use case",
-    title: "Planning a date night out",
-    detail:
-      "Use Mara to shape the whole night: line up restaurant ideas, track babysitter timing, keep the route between stops clear, and hold onto backup plans if the evening shifts.",
+    eyebrow: "Example",
+    title: "A Friday date night",
+    detail: "Dinner, sitter timing, one or two fun stops, and a backup if the night shifts.",
     icon: HeartHandshake,
     tone:
       "bg-[radial-gradient(circle_at_top_left,rgba(255,141,107,0.2),transparent_26%),linear-gradient(180deg,rgba(255,247,243,0.96),rgba(255,255,255,0.92))]",
-    highlights: ["Babysitter timing", "Restaurant shortlist", "Night-out ideas", "Backup options"],
   },
   {
-    eyebrow: "Typical use case",
-    title: "A full week-long Disney family vacation",
-    detail:
-      "Build the whole trip in one place with park-day pacing, dining notes, shared family context, and a day-of itinerary that stays usable once the vacation actually starts.",
+    eyebrow: "Example",
+    title: "A Disney week with the family",
+    detail: "Park days, dining, notes, and a shared plan that still works once the trip starts.",
     icon: Compass,
     tone:
       "bg-[radial-gradient(circle_at_top_left,rgba(99,167,255,0.2),transparent_26%),linear-gradient(180deg,rgba(241,247,255,0.96),rgba(255,255,255,0.92))]",
-    highlights: ["7-day trip structure", "Park-day pacing", "Dining and notes", "Shared family itinerary"],
   },
 ] as const;
 
@@ -116,10 +105,7 @@ export function PremiumHomepage({ currentTier, primaryHref, primaryLabel, second
       </section>
 
       <section id="how-it-works" className="space-y-5 scroll-mt-32">
-        <SectionIntro
-          eyebrow="Core features"
-          title="The three things Parqara does best."
-        />
+        <SectionIntro eyebrow="Core features" title="What Parqara makes easy." />
         <div className="grid gap-4 lg:grid-cols-3">
           {featureCards.map((card) => {
             const Icon = card.icon;
@@ -152,10 +138,7 @@ export function PremiumHomepage({ currentTier, primaryHref, primaryLabel, second
       </section>
 
       <section id="use-cases" className="space-y-5 scroll-mt-32">
-        <SectionIntro
-          eyebrow="Typical use cases"
-          title="From a night out to a full family vacation."
-        />
+        <SectionIntro eyebrow="Typical use cases" title="A night out or a family trip." />
         <div className="grid gap-5 xl:grid-cols-2">
           {typicalUseCases.map((useCase) => {
             const Icon = useCase.icon;
@@ -167,9 +150,7 @@ export function PremiumHomepage({ currentTier, primaryHref, primaryLabel, second
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="max-w-2xl">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--muted)]">
-                      {useCase.eyebrow}
-                    </p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--muted)]">{useCase.eyebrow}</p>
                     <h3 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight text-[var(--foreground)]">
                       {useCase.title}
                     </h3>
@@ -178,17 +159,6 @@ export function PremiumHomepage({ currentTier, primaryHref, primaryLabel, second
                   <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[20px] border border-white/75 bg-white/78 shadow-[0_14px_30px_rgba(12,20,37,0.08)]">
                     <Icon className="h-6 w-6 text-[var(--foreground)]" />
                   </div>
-                </div>
-
-                <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                  {useCase.highlights.map((highlight) => (
-                    <div
-                      key={highlight}
-                      className="rounded-[22px] border border-white/70 bg-white/74 px-4 py-3 text-sm font-semibold text-[var(--foreground)] shadow-[0_12px_28px_rgba(12,20,37,0.06)]"
-                    >
-                      {highlight}
-                    </div>
-                  ))}
                 </div>
               </div>
             );
@@ -199,11 +169,7 @@ export function PremiumHomepage({ currentTier, primaryHref, primaryLabel, second
       <MaraChatPreview />
 
       <section id="pricing" className="space-y-5 scroll-mt-32">
-        <SectionIntro
-          eyebrow="Pricing"
-          title="Start free. Upgrade when you want Mara and a richer planning workflow."
-          align="center"
-        />
+        <SectionIntro eyebrow="Pricing" title="Start free. Upgrade when you want more Mara." align="center" />
         <PricingGrid currentTier={currentTier} signedIn={signedIn} density="compact" className="mx-auto max-w-6xl" />
       </section>
 
@@ -218,11 +184,7 @@ export function PremiumHomepage({ currentTier, primaryHref, primaryLabel, second
             <h2 className="font-[family-name:var(--font-display)] text-4xl font-semibold tracking-[-0.05em] text-white sm:text-5xl lg:text-[3.35rem] lg:leading-[0.96] lg:whitespace-nowrap">
               {signedIn ? "Jump back into your planning home." : "Create your account and start planning with Mara."}
             </h2>
-            <p className="text-base leading-7 text-slate-300">
-              {signedIn
-                ? "Open the planner workspace and keep shaping the next adventure."
-                : "Sign up in seconds and start building trips, weekends, nights out, and family plans in one polished place."}
-            </p>
+            <p className="text-base leading-7 text-slate-300">{signedIn ? "Open Mara and shape the next adventure." : "Start planning in seconds."}</p>
           </div>
           <div className="flex flex-wrap gap-3">
             <Link href={primaryHref} className={buttonStyles({ variant: "primary", size: "lg" })}>
@@ -238,10 +200,4 @@ export function PremiumHomepage({ currentTier, primaryHref, primaryLabel, second
     </div>
   );
 }
-
-
-
-
-
-
 

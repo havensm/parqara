@@ -1,83 +1,37 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CornerDownLeft, Info, LoaderCircle, RotateCcw, SendHorizontal, Sparkles, X } from "lucide-react";
+import { LoaderCircle, RotateCcw, SendHorizontal } from "lucide-react";
 
-import { canAccessBillingFeature, getMaraStarterPreviewState, getPlanByTier } from "@/lib/billing";
 import type { SubscriptionTierValue } from "@/lib/contracts";
 import {
   buildTripPlannerWelcomeMessage,
   getTripPlannerStarterPrompts,
-  TRIP_PLANNER_PERSONA,
   type TripPlannerChatMessage,
   type TripPlannerTripContext,
 } from "@/lib/trip-planner-agent";
 import { cn } from "@/lib/utils";
 
-import { FeatureUpsellCard } from "@/components/billing/feature-upsell-card";
-import { PlanBadge } from "@/components/billing/plan-badge";
 import { MaraPortrait } from "@/components/assistant/mara-portrait";
-import { PlannerSectionKicker } from "@/components/trip/planner-section-kicker";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 type TripPlannerConciergeProps = {
   currentTier: SubscriptionTierValue;
-  maraStarterRepliesUsed?: number;
   firstName?: string | null;
-  tripId?: string;
+  tripId: string;
   tripContext?: TripPlannerTripContext;
   questions?: string[];
   priorityMode?: boolean;
   onMessagesChange?: (messages: TripPlannerChatMessage[]) => void;
   refreshOnReply?: boolean;
-};
-
-type MaraWorkflowExample = {
-  title: string;
-  description: string;
-  prompt: string;
+  headerAction?: ReactNode;
 };
 
 const textareaClassName =
-  "min-h-[96px] w-full rounded-[24px] border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[#1b6b63]/40 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400";
-
-const generalWorkflowExamples: MaraWorkflowExample[] = [
-  {
-    title: "Start with the rough idea",
-    description: "Give Mara the rough idea and let her pull the basics.",
-    prompt: "I want to plan an adventure. Ask me the first one or two details you need.",
-  },
-  {
-    title: "Lead with destination",
-    description: "Start with the destination and let Mara shape the rest.",
-    prompt: "I know where I want to go. Ask me the next one or two details you need.",
-  },
-  {
-    title: "Plan around constraints",
-    description: "Lead with constraints like budget, food, pace, or access.",
-    prompt: "Help me plan a low-stress day for my group around food, pacing, and two must-dos.",
-  },
-];
-
-const tripWorkflowExamples: MaraWorkflowExample[] = [
-  {
-    title: "Find what is still missing",
-    description: "Ask Mara what is still missing before you build.",
-    prompt: "Review this trip and tell me what details are still missing before it is ready.",
-  },
-  {
-    title: "Stress-test the itinerary",
-    description: "Use Mara to check pace, walking, and fit.",
-    prompt: "Pressure-test this trip for walking, pacing, and whether it feels realistic for our group.",
-  },
-  {
-    title: "Adjust priorities quickly",
-    description: "Ask Mara how the plan should shift when priorities change.",
-    prompt: "Update this trip so it protects a calmer morning and makes food stops more important.",
-  },
-];
+  "min-h-[104px] w-full resize-none rounded-[22px] border border-[var(--card-border)] bg-white px-4 py-3 text-[15px] text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted)] focus:border-[rgba(27,107,99,0.32)]";
 
 function buildInitialMessages(firstName?: string | null, tripContext?: TripPlannerTripContext): TripPlannerChatMessage[] {
   return [
@@ -89,8 +43,6 @@ function buildInitialMessages(firstName?: string | null, tripContext?: TripPlann
 }
 
 export function TripPlannerConcierge({
-  currentTier,
-  maraStarterRepliesUsed = 0,
   firstName,
   tripId,
   tripContext,
@@ -98,50 +50,26 @@ export function TripPlannerConcierge({
   priorityMode = false,
   onMessagesChange,
   refreshOnReply = false,
+  headerAction,
 }: TripPlannerConciergeProps) {
   const router = useRouter();
   const [messages, setMessages] = useState<TripPlannerChatMessage[]>(() => buildInitialMessages(firstName, tripContext));
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [starterRepliesUsed, setStarterRepliesUsed] = useState(maraStarterRepliesUsed);
-  const [showInfoDialog, setShowInfoDialog] = useState(false);
   const [isPending, startTransition] = useTransition();
   const threadScrollRef = useRef<HTMLDivElement | null>(null);
 
-  const hasFullAccess = canAccessBillingFeature(currentTier, "aiConcierge");
-  const starterPreview = getMaraStarterPreviewState(currentTier, starterRepliesUsed);
-  const isStarterPreview = !hasFullAccess && starterPreview.included;
-  const isLocked = !hasFullAccess && !starterPreview.canSend;
-  const currentPlan = getPlanByTier(currentTier);
-  const plannerChatTargetId = tripId ?? tripContext?.id;
-  const isGenericKickoff = !tripContext;
-  const workflowExamples = tripContext ? tripWorkflowExamples : generalWorkflowExamples;
+  const quickPrompts = (questions.length ? questions : getTripPlannerStarterPrompts(tripContext)).slice(0, tripContext ? 1 : 2);
 
   useEffect(() => {
     setMessages(buildInitialMessages(firstName, tripContext));
     setDraft("");
     setError(null);
-    setStarterRepliesUsed(maraStarterRepliesUsed);
-  }, [firstName, maraStarterRepliesUsed, tripContext, tripId]);
+  }, [firstName, tripContext, tripId]);
 
   useEffect(() => {
     onMessagesChange?.(messages);
   }, [messages, onMessagesChange]);
-
-  useEffect(() => {
-    if (!showInfoDialog) {
-      return;
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setShowInfoDialog(false);
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [showInfoDialog]);
 
   useEffect(() => {
     const thread = threadScrollRef.current;
@@ -167,7 +95,12 @@ export function TripPlannerConcierge({
 
   function sendMessage(content: string) {
     const trimmed = content.trim();
-    if (!trimmed || isPending || isLocked) {
+    if (!trimmed || isPending) {
+      return;
+    }
+
+    if (!tripId) {
+      setError("Open a planner to talk with Mara.");
       return;
     }
 
@@ -185,19 +118,14 @@ export function TripPlannerConcierge({
           },
           body: JSON.stringify({
             messages: nextMessages,
-            tripId: plannerChatTargetId,
+            tripId,
           }),
         });
 
         const result = (await response.json()) as {
           error?: string;
           reply?: string;
-          usedStarterReplies?: number;
         };
-
-        if (typeof result.usedStarterReplies === "number") {
-          setStarterRepliesUsed(result.usedStarterReplies);
-        }
 
         if (!response.ok || !result.reply) {
           throw new Error(result.error || "Mara could not respond right now.");
@@ -206,7 +134,7 @@ export function TripPlannerConcierge({
         const resolvedMessages: TripPlannerChatMessage[] = [...nextMessages, { role: "assistant", content: result.reply }];
         setMessages(resolvedMessages);
 
-        if (refreshOnReply && plannerChatTargetId) {
+        if (refreshOnReply) {
           router.refresh();
         }
       } catch (submitError) {
@@ -215,448 +143,115 @@ export function TripPlannerConcierge({
     });
   }
 
-  const visibleQuestions = (questions.length ? questions : getTripPlannerStarterPrompts(tripContext)).slice(0, 2);
-  const compactExamples = workflowExamples.slice(0, priorityMode ? 3 : workflowExamples.length);
-  const starterReplyLabel = starterPreview.remainingReplies === 1 ? "reply" : "replies";
-  const showFollowUpPrompts = hasFullAccess && (!priorityMode || !isGenericKickoff);
-
   return (
-    <>
-      <Card
-        tone={priorityMode ? "solid" : "default"}
-        className={cn(
-          "overflow-hidden p-5 sm:p-6",
-          priorityMode &&
-            "border-[#d6e7e2] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.05)]"
-        )}
-      >
-        {priorityMode ? (
-          <div className="-mx-5 -mt-5 mb-5 border-b border-[#d7e7e1] bg-[linear-gradient(180deg,#f8fcfb_0%,#ffffff_100%)] px-5 py-5 sm:-mx-6 sm:-mt-6 sm:px-6 sm:py-6">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-              <div className="flex items-start gap-4">
-                <MaraPortrait size="md" className="shrink-0" />
-                <div className="max-w-3xl">
-                  <PlannerSectionKicker emoji="✨" label="Mara" tone="teal" />
-                  <div className="mt-3 flex flex-wrap items-center gap-3">
-                    <h2 className="font-[family-name:var(--font-space-grotesk)] text-[2rem] font-semibold tracking-tight text-slate-950 sm:text-[2.25rem]">
-                      {tripContext ? "Ask Mara to shape this trip." : "Start with Mara."}
-                    </h2>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowInfoDialog(true)}
-                      className="gap-2 rounded-full border border-slate-200 bg-white text-slate-600 hover:border-teal-200 hover:bg-teal-50 hover:text-teal-700"
-                    >
-                      <Info className="h-4 w-4" />
-                      Meet Mara
-                    </Button>
-                  </div>
-                  <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 sm:text-[15px]">
-                    {tripContext
-                      ? "Use Mara first for changes, tradeoffs, missing details, and next steps. The planner below is the follow-through layer."
-                      : isStarterPreview
-                        ? "Free includes one Mara preview. Save the planner basics, ask for the preview, and then upgrade to Plus if you want full back-and-forth planning."
-                        : "Give Mara the destination, the vibe, or the must-dos. She will ask for the next one or two details and shape the draft."}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2 xl:justify-end">
-                {hasFullAccess ? <PlanBadge tier={currentTier} /> : <PlanBadge tier={currentTier} label="Free preview" />}
-                {isStarterPreview ? (
-                  <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                    {starterPreview.remainingReplies} preview {starterReplyLabel} left
-                  </span>
-                ) : null}
-                <Button type="button" variant="secondary" onClick={resetConversation} disabled={isPending} className="rounded-full">
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Reset
-                </Button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <PlannerSectionKicker emoji="✨" label="Mara" tone="teal" />
-                {hasFullAccess ? <PlanBadge tier={currentTier} /> : <PlanBadge tier={currentTier} label="Free preview" />}
-                {isStarterPreview ? (
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
-                    {starterPreview.remainingReplies} preview {starterReplyLabel} left
-                  </span>
-                ) : null}
-              </div>
-              <div className="mt-3 flex flex-wrap items-center gap-3">
-                <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl font-semibold tracking-tight text-slate-950">
-                  Chat with Mara
-                </h2>
-                <MaraPortrait size="sm" />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowInfoDialog(true)}
-                  className="gap-2 rounded-full border border-slate-200 bg-white text-slate-600 hover:border-teal-200 hover:bg-teal-50 hover:text-teal-700"
-                >
-                  <Info className="h-4 w-4" />
-                  Meet Mara
-                </Button>
-              </div>
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-                {tripContext
-                  ? `Focused on ${tripContext.name} at ${tripContext.parkName} on ${tripContext.visitDate}. Ask Mara to tighten the plan or make changes here.`
-                  : isStarterPreview
-                    ? "Free includes one Mara preview here. Save enough basics to give Mara context, then ask for a starter recommendation and sample day."
-                    : "Start with the destination, vibe, or must-dos. Mara will ask for the next one or two details."}
+    <Card
+      tone="solid"
+      className={cn(
+        "overflow-hidden border border-white/74 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(246,250,255,0.96))] shadow-[0_22px_48px_rgba(12,20,37,0.08)]",
+        priorityMode ? "rounded-[32px]" : "rounded-[28px]"
+      )}
+    >
+      <div className="border-b border-[var(--card-border)] px-5 py-5 sm:px-6 sm:py-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <MaraPortrait size={priorityMode ? "md" : "sm"} className="shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Mara</p>
+              <h2 className="mt-2 font-[family-name:var(--font-space-grotesk)] text-[1.85rem] font-semibold tracking-tight text-[var(--foreground)] sm:text-[2.05rem]">
+                {tripContext?.name ?? "Planner"}
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-7 text-[var(--muted)]">
+                {tripContext ? `${tripContext.parkName} · ${tripContext.visitDate}` : "Open a planner to talk with Mara."}
               </p>
             </div>
-            <Button type="button" variant="secondary" onClick={resetConversation} disabled={isPending}>
-              <RotateCcw className="mr-2 h-4 w-4" />
-              Reset chat
+          </div>
+
+          <div className="flex items-center gap-2 sm:justify-end">
+            {headerAction}
+            <Button type="button" variant="ghost" size="sm" onClick={resetConversation} disabled={isPending}>
+              <RotateCcw className="h-4 w-4" />
+              Reset
             </Button>
           </div>
-        )}
+        </div>
+      </div>
 
+      <div className="p-4 sm:p-5">
         <div
-          className={cn(
-            "mt-5 rounded-[26px] border border-slate-200 bg-white p-4 sm:p-5",
-            priorityMode &&
-              "relative overflow-hidden border-transparent bg-transparent p-0 shadow-none"
-          )}
+          ref={threadScrollRef}
+          className="soft-scrollbar flex min-h-[220px] max-h-[360px] flex-col gap-3 overflow-y-auto rounded-[24px] border border-[var(--card-border)] bg-[var(--surface-muted)] p-4 sm:p-5"
         >
-          <div className="relative z-10">
-            <div className={cn("flex flex-col gap-3", priorityMode && "gap-4") }>
-              <div className={cn("flex flex-col gap-3", priorityMode && "overflow-hidden rounded-[28px] border border-[#d6e7e2] bg-[linear-gradient(180deg,#fcfefd_0%,#ffffff_100%)] shadow-[0_16px_32px_rgba(15,23,42,0.05)]")}>
-                <div className={cn("flex flex-col gap-3", priorityMode && "px-4 pt-4 sm:px-5 sm:pt-5 lg:flex-row lg:items-start lg:justify-between")}>
-                  <div className="max-w-3xl">
-                    {priorityMode ? <PlannerSectionKicker emoji="💬" label="Main way to steer the planner" tone="teal" /> : null}
-                    <label className={cn("block text-sm font-medium text-slate-700", priorityMode && "mt-3 text-lg font-semibold text-slate-950")} htmlFor="trip-planner-message">
-                      {tripContext ? "Tell Mara what to change next." : isStarterPreview ? "Ask for the Mara preview." : "Start planning with Mara."}
-                    </label>
-                    <p className={cn("mt-2 text-sm leading-6 text-slate-600", priorityMode && "max-w-3xl text-[15px] leading-7 text-slate-600")}>
-                      {tripContext
-                        ? "Start with the change, tradeoff, or question. Mara should be the first place you steer this planner."
-                        : isStarterPreview
-                          ? "Use the Free preview to get one starter recommendation, a rough budget range, and a sample day before deciding on Plus."
-                          : "Start with the destination, the kind of adventure, or the must-dos. Mara will ask for the next one or two details from there."}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2 lg:justify-end">
-                    <p className={cn("flex items-center gap-2 text-xs text-slate-500", priorityMode && "rounded-full border border-slate-200/80 bg-white/88 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500") }>
-                      <CornerDownLeft className="h-3.5 w-3.5" />
-                      {hasFullAccess
-                        ? "Enter sends"
-                        : isLocked
-                          ? "Free preview used"
-                          : "One preview included"}
-                    </p>
-                    {priorityMode ? (
-                      <div className="flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/88 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                        <Sparkles className="h-3.5 w-3.5 text-teal-600" />
-                        Ask in plain language
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
+          {messages.map((message, index) => (
+            <div key={`${message.role}-${index}-${message.content.slice(0, 24)}`} className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}>
+              <div
+                className={cn(
+                  "max-w-[85%] rounded-[22px] px-4 py-3 text-sm leading-7 shadow-[0_10px_24px_rgba(12,20,37,0.04)] whitespace-pre-wrap",
+                  message.role === "user"
+                    ? "bg-slate-950 text-white"
+                    : "border border-[var(--card-border)] bg-white text-[var(--foreground)]"
+                )}
+              >
+                <p className={cn("mb-1 text-[11px] font-semibold uppercase tracking-[0.18em]", message.role === "user" ? "text-white/60" : "text-[var(--muted)]")}>
+                  {message.role === "user" ? "You" : "Mara"}
+                </p>
+                <p>{message.content}</p>
+              </div>
+            </div>
+          ))}
 
-                <div className={cn("mt-4 rounded-[24px] border border-slate-200 bg-slate-50/90 p-3 sm:p-4", priorityMode && "mt-0 border-0 border-t border-[#d6e7e2] bg-transparent p-0 shadow-none")}>
-                  <div ref={threadScrollRef} className={cn("flex max-h-[300px] flex-col gap-3 overflow-y-auto pr-1 sm:max-h-[340px]", priorityMode && "min-h-[190px] max-h-[320px] px-4 py-4 sm:px-5")}>
-                    {messages.map((message, index) => (
-                      <div key={`${message.role}-${index}-${message.content.slice(0, 24)}`} className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}>
-                        <div
-                          className={cn(
-                            "max-w-[86%] rounded-[22px] px-4 py-3 text-sm leading-6 shadow-[0_10px_24px_rgba(15,23,42,0.04)] whitespace-pre-wrap sm:max-w-[78%]",
-                            message.role === "user"
-                              ? "bg-slate-950 text-white"
-                              : "border border-slate-200 bg-white text-slate-700"
-                          )}
-                        >
-                          <p
-                            className={cn(
-                              "mb-1 text-[11px] font-semibold uppercase tracking-[0.18em]",
-                              message.role === "user" ? "text-white/60" : "text-teal-700/70"
-                            )}
-                          >
-                            {message.role === "user" ? "You" : "Mara"}
-                          </p>
-                          <p>{message.content}</p>
-                        </div>
-                      </div>
-                    ))}
-                    {isPending ? (
-                      <div className="flex justify-start">
-                        <div className="max-w-[86%] rounded-[22px] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-[0_10px_24px_rgba(15,23,42,0.04)] sm:max-w-[78%]">
-                          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-teal-700/70">Mara</p>
-                          <div className="flex items-center gap-2">
-                            <LoaderCircle className="h-4 w-4 animate-spin" />
-                            Mara is working...
-                          </div>
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-
-                <textarea
-                  id="trip-planner-message"
-                  className={cn(
-                    `${textareaClassName}`,
-                    priorityMode &&
-                      "min-h-[112px] rounded-none border-x-0 border-b-0 border-t border-[#d6e7e2] bg-white px-5 py-4 text-base shadow-none focus:border-[#d6e7e2]"
-                  )}
-                  disabled={isLocked || isPending}
-                  placeholder={
-                    isLocked
-                      ? `You have already used the Mara preview included on ${currentPlan.name}. Upgrade to Plus to keep planning with unlimited Mara.`
-                      : tripContext
-                        ? "Example: Review this plan, make lunch easier, and ask me the next one or two details you still need."
-                        : isStarterPreview
-                          ? "Example: Preview a Saturday trip for two adults and one 8-year-old, with one signature ride and an easy lunch window."
-                          : "Example: I want to plan a Saturday adventure for two adults and one 8-year-old. Ask me the first one or two details you need."
-                  }
-                  value={draft}
-                  onChange={(event) => setDraft(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" && !event.shiftKey) {
-                      event.preventDefault();
-                      sendMessage(draft);
-                    }
-                  }}
-                />
-
-                <div className={cn("flex flex-col gap-3 md:flex-row md:items-center md:justify-between", priorityMode && "px-4 pb-4 sm:px-5 sm:pb-5")}>
-                  <div className="flex flex-wrap gap-2">
-                    {(tripContext
-                      ? ["Adjust pacing", "Protect must-dos", "Rework lunch"]
-                      : ["Pick a park", "Set the vibe", "List must-dos"]
-                    ).map((hint) => (
-                      <span
-                        key={hint}
-                        className={cn(
-                          "rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600",
-                          priorityMode && "bg-white"
-                        )}
-                      >
-                        {hint}
-                      </span>
-                    ))}
-                  </div>
-                  <Button
-                    type="button"
-                    onClick={() => sendMessage(draft)}
-                    disabled={isPending || !draft.trim() || isLocked}
-                    className={cn(priorityMode && "h-12 rounded-full px-7 text-sm shadow-[0_18px_38px_rgba(15,23,42,0.14)]")}
-                  >
-                    <SendHorizontal className="mr-2 h-4 w-4" />
-                    {isStarterPreview ? "Get Mara preview" : priorityMode ? "Send to Mara" : "Send"}
-                  </Button>
+          {isPending ? (
+            <div className="flex justify-start">
+              <div className="max-w-[85%] rounded-[22px] border border-[var(--card-border)] bg-white px-4 py-3 text-sm text-[var(--muted)] shadow-[0_10px_24px_rgba(12,20,37,0.04)]">
+                <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">Mara</p>
+                <div className="flex items-center gap-2">
+                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                  Thinking...
                 </div>
               </div>
             </div>
-          </div>
+          ) : null}
         </div>
 
-        {isGenericKickoff ? (
-          <div className={cn("mt-5", priorityMode && "rounded-[24px] border border-slate-200/80 bg-[linear-gradient(180deg,#fbfdff_0%,#ffffff_100%)] p-4 sm:p-5")}>
-            <PlannerSectionKicker emoji="🗺️" label={priorityMode ? "Need a faster start?" : "Start here"} tone="sky" />
-            {priorityMode ? <p className="mt-2 text-sm text-slate-600">Tap one and Mara will take it from there.</p> : null}
-            <div className="mt-3 grid gap-2.5 md:grid-cols-3">
-              {compactExamples.map((item) => (
-                <button
-                  key={item.title}
-                  type="button"
-                  onClick={() => sendMessage(item.prompt)}
-                  disabled={isPending || isLocked}
-                  className={cn(
-                    "rounded-[20px] border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-[#bfd4cb] hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400",
-                    priorityMode && "shadow-none"
-                  )}
-                >
-                  <p className="text-sm font-semibold text-slate-950">{item.title}</p>
-                  <p className="mt-1.5 text-sm leading-6 text-slate-600">{item.description}</p>
-                </button>
-              ))}
-            </div>
+        {quickPrompts.length ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {quickPrompts.map((prompt) => (
+              <button
+                key={prompt}
+                type="button"
+                onClick={() => sendMessage(prompt)}
+                disabled={isPending}
+                className="rounded-[16px] border border-[var(--card-border)] bg-white px-3.5 py-2 text-sm text-[var(--foreground)] transition hover:bg-[var(--surface-muted)] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {prompt}
+              </button>
+            ))}
           </div>
         ) : null}
 
-        {isLocked ? <FeatureUpsellCard className="mt-5" currentTier={currentTier} feature="aiConcierge" /> : null}
-        {error ? <p className="mt-4 rounded-[22px] border border-[#efc1bc] bg-[#fff0ee] px-4 py-3 text-sm text-[#b14b41]">{error}</p> : null}
+        {error ? <div className="mt-4 rounded-[20px] border border-[#efc1bc] bg-[#fff0ee] px-4 py-3 text-sm text-[#b14b41]">{error}</div> : null}
 
-        {showFollowUpPrompts ? (
-          <div className={cn("mt-5", !priorityMode && "border-t border-slate-200/80 pt-6")}>
-            <PlannerSectionKicker emoji={isGenericKickoff ? "💬" : "🧩"} label={isGenericKickoff ? "Prompts to try" : "Helpful follow-ups"} tone={isGenericKickoff ? "violet" : "amber"} />
-            <div className={cn("mt-3", priorityMode ? "flex flex-wrap gap-2.5" : "grid gap-3 md:grid-cols-2")}>
-              {visibleQuestions.map((question) => (
-                <button
-                  key={question}
-                  type="button"
-                  onClick={() => sendMessage(question)}
-                  disabled={isPending || isLocked}
-                  className={cn(
-                    "border border-slate-200 bg-white text-left text-sm font-medium text-slate-700 transition hover:border-[#bfd4cb] hover:bg-slate-50 hover:text-slate-950 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400",
-                    priorityMode ? "rounded-full px-3.5 py-2 leading-5" : "rounded-[24px] px-4 py-4 leading-6"
-                  )}
-                >
-                  {question}
-                </button>
-              ))}
-            </div>
-            {tripContext?.detailTags.length ? (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {tripContext.detailTags.map((item) => (
-                  <span key={item} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600">
-                    {item}
-                  </span>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-      </Card>
-
-      {showInfoDialog ? <MaraInfoDialog tripContext={tripContext} onClose={() => setShowInfoDialog(false)} /> : null}
-    </>
-  );
-}
-
-function MaraInfoDialog({ tripContext, onClose }: { tripContext?: TripPlannerTripContext; onClose: () => void }) {
-  const workflowExamples = (tripContext ? tripWorkflowExamples : generalWorkflowExamples).slice(0, 3);
-  const usageItems = tripContext
-    ? [
-        "Find what is still missing.",
-        "Change pacing, food, or must-dos quickly.",
-        "Rework the plan when the day changes.",
-      ]
-    : [
-        "Turn a rough outing idea into a plan.",
-        "Figure out the next one or two details fast.",
-        "Shape the day around real constraints.",
-      ];
-  const bestInputs = tripContext
-    ? ["what changed", "what to protect", "what feels off"]
-    : ["where to go", "who is going", "must-dos", "budget or pace"];
-
-  return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/55 px-4 py-6 backdrop-blur-sm" onClick={onClose}>
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="mara-info-title"
-        className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-[30px] border border-white/70 bg-[linear-gradient(180deg,#ffffff_0%,#f7fafc_100%)] p-6 shadow-[0_32px_90px_rgba(15,23,42,0.24)] sm:p-7"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div className="max-w-3xl">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-teal-100 text-teal-700">
-                <Sparkles className="h-5 w-5" />
-              </div>
-              <PlannerSectionKicker emoji="💡" label="Meet Mara" tone="teal" />
-            </div>
-            <h3 id="mara-info-title" className="mt-4 font-[family-name:var(--font-space-grotesk)] text-3xl font-semibold tracking-tight text-slate-950">
-              The planner behind the planner
-            </h3>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
-              Mara turns rough ideas into a clear next step. Start with the ask, then let her shape the plan with you.
-            </p>
-          </div>
-          <Button type="button" variant="ghost" size="sm" onClick={onClose} className="h-10 w-10 rounded-full border border-slate-200 bg-white p-0 text-slate-500 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700">
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close Mara info</span>
-          </Button>
-        </div>
-
-        <div className="mt-6 grid gap-5 xl:grid-cols-[0.82fr_1.18fr]">
-          <div className="space-y-4">
-            <div className="rounded-[26px] border border-slate-200 bg-white p-5 shadow-[0_16px_40px_rgba(15,23,42,0.05)]">
-              <div className="flex flex-col items-center text-center">
-                <MaraPortrait size="lg" />
-                <p className="mt-4 text-xl font-semibold text-slate-950">{TRIP_PLANNER_PERSONA.name}</p>
-                <p className="mt-1 text-sm font-medium text-teal-700">{TRIP_PLANNER_PERSONA.title}</p>
-              </div>
-              <div className="mt-5 flex flex-wrap justify-center gap-2">
-                {TRIP_PLANNER_PERSONA.personality.map((item) => (
-                  <span key={item} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600">
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#eefbf8_0%,#ffffff_100%)] p-5">
-              <p className="text-sm font-semibold text-slate-950">Best when you share</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {bestInputs.map((item) => (
-                  <span key={item} className="rounded-full border border-white/80 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="rounded-[24px] border border-slate-200 bg-white p-5">
-              <p className="text-sm font-semibold text-slate-950">Use Mara for</p>
-              <div className="mt-4 space-y-2.5">
-                {usageItems.map((item) => (
-                  <InfoListItem key={item} text={item} />
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <PlannerSectionKicker emoji="🧠" label="Try one of these" tone="violet" />
-              <div className="mt-3 grid gap-3">
-                {workflowExamples.map((item) => (
-                  <WorkflowExampleCard key={item.title} item={item} />
-                ))}
-              </div>
-            </div>
+        <div className="mt-4 rounded-[24px] border border-[var(--card-border)] bg-white p-3 sm:p-4">
+          <textarea
+            className={textareaClassName}
+            disabled={isPending}
+            placeholder={tripContext ? "What should we change?" : "Open a planner to talk with Mara."}
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage(draft);
+              }
+            }}
+          />
+          <div className="mt-3 flex justify-end">
+            <Button type="button" onClick={() => sendMessage(draft)} disabled={isPending || !draft.trim()}>
+              <SendHorizontal className="h-4 w-4" />
+              Send
+            </Button>
           </div>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
-
-function InfoListItem({ text }: { text: string }) {
-  return (
-    <div className="flex items-start gap-3 rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3">
-      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-teal-700 shadow-[0_8px_18px_rgba(15,23,42,0.04)]">
-        <Sparkles className="h-3.5 w-3.5" />
-      </div>
-      <p className="text-sm leading-6 text-slate-600">{text}</p>
-    </div>
-  );
-}
-
-function WorkflowExampleCard({ item }: { item: MaraWorkflowExample }) {
-  return (
-    <div className="rounded-[22px] border border-slate-200 bg-white p-4">
-      <p className="text-sm font-semibold text-slate-950">{item.title}</p>
-      <div className="mt-3 rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Say this</p>
-        <p className="mt-2 text-sm leading-6 text-slate-700">{item.prompt}</p>
-      </div>
-    </div>
-  );
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

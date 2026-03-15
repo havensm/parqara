@@ -11,7 +11,7 @@ export function Card({ className, tone = "default", ...props }: CardProps) {
     <div
       className={cn(
         tone === "solid"
-          ? "relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--card-border)] bg-white shadow-[var(--shadow-soft)]"
+          ? "relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--card-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,251,255,0.95))] shadow-[var(--shadow-soft)]"
           : "surface-panel panel-grid relative overflow-hidden rounded-[var(--radius-lg)]",
         className
       )}
@@ -19,4 +19,3 @@ export function Card({ className, tone = "default", ...props }: CardProps) {
     />
   );
 }
-

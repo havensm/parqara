@@ -46,6 +46,7 @@ const tierRank: Record<SubscriptionTierValue, number> = {
 
 const activeStatuses = new Set<SubscriptionStatusValue>(["ACTIVE", "TRIALING"]);
 
+// Legacy preview counter stays in the schema for now, but Mara is included on every plan.
 export const MARA_FREE_PREVIEW_REPLY_LIMIT = 1;
 export const MARA_STARTER_REPLY_LIMIT = MARA_FREE_PREVIEW_REPLY_LIMIT;
 
@@ -55,16 +56,16 @@ export const BILLING_PLANS: Record<SubscriptionTierValue, BillingPlan> = {
     name: "Free",
     monthlyPrice: 0,
     monthlyLabel: "$0",
-    tagline: "Start planning",
-    summary: "Trip setup, itinerary views, calendar access, one active planner, and one intentional Mara preview after the basics are saved.",
-    badge: "Best for getting started",
+    tagline: "Full Mara",
+    summary: "Full Mara, trip setup, itinerary views, calendar access, and one active planner for your current trip or outing.",
+    badge: "Best for one active plan",
     activePlannerLimit: 1,
     features: [
+      "Full Mara on 1 active planner",
       "Trip setup with dates, group details, must-dos, and dining preferences",
       "Build and view generated itinerary routes",
       "Calendar view, private trip feed, and notifications",
       "1 active planner",
-      "One Mara preview after the planner basics are saved",
     ],
   },
   PLUS: {
@@ -72,13 +73,13 @@ export const BILLING_PLANS: Record<SubscriptionTierValue, BillingPlan> = {
     name: "Plus",
     monthlyPrice: 12,
     monthlyLabel: "$12",
-    tagline: "Unlimited Mara",
-    summary: "Unlimited Mara, live dashboard access, instant replans, and up to three active planners for the full day-of planning experience.",
+    tagline: "More room",
+    summary: "Everything in Free, plus live mode, replans, and room for up to three active planners.",
     badge: "Best plan for most people",
     activePlannerLimit: 3,
     features: [
-      "Unlimited Mara access for trip-specific planning",
-      "Unlimited follow-up questions and route revisions",
+      "Everything in Free",
+      "Full Mara on up to 3 active planners",
       "Live dashboard with next-move guidance",
       "Instant replans and ride-completion controls",
       "3 active planners",
@@ -89,7 +90,7 @@ export const BILLING_PLANS: Record<SubscriptionTierValue, BillingPlan> = {
     name: "Pro",
     monthlyPrice: 29,
     monthlyLabel: "$29",
-    tagline: "Repeat workflows",
+    tagline: "Scale up",
     summary: "Everything in Plus, plus more planner room, duplication, templates, version history, and collaborator invites for higher-volume planning.",
     badge: "For repeat planners and shared trips",
     activePlannerLimit: 10,
@@ -120,11 +121,11 @@ export const BILLING_FEATURES: Record<BillingFeatureKey, BillingFeatureDefinitio
     highlights: ["Replan around changing waits", "Adapt to closures and slowdowns", "Keep the rest of the route intact"],
   },
   aiConcierge: {
-    label: "Unlimited Mara access",
-    requiredTier: "PLUS",
-    upgradeTitle: "Unlimited Mara is part of Plus",
-    upgradeDescription: "Free includes a single intentional Mara preview. Plus unlocks the full planning conversation with unlimited Mara access.",
-    highlights: ["Full AI trip planning", "Follow-up questions and revisions", "Memory-backed, trip-specific guidance"],
+    label: "Mara access",
+    requiredTier: "FREE",
+    upgradeTitle: "Mara is included on every plan",
+    upgradeDescription: "Every plan includes full Mara. Upgrade when you need more active planners, live mode, or higher-volume planning tools.",
+    highlights: ["Included on every plan", "Follow-up questions and revisions", "Memory-backed, trip-specific guidance"],
   },
   tripCollaboration: {
     label: "Shared planner collaboration",
@@ -206,27 +207,8 @@ export function canUseFullMara(
   return canAccessBillingFeature(currentTier, "aiConcierge");
 }
 
-export function canUseFreePreview(
-  user: {
-    subscriptionTier?: SubscriptionTierValue | null;
-    subscriptionStatus?: SubscriptionStatusValue | null;
-    maraPreviewRepliesUsed?: number | null;
-  },
-  planner?: {
-    plannerStatus?: "ACTIVE" | "ARCHIVED" | null;
-  } | null
-) {
-  const currentTier = getEffectiveSubscriptionTier(user.subscriptionTier, user.subscriptionStatus);
-
-  if (currentTier !== "FREE") {
-    return false;
-  }
-
-  if (planner?.plannerStatus === "ARCHIVED") {
-    return false;
-  }
-
-  return (user.maraPreviewRepliesUsed ?? 0) < MARA_FREE_PREVIEW_REPLY_LIMIT;
+export function canUseFreePreview() {
+  return false;
 }
 
 export function canCreatePlanner(input: {
@@ -261,27 +243,15 @@ export function getMaraStarterPreviewState(
   currentTier: SubscriptionTierValue,
   usedReplies: number | null | undefined
 ): MaraStarterPreviewState {
-  const normalizedUsedReplies = Math.max(0, usedReplies ?? 0);
-  const fullAccess = canUseFullMara(currentTier);
-
-  if (fullAccess || currentTier !== "FREE") {
-    return {
-      included: false,
-      replyLimit: MARA_FREE_PREVIEW_REPLY_LIMIT,
-      usedReplies: 0,
-      remainingReplies: 0,
-      canSend: false,
-    };
-  }
-
-  const remainingReplies = Math.max(0, MARA_FREE_PREVIEW_REPLY_LIMIT - normalizedUsedReplies);
+  void currentTier;
+  void usedReplies;
 
   return {
-    included: true,
+    included: false,
     replyLimit: MARA_FREE_PREVIEW_REPLY_LIMIT,
-    usedReplies: normalizedUsedReplies,
-    remainingReplies,
-    canSend: remainingReplies > 0,
+    usedReplies: 0,
+    remainingReplies: 0,
+    canSend: false,
   };
 }
 
@@ -334,3 +304,4 @@ export function getBillingStatusLabel(status: SubscriptionStatusValue | null | u
       return "Free";
   }
 }
+

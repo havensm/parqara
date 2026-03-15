@@ -38,8 +38,8 @@ export default async function BillingPage({
         ? `${savedTemplates.length} template${savedTemplates.length === 1 ? "" : "s"} saved, plus duplication, version history, and collaboration.`
         : "Templates, duplication, version history, and collaboration are included on Pro."
       : billing.currentTier === "PLUS"
-        ? "Unlimited Mara, live mode, and replans are included."
-        : "Core planning tools with one Mara preview included.";
+        ? "Live mode, replans, and more room are included."
+        : "Full Mara is included, with room for one active planner.";
 
   return (
     <AppShell
@@ -83,7 +83,7 @@ export default async function BillingPage({
           </div>
 
           <div className="divide-y divide-[var(--card-border)]">
-            <BillingRow label="Mara access" value={billing.featureAccess.aiConcierge ? "Unlimited" : "One preview"} detail={billing.featureAccess.aiConcierge ? "Full planning and revisions are open." : "Free includes one meaningful Mara preview."} />
+            <BillingRow label="Mara access" value="Included" detail="Full planning and revisions are open on every plan." />
             <BillingRow label="Active planners" value={`${plannerLimitState.activePlannerCount} / ${plannerLimitState.plannerLimit}`} detail={`${plannerLimitState.archivedTrips.length} archived planners saved outside the active limit.`} />
             <BillingRow label="Workflow tools" value={billing.currentTier === "PRO" ? "Advanced" : billing.currentTier === "PLUS" ? "Core premium" : "Starter"} detail={workflowSummary} />
 
@@ -148,7 +148,7 @@ export default async function BillingPage({
             Compare Free, Plus, and Pro.
           </h2>
           <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-            Choose the amount of Mara access, planner room, and workflow depth you actually need.
+            Choose the amount of planner room and workflow depth you actually need.
           </p>
         </div>
 
@@ -191,4 +191,6 @@ function BillingRow({
     </div>
   );
 }
+
+
 
