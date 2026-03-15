@@ -60,6 +60,7 @@ export function TripPlannerConcierge({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const threadScrollRef = useRef<HTMLDivElement | null>(null);
+  const composerRef = useRef<HTMLDivElement | null>(null);
 
   const quickPrompts = (questions.length ? questions : getTripPlannerStarterPrompts(tripContext, starterMode)).slice(0, starterMode ? 2 : tripContext ? 1 : 2);
 
@@ -143,6 +144,15 @@ export function TripPlannerConcierge({
         setError(submitError instanceof Error ? submitError.message : "Mara could not respond right now.");
       }
     });
+  }
+
+  function handleComposerFocus() {
+    window.setTimeout(() => {
+      composerRef.current?.scrollIntoView({
+        block: "end",
+        behavior: "smooth",
+      });
+    }, 120);
   }
 
   return (
@@ -232,13 +242,14 @@ export function TripPlannerConcierge({
 
         {error ? <div className="mt-4 rounded-[20px] border border-[#efc1bc] bg-[#fff0ee] px-4 py-3 text-sm text-[#b14b41]">{error}</div> : null}
 
-        <div className="mt-4 rounded-[24px] border border-[var(--card-border)] bg-white p-3 sm:p-4">
+        <div ref={composerRef} className="mt-4 rounded-[24px] border border-[var(--card-border)] bg-white p-3 sm:p-4">
           <textarea
             className={textareaClassName}
             disabled={isPending}
             placeholder={starterMode ? "What do you want to plan?" : tripContext ? "What should we change?" : "Open a planner to talk with Mara."}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
+            onFocus={handleComposerFocus}
             onKeyDown={(event) => {
               if (event.key === "Enter" && !event.shiftKey) {
                 event.preventDefault();

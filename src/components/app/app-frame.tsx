@@ -22,10 +22,11 @@ export function AppFrame({
   void plannerTabs;
 
   return (
-    <div data-testid="app-frame" className="relative overflow-hidden pb-24 xl:pb-0">
+    <div data-testid="app-frame" className="relative overflow-x-hidden pb-28 xl:pb-0">
       <div className="relative min-w-0">{children}</div>
       <BottomTabBar />
     </div>
   );
 }
+
 
