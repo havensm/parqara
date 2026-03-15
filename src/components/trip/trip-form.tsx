@@ -571,12 +571,12 @@ export function TripForm({ catalog, initialTrip }: { catalog: ParkCatalogDto; in
     <Card tone="solid" className="p-6 sm:p-7" data-tour-id="trip-details-card" onBlurCapture={() => void persistDraft(valuesRef.current)}>
       <div className="flex flex-col gap-4 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <PlannerSectionKicker emoji="🗂️" label="Trip details" tone="teal" />
+          <PlannerSectionKicker emoji="🗂️" label="Planner basics" tone="teal" />
           <h2 className="mt-3 font-[family-name:var(--font-space-grotesk)] text-3xl font-semibold tracking-tight text-slate-950">
-            Saved trip details
+            Pinned basics
           </h2>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-            Mara shapes the working brief above. Use this layer to confirm or override the details that should stay saved on the planner.
+            Use this layer to pin the details that should stay attached to this planner.
           </p>
         </div>
         <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600">
@@ -836,8 +836,8 @@ export function TripForm({ catalog, initialTrip }: { catalog: ParkCatalogDto; in
         </div>
       </details>
 
-      <div className="mt-6 flex flex-col gap-3 rounded-[28px] border border-slate-200/80 bg-[var(--surface-muted)]/72 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-5">
-        <p className="text-sm text-slate-500">Mara leads the direction. These saved details keep the planner grounded.</p>
+      <div className="mt-6 flex flex-col gap-3 rounded-[30px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(246,249,253,0.96),rgba(241,246,252,0.94))] shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-5">
+        <p className="text-sm text-slate-500">Mara shapes the plan. These basics stay pinned.</p>
         <div className="flex flex-col gap-3 sm:flex-row">
           <Button type="button" variant="secondary" onClick={() => void handleSave()} disabled={saveState === "saving" || isGenerating}>
             Save now
@@ -927,6 +927,8 @@ function SnapshotCard({
     </div>
   );
 }
+
+
 
 
 

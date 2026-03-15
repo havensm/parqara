@@ -31,14 +31,14 @@ export const HELP_FAQ_ITEMS: HelpFaqItem[] = [
     id: "share-planner",
     question: "How do shared planners work?",
     answer:
-      "Shared planners are part of Pro. On Pro, you can add existing Parqara users directly or invite someone by email. If the invited person does not have an account yet, they will get an email telling them to create one before they can open the planner.",
+      "Every plan can share a planner. You can add existing Parqara users directly or invite someone by email. If the invited person does not have an account yet, they will get an email telling them to create one before they can open the planner.",
     tags: ["sharing", "collaboration", "invite"],
   },
   {
     id: "your-people",
     question: "What is the saved contacts list on the profile page?",
     answer:
-      "It is your saved list of contacts who already have Parqara accounts. It speeds up Pro sharing because you can add them to a planner without typing their email every time.",
+      "It is your saved list of contacts who already have Parqara accounts. It speeds up planner sharing because you can add them without typing their email every time.",
     tags: ["profile", "sharing", "people"],
   },
   {
@@ -52,7 +52,7 @@ export const HELP_FAQ_ITEMS: HelpFaqItem[] = [
     id: "plans",
     question: "How do the plans differ?",
     answer:
-      "Every plan includes Mara. Free gives you one active planner, Plus gives you three plus live mode and replans, and Pro gives you ten plus templates, version history, duplication, and collaborator access.",
+      "Every plan includes Mara and planner sharing. Free gives you one active planner, Plus gives you three plus live mode and replans, and Pro gives you ten plus templates, version history, and duplication.",
     tags: ["billing", "plans", "pricing"],
   },
   {
@@ -63,4 +63,5 @@ export const HELP_FAQ_ITEMS: HelpFaqItem[] = [
     tags: ["feedback", "support", "bugs"],
   },
 ];
+
 

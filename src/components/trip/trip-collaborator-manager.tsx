@@ -3,21 +3,17 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { CirclePlus, LoaderCircle, Mail, ShieldCheck, Trash2, UserRound, X } from "lucide-react";
 
-import { canAccessBillingFeature } from "@/lib/billing";
-import type { SubscriptionTierValue, TripCollaboratorStateDto, UserPersonDto } from "@/lib/contracts";
+import type { TripCollaboratorStateDto, UserPersonDto } from "@/lib/contracts";
 
-import { FeatureUpsellCard } from "@/components/billing/feature-upsell-card";
 import { Button } from "@/components/ui/button";
 
 const inputClassName =
   "mt-2 w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[#1b6b63]/40 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400";
 
 export function TripCollaboratorManager({
-  currentTier,
   tripId,
   label = "People",
 }: {
-  currentTier: SubscriptionTierValue;
   tripId: string;
   label?: string;
 }) {
@@ -27,7 +23,6 @@ export function TripCollaboratorManager({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const isLocked = !canAccessBillingFeature(currentTier, "tripCollaboration");
 
   useEffect(() => {
     setIsOpen(false);
@@ -59,7 +54,7 @@ export function TripCollaboratorManager({
   }, [isOpen]);
 
   async function loadCollaborators(force = false) {
-    if ((state && !force) || isLoading || isLocked) {
+    if ((state && !force) || isLoading) {
       return;
     }
 
@@ -83,9 +78,7 @@ export function TripCollaboratorManager({
 
   function openDialog() {
     setIsOpen(true);
-    if (!isLocked) {
-      void loadCollaborators();
-    }
+    void loadCollaborators();
   }
 
   function closeDialog() {
@@ -96,7 +89,7 @@ export function TripCollaboratorManager({
 
   function handleInvite(nextEmail = inviteEmail) {
     const email = nextEmail.trim();
-    if (!email || isPending || isLocked) {
+    if (!email || isPending) {
       return;
     }
 
@@ -125,7 +118,7 @@ export function TripCollaboratorManager({
   }
 
   function handleRemove(collaboratorId: string) {
-    if (isPending || isLocked) {
+    if (isPending) {
       return;
     }
 
@@ -149,7 +142,7 @@ export function TripCollaboratorManager({
   }
 
   function handleRemoveInvite(inviteId: string) {
-    if (isPending || isLocked) {
+    if (isPending) {
       return;
     }
 
@@ -194,11 +187,6 @@ export function TripCollaboratorManager({
         <CirclePlus className="h-4 w-4" />
         <span>{label}</span>
         <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">{peopleCount}</span>
-        {isLocked ? (
-          <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-            Pro
-          </span>
-        ) : null}
       </button>
 
       {isOpen ? (
@@ -227,46 +215,14 @@ export function TripCollaboratorManager({
               </button>
             </div>
 
-            {isLocked ? (
-              <div className="mt-8 space-y-6">
-                <FeatureUpsellCard currentTier={currentTier} feature="tripCollaboration" />
-                <section className="rounded-[26px] border border-slate-200 bg-white p-5">
-                  <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Invite by email</p>
-                  <label className="mt-4 block text-sm font-medium text-slate-700" htmlFor={`trip-collaborator-email-${tripId}`}>
-                    Add by email
-                  </label>
-                  <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
-                    <div className="min-w-0 flex-1">
-                      <div className="relative">
-                        <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                        <input
-                          id={`trip-collaborator-email-${tripId}`}
-                          type="email"
-                          disabled
-                          value={inviteEmail}
-                          onChange={(event) => setInviteEmail(event.currentTarget.value)}
-                          placeholder="teammate@example.com"
-                          className={`${inputClassName} pl-11`}
-                        />
-                      </div>
-                    </div>
-                    <Button type="button" disabled>
-                      Send invite
-                    </Button>
-                  </div>
-                  <p className="mt-3 text-xs leading-6 text-slate-500">Pro is required before invitations and shared planners can be used.</p>
-                </section>
-              </div>
-            ) : null}
-
-            {isLoading && !state && !isLocked ? (
+            {isLoading && !state ? (
               <div className="mt-8 flex items-center gap-3 rounded-[24px] border border-slate-200 bg-white px-4 py-4 text-sm text-slate-600">
                 <LoaderCircle className="h-4 w-4 animate-spin" />
                 Loading access list...
               </div>
             ) : null}
 
-            {state && !isLocked ? (
+            {state ? (
               <div className="mt-8 space-y-6">
                 <section className="rounded-[26px] border border-slate-200 bg-white p-5">
                   <div className="flex items-start justify-between gap-4">
@@ -445,4 +401,3 @@ export function TripCollaboratorManager({
     </>
   );
 }
-

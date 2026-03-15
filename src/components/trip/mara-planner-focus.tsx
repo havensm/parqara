@@ -160,7 +160,7 @@ function StartingLocationPanel({ startingLocation }: { startingLocation: string 
   if (!startingLocation) {
     return (
       <div className="rounded-[24px] border border-dashed border-[var(--card-border)] bg-[var(--surface-muted)] px-4 py-5 text-sm text-[var(--muted)]">
-        Add a starting location in trip details and Mara will pin it here.
+        Add a starting location in planner basics and Mara will pin it here.
       </div>
     );
   }
@@ -174,7 +174,7 @@ function StartingLocationPanel({ startingLocation }: { startingLocation: string 
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Starting point</p>
           <p className="mt-2 text-lg font-semibold text-[var(--foreground)]">{startingLocation}</p>
-          <p className="mt-1 text-sm text-[var(--muted)]">Pinned on the saved trip map.</p>
+          <p className="mt-1 text-sm text-[var(--muted)]">Pinned on the planner map.</p>
         </div>
         <a
           href={mapHref}
@@ -194,6 +194,20 @@ function StartingLocationPanel({ startingLocation }: { startingLocation: string 
           referrerPolicy="no-referrer-when-downgrade"
           className="h-[260px] w-full border-0"
         />
+      </div>
+    </div>
+  );
+}
+
+function StarterPlanNote() {
+  return (
+    <div className="border-t border-[var(--card-border)] px-5 py-5 sm:px-6 sm:py-6">
+      <div className="rounded-[24px] border border-dashed border-[var(--card-border)] bg-[var(--surface-muted)] px-5 py-5 sm:px-6">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Nothing saved yet</p>
+        <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">
+          Tell Mara the basics like where you want to go, when you want to go, who is coming, and where you are starting from.
+          Your pinned basics and Mara&apos;s latest take will show up here as you plan.
+        </p>
       </div>
     </div>
   );
@@ -274,77 +288,90 @@ export function MaraPlannerFocus({
         <details className="group">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-5 sm:px-6 sm:py-6 [&::-webkit-details-marker]:hidden">
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Trip details</p>
-              <h3 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-[-0.04em] text-[var(--foreground)] sm:text-[2.15rem]">
-                Saved plan
-              </h3>
-              <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                {trip.name} · {trip.park.name} · {formatTripDate(trip.visitDate)} · {formatTripPlannerStatusLabel(trip.status)}
-              </p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Mara snapshot</p>
+              <h3 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-[-0.04em] text-[var(--foreground)] sm:text-[2.15rem]">Live snapshot</h3>
+              {starterMode ? (
+                <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                  Nothing is pinned yet. Tell Mara the basics and this snapshot will build up here.
+                </p>
+              ) : (
+                <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                  {trip.name} · {trip.park.name} · {formatTripDate(trip.visitDate)} · {formatTripPlannerStatusLabel(trip.status)}
+                </p>
+              )}
             </div>
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[16px] border border-[var(--card-border)] bg-[var(--surface-muted)] text-[var(--muted)] transition group-open:bg-white group-open:text-[var(--foreground)]">
               <ChevronDown className="h-5 w-5 transition group-open:rotate-180" />
             </div>
           </summary>
 
-          <div className="border-t border-[var(--card-border)]">
-            <div className="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-4 sm:p-6">
-              <DetailBlock
-                label="Who"
-                value={getConversationGroupSummary(userConversationText, trip)}
-                detail={`Saved group: ${getSavedGroupSummary(trip)}`}
-                icon={Users}
-              />
-              <DetailBlock
-                label="When"
-                value={`${formatTripDate(trip.visitDate)} at ${trip.partyProfile.startTime}`}
-                detail={trip.partyProfile.breakStart && trip.partyProfile.breakEnd ? `Break ${trip.partyProfile.breakStart}-${trip.partyProfile.breakEnd}` : "No break saved yet"}
-                icon={CalendarDays}
-              />
-              <DetailBlock
-                label="Start"
-                value={startingLocation ?? "Add a starting point"}
-                detail={startingLocation ? "Shown on the saved trip map" : "Save a hotel, home, or neighborhood"}
-                icon={MapPinned}
-              />
-              <DetailBlock
-                label="Focus"
-                value={getConversationFocus(userConversationText, trip)}
-                detail={trip.latestPlanSummary ?? "Mara will keep shaping this as you talk."}
-                icon={Route}
-              />
-            </div>
-
-            <div className="grid gap-4 border-t border-[var(--card-border)] px-5 py-5 sm:px-6 sm:py-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Latest from Mara</p>
-                <p className="mt-3 text-base leading-7 text-[var(--foreground)]">{latestTakeaway}</p>
+          {starterMode ? (
+            <StarterPlanNote />
+          ) : (
+            <div className="border-t border-[var(--card-border)]">
+              <div className="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-4 sm:p-6">
+                <DetailBlock
+                  label="Who"
+                  value={getConversationGroupSummary(userConversationText, trip)}
+                  detail={`Saved group: ${getSavedGroupSummary(trip)}`}
+                  icon={Users}
+                />
+                <DetailBlock
+                  label="When"
+                  value={`${formatTripDate(trip.visitDate)} at ${trip.partyProfile.startTime}`}
+                  detail={trip.partyProfile.breakStart && trip.partyProfile.breakEnd ? `Break ${trip.partyProfile.breakStart}-${trip.partyProfile.breakEnd}` : "No break saved yet"}
+                  icon={CalendarDays}
+                />
+                <DetailBlock
+                  label="Start"
+                  value={startingLocation ?? "Add a starting point"}
+                  detail={startingLocation ? "Shown on the saved trip map" : "Save a hotel, home, or neighborhood"}
+                  icon={MapPinned}
+                />
+                <DetailBlock
+                  label="Focus"
+                  value={getConversationFocus(userConversationText, trip)}
+                  detail={trip.latestPlanSummary ?? "Mara will keep shaping this as you talk."}
+                  icon={Route}
+                />
               </div>
 
-              <div className="rounded-[20px] border border-[var(--card-border)] bg-[var(--surface-muted)] px-4 py-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-white text-[var(--teal-700)] shadow-[0_8px_18px_rgba(12,20,37,0.05)]">
-                    <Clock3 className="h-4.5 w-4.5" />
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Next up</p>
-                    <p className="mt-1 text-sm font-semibold text-[var(--foreground)]">{nextItem ? nextItem.title : "No route yet"}</p>
-                    <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                      {nextItem
-                        ? `${formatTimeLabel(nextItem.startTime)} · ${nextItem.predictedWaitMinutes}m wait · ${nextItem.walkingMinutes}m walk`
-                        : "Ask Mara to sketch the day."}
-                    </p>
+              <div className="grid gap-4 border-t border-[var(--card-border)] px-5 py-5 sm:px-6 sm:py-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Mara&apos;s latest take</p>
+                  <p className="mt-3 text-base leading-7 text-[var(--foreground)]">{latestTakeaway}</p>
+                </div>
+
+                <div className="rounded-[20px] border border-[var(--card-border)] bg-[var(--surface-muted)] px-4 py-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-white text-[var(--teal-700)] shadow-[0_8px_18px_rgba(12,20,37,0.05)]">
+                      <Clock3 className="h-4.5 w-4.5" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Next up</p>
+                      <p className="mt-1 text-sm font-semibold text-[var(--foreground)]">{nextItem ? nextItem.title : "No route yet"}</p>
+                      <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                        {nextItem
+                          ? `${formatTimeLabel(nextItem.startTime)} · ${nextItem.predictedWaitMinutes}m wait · ${nextItem.walkingMinutes}m walk`
+                          : "Ask Mara to sketch the day."}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className="border-t border-[var(--card-border)] px-5 py-5 sm:px-6 sm:py-6">
-              <StartingLocationPanel startingLocation={startingLocation} />
+              <div className="border-t border-[var(--card-border)] px-5 py-5 sm:px-6 sm:py-6">
+                <StartingLocationPanel startingLocation={startingLocation} />
+              </div>
             </div>
-          </div>
+          )}
         </details>
       </Card>
     </div>
   );
 }
+
+
+
+
+

@@ -34,7 +34,7 @@ const featureCards = [
     title: "A live plan for the day",
     detail: "Keep the day moving with live timing and a clear next step.",
     icon: CalendarRange,
-    image: generatedVisuals.homepage.dayOf,
+    image: generatedVisuals.homepage.dateNight,
     imageAlt: "Day-of planning and itinerary scene",
     imageClassName: "object-cover object-center",
     tone: "bg-[rgba(239,245,255,0.92)] text-[var(--sky-700)]",
@@ -56,8 +56,8 @@ const typicalUseCases = [
     title: "A Friday date night",
     detail: "Dinner, sitter timing, one or two fun stops, and a backup if the night shifts.",
     icon: HeartHandshake,
-    image: generatedVisuals.homepage.dayOf,
-    imageAlt: "Date-night planning and day-of itinerary scene",
+    image: generatedVisuals.homepage.dateNight,
+    imageAlt: "Date-night planning inspiration scene",
     imageClassName: "object-cover object-center",
     tone:
       "bg-[radial-gradient(circle_at_top_left,rgba(255,141,107,0.2),transparent_26%),linear-gradient(180deg,rgba(255,247,243,0.96),rgba(255,255,255,0.92))]",
@@ -214,4 +214,5 @@ export function PremiumHomepage({ currentTier, primaryHref, primaryLabel, second
     </div>
   );
 }
+
 

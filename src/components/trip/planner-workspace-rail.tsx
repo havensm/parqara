@@ -57,7 +57,7 @@ export function PlannerWorkspaceRail({
               ? "Free keeps Mara open on one active planner at a time."
               : currentTier === "PLUS"
                 ? "Plus keeps Mara open across three active planners, with live mode and replans included."
-                : "Pro keeps everything in Plus and adds more room, stronger organization, and shared planning tools."}
+                : "Pro keeps everything in Plus and adds more room plus stronger organization tools."}
           </p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
             <MetricPill label="Active planners" value={`${plannerLimitState.activePlannerCount}/${plannerLimitState.plannerLimit}`} />
@@ -160,4 +160,5 @@ function MetricPill({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
 

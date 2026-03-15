@@ -33,7 +33,7 @@ export default async function PricingPage({
           <SectionIntro
             eyebrow="Pricing"
             title="Premium planning without premium confusion."
-            description="Every plan includes Mara. Plus adds more room and live mode. Pro adds scale, sharing, and workflow tools."
+            description="Every plan includes Mara and sharing. Plus adds more room and live mode. Pro adds scale and workflow tools."
           />
 
           <div className="mt-6 flex flex-wrap gap-3">
@@ -47,9 +47,9 @@ export default async function PricingPage({
 
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             {[
-              ["Free", "Full Mara on one active planner"],
+              ["Free", "Full Mara, sharing, and one active planner"],
               ["Plus", "3 active planners, live dashboard, and replans"],
-              ["Pro", "Templates, versions, duplication, collaboration, and scale"],
+              ["Pro", "Templates, versions, duplication, and scale"],
             ].map(([label, detail]) => (
               <div key={label} className="rounded-[26px] border border-white/70 bg-white/70 px-4 py-4 shadow-[0_14px_30px_rgba(12,20,37,0.08)]">
                 <p className="text-sm font-semibold text-[var(--foreground)]">{label}</p>
@@ -117,7 +117,7 @@ export default async function PricingPage({
           </div>
           <h2 className="mt-4 text-2xl font-semibold text-[var(--foreground)]">Pro unlocks workflow scale</h2>
           <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-            Templates, duplication, version history, collaborator invites, and more active planners make Pro the repeat-workflow tier.
+            Templates, duplication, version history, and more active planners make Pro the repeat-workflow tier.
           </p>
         </Card>
       </section>
@@ -146,5 +146,6 @@ export default async function PricingPage({
     </div>
   );
 }
+
 
 

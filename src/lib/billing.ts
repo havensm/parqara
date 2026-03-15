@@ -57,12 +57,13 @@ export const BILLING_PLANS: Record<SubscriptionTierValue, BillingPlan> = {
     monthlyPrice: 0,
     monthlyLabel: "$0",
     tagline: "Full Mara",
-    summary: "Full Mara, trip setup, itinerary views, calendar access, and one active planner for your current trip or outing.",
+    summary: "Full Mara, planner sharing, trip setup, itinerary views, calendar access, and one active planner for your current trip or outing.",
     badge: "Best for one active plan",
     activePlannerLimit: 1,
     features: [
       "Full Mara on 1 active planner",
       "Trip setup with dates, group details, must-dos, and dining preferences",
+      "Share the planner and invite collaborators",
       "Build and view generated itinerary routes",
       "Calendar view, private trip feed, and notifications",
       "1 active planner",
@@ -91,8 +92,8 @@ export const BILLING_PLANS: Record<SubscriptionTierValue, BillingPlan> = {
     monthlyPrice: 29,
     monthlyLabel: "$29",
     tagline: "Scale up",
-    summary: "Everything in Plus, plus more planner room, duplication, templates, version history, and collaborator invites for higher-volume planning.",
-    badge: "For repeat planners and shared trips",
+    summary: "Everything in Plus, plus more planner room, duplication, templates, and version history for higher-volume planning.",
+    badge: "For repeat planners",
     activePlannerLimit: 10,
     features: [
       "Everything in Plus",
@@ -100,7 +101,6 @@ export const BILLING_PLANS: Record<SubscriptionTierValue, BillingPlan> = {
       "Planner duplication",
       "Reusable planner templates",
       "Version history and saved snapshots",
-      "Collaborator invites and shared planner management",
     ],
   },
 };
@@ -129,9 +129,9 @@ export const BILLING_FEATURES: Record<BillingFeatureKey, BillingFeatureDefinitio
   },
   tripCollaboration: {
     label: "Shared planner collaboration",
-    requiredTier: "PRO",
-    upgradeTitle: "Shared planner collaboration is on Pro",
-    upgradeDescription: "Invite existing Parqara users, manage access, and keep one planner visible to everyone working on the same trip.",
+    requiredTier: "FREE",
+    upgradeTitle: "Shared planner collaboration is included on every plan",
+    upgradeDescription: "Invite existing Parqara users, manage access, and keep one planner visible to everyone working on the same trip on any plan.",
     highlights: ["Invite collaborators by email", "Manage shared planner access", "Keep group planning in one place"],
   },
   plannerDuplication: {
@@ -304,4 +304,3 @@ export function getBillingStatusLabel(status: SubscriptionStatusValue | null | u
       return "Free";
   }
 }
-

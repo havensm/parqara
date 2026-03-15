@@ -5,10 +5,8 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { ChevronDown, CirclePlus, LoaderCircle, Mail, PencilLine, ShieldAlert, ShieldCheck, Trash2, UserRound, X } from "lucide-react";
 
-import { canAccessBillingFeature } from "@/lib/billing";
 import type { SubscriptionTierValue, TripCollaboratorStateDto } from "@/lib/contracts";
 
-import { FeatureUpsellCard } from "@/components/billing/feature-upsell-card";
 import { PlannerWorkflowPanel } from "@/components/trip/planner-workflow-panel";
 import { Button } from "@/components/ui/button";
 
@@ -42,7 +40,6 @@ export function TripPlannerSettingsDialog({
   const [isSavingName, setIsSavingName] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const isCollaborationLocked = !canAccessBillingFeature(currentTier, "tripCollaboration");
   const canConfirmDelete = deleteConfirmation.trim().toLowerCase() === "delete";
 
   useEffect(() => {
@@ -94,7 +91,7 @@ export function TripPlannerSettingsDialog({
   }, [isDeleteDialogOpen, isOpen]);
 
   async function loadCollaborators(force = false) {
-    if ((state && !force) || isLoading || isCollaborationLocked) {
+    if ((state && !force) || isLoading) {
       return;
     }
 
@@ -123,9 +120,7 @@ export function TripPlannerSettingsDialog({
     setIsDeleteDialogOpen(false);
     setDeleteConfirmation("");
     setIsWorkflowOpen(false);
-    if (!isCollaborationLocked) {
-      void loadCollaborators(true);
-    }
+    void loadCollaborators(true);
   }
 
   function closeDialog() {
@@ -196,7 +191,7 @@ export function TripPlannerSettingsDialog({
 
   function handleInvite() {
     const email = inviteEmail.trim();
-    if (!email || isPending || isCollaborationLocked) {
+    if (!email || isPending) {
       return;
     }
 
@@ -225,7 +220,7 @@ export function TripPlannerSettingsDialog({
   }
 
   function handleRemove(collaboratorId: string) {
-    if (isPending || isCollaborationLocked) {
+    if (isPending) {
       return;
     }
 
@@ -383,25 +378,12 @@ export function TripPlannerSettingsDialog({
                       Keep collaborators in one place so everyone planning the same trip can stay aligned.
                     </p>
                   </div>
-                  {!isCollaborationLocked ? (
-                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500">
-                      {collaboratorsCount} added
-                    </span>
-                  ) : (
-                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                      Pro
-                    </span>
-                  )}
+                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500">
+                    {collaboratorsCount} added
+                  </span>
                 </div>
 
-                {isCollaborationLocked ? (
-                  <div className="mt-6 space-y-6">
-                    <FeatureUpsellCard currentTier={currentTier} feature="tripCollaboration" />
-                    <p className="text-sm leading-7 text-slate-600">
-                      Collaboration stays visible here so you can see how shared planning works, but inviting other users requires Pro.
-                    </p>
-                  </div>
-                ) : isLoading && !state ? (
+                {isLoading && !state ? (
                   <div className="mt-6 flex items-center gap-3 rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600">
                     <LoaderCircle className="h-4 w-4 animate-spin" />
                     Loading planner access...
@@ -640,6 +622,8 @@ export function TripPlannerSettingsDialog({
     </>
   );
 }
+
+
 
 
 

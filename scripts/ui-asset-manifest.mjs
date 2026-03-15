@@ -146,6 +146,27 @@ export const uiAssetManifest = [
     ].join("\n")
   },
   {
+    id: "homepage-date-night",
+    out: "public/generated/homepage/parqara-date-night-scene.png",
+    size: "1536x1024",
+    quality: "high",
+    prompt: [
+      "Use case: photorealistic-natural",
+      "Asset type: landing-page use-case image for planning a date night out",
+      "Primary request: a premium cinematic scene that captures planning a Friday date night with dinner, a second stop, and easy backup options",
+      "Scene/background: a warm evening bistro district with a stylish couple-oriented planning moment, a softly lit table, elegant drinks, city lights, a discreet phone with abstract planning blocks, and hints of a babysitter-friendly timeline without visible text",
+      "Subject: an aspirational but practical date-night planning atmosphere that feels romantic, urban, relaxed, and distinct from the day-of itinerary card image",
+      "Style/medium: editorial lifestyle product visual with realistic materials and subtle SaaS polish",
+      "Composition/framing: wide responsive composition with a strong focal cluster and enough clean breathing room for a use-case card crop",
+      "Lighting/mood: warm evening glow, polished, intimate, adventurous, modern",
+      "Color palette: amber, deep teal, soft coral, candle cream, midnight navy",
+      "Materials/textures: brushed wood, glass, linen, leather, city-window reflections",
+      "Quality: high",
+      "Constraints: absolutely no readable text, letters, numbers, logos, pseudo-text, watermarks, or literal UI labels; any device screen should show only abstract blocks and shapes; do not reuse the transit-lounge or apartment-hero setting",
+      "Avoid: stock-photo restaurant advertising, cheesy romance tropes, harsh flash, enterprise dashboard screens, generic coffee-table planning scenes"
+    ].join("\n")
+  },
+  {
     id: "planner-studio",
     out: "public/generated/planners/parqara-planner-studio.png",
     size: "1024x1024",
@@ -234,6 +255,10 @@ export const uiAssetManifest = [
 export function getUiAssetPromptList() {
   return uiAssetManifest.map(({ id, out, prompt }) => ({ id, out, prompt }));
 }
+
+
+
+
 
 
 

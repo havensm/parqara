@@ -108,7 +108,7 @@ function DetailBlock({
 
 function LockedLiveNotice({ href, message }: { href: string; message: string }) {
   return (
-    <div className="rounded-[28px] border border-[rgba(244,182,73,0.14)] bg-[linear-gradient(135deg,rgba(255,250,242,0.98),rgba(255,253,249,0.94))] px-5 py-4 text-sm text-[var(--amber-700)] shadow-[0_8px_20px_rgba(244,182,73,0.06)]">
+    <div className="rounded-[30px] border border-[rgba(244,182,73,0.12)] bg-[linear-gradient(180deg,rgba(255,251,244,0.98),rgba(255,255,255,0.96))] px-5 py-4 text-sm text-[var(--amber-700)] shadow-[0_10px_22px_rgba(244,182,73,0.05)]">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <p className="leading-6">{message}</p>
         <Link href={href} className="font-semibold text-[var(--amber-700)] transition hover:text-[#9b640e]">
@@ -141,11 +141,9 @@ export function PlannerDashboardDetails({ currentTier, trip, catalog }: PlannerD
       <div className="overflow-hidden rounded-[30px] border border-[var(--card-border)] bg-white shadow-[0_18px_40px_rgba(12,20,37,0.05)]">
         <div className="flex flex-col gap-4 border-b border-[var(--card-border)] px-5 py-5 sm:px-6 sm:py-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-3xl">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Plan details</p>
-            <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-[-0.04em] text-[var(--foreground)] sm:text-[2.15rem]">
-              Saved details.
-            </h2>
-            <p className="mt-2 text-sm leading-7 text-[var(--muted)]">Mara uses these when shaping the day.</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Current plan</p>
+            <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-[-0.04em] text-[var(--foreground)] sm:text-[2.15rem]">Plan snapshot.</h2>
+            <p className="mt-2 text-sm leading-7 text-[var(--muted)]">This is Mara&apos;s live view of the planner, built from your pinned basics.</p>
           </div>
 
           <div className="flex flex-wrap gap-3">
@@ -218,3 +216,9 @@ export function PlannerDashboardDetails({ currentTier, trip, catalog }: PlannerD
     </div>
   );
 }
+
+
+
+
+
+

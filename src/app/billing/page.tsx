@@ -36,10 +36,10 @@ export default async function BillingPage({
     billing.currentTier === "PRO"
       ? billing.featureAccess.plannerTemplates
         ? `${savedTemplates.length} template${savedTemplates.length === 1 ? "" : "s"} saved, plus duplication, version history, and collaboration.`
-        : "Templates, duplication, version history, and collaboration are included on Pro."
+        : "Templates, duplication, and version history are included on Pro."
       : billing.currentTier === "PLUS"
         ? "Live mode, replans, and more room are included."
-        : "Full Mara is included, with room for one active planner.";
+        : "Full Mara and planner sharing are included, with room for one active planner.";
 
   return (
     <AppShell
@@ -95,7 +95,7 @@ export default async function BillingPage({
               <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">
                 {nextUpgradePlan
                   ? nextUpgradePlan.summary
-                  : "Pro already includes the higher-volume workflow tools: duplication, templates, version history, and collaborator access."}
+                  : "Pro already includes the higher-volume workflow tools: duplication, templates, and version history."}
               </p>
               <div className="mt-5 flex flex-wrap gap-3">
                 {nextUpgradePlan ? (
@@ -191,4 +191,5 @@ function BillingRow({
     </div>
   );
 }
+
 
