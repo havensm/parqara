@@ -197,7 +197,7 @@ export function ProfilePreferencesForm({
                 {values.profileImageDataUrl ? <AvatarImage src={values.profileImageDataUrl} alt={`${displayName} profile photo`} /> : null}
                 <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
               </Avatar>
-              <p className="mt-4 text-sm font-semibold text-slate-950">Shown around Parqara</p>
+              <p className="mt-4 text-sm font-semibold text-slate-950">Used on your profile</p>
               <p className="mt-1 text-sm leading-6 text-slate-500">Upload a PNG, JPG, or WebP image.</p>
             </div>
             <div className="mt-5 flex flex-wrap gap-3">

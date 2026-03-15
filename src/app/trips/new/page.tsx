@@ -10,8 +10,10 @@ import {
 } from "@/lib/trip-planner-agent";
 import {
   buildTripWorkspaceTabs,
+  getTripWorkspaceHref,
   getTripWorkspaceStatusDetail,
   isPlannerKickoffDraft,
+  pickDefaultTrip,
 } from "@/lib/trip-workspace";
 import { getPlannerLimitState } from "@/server/services/planner-entitlement-service";
 import {
@@ -38,9 +40,20 @@ export default async function NewTripPage({ searchParams }: { searchParams: Prom
   const plannerLimitState = await getPlannerLimitState(user.id);
   const defaultVisitDate = addDays(new Date(), 7).toISOString().slice(0, 10);
   const { fresh, tripId } = await searchParams;
-  const defaultPark = tripId ? null : await getDefaultParkSummary();
+  const shouldReuseExistingPlanner = !tripId && fresh !== "1";
+  const [defaultPark, existingTrips] = await Promise.all([
+    tripId ? null : getDefaultParkSummary(),
+    shouldReuseExistingPlanner ? listDashboardTrips(user.id) : Promise.resolve([]),
+  ]);
 
-  if (!tripId && !plannerLimitState.canCreate) {
+  if (shouldReuseExistingPlanner && existingTrips.length) {
+    const existingTrip = pickDefaultTrip(existingTrips);
+    if (existingTrip) {
+      redirect(getTripWorkspaceHref(existingTrip));
+    }
+  }
+
+  if (fresh === "1" && !tripId && !plannerLimitState.canCreate) {
     return (
       <div className="space-y-6">
         <PlannerLimitCard

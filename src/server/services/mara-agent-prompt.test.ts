@@ -28,6 +28,7 @@ const sampleContext: PlannerContext = {
     status: "LIVE",
     visitDate: "2026-04-01",
     latestPlanSummary: "Keep the morning calm and protect lunch.",
+    startingLocation: "Riverside Hotel",
     partySize: 3,
     kidsAges: [8],
     thrillTolerance: "MEDIUM",
@@ -49,6 +50,7 @@ describe("buildMaraInstructions", () => {
     expect(instructions).toContain("You are Mara, Parqara's Trip Planning Concierge.");
     expect(instructions).toContain("Ask one question at a time when possible.");
     expect(instructions).toContain("Focused trip: Spring Break at Aurora Adventure Park on 2026-04-01 (Live)");
+    expect(instructions).toContain("Focused trip starting location: Riverside Hotel");
     expect(instructions).toContain("Focused trip itinerary preview: River Run -> Lunch at Harbor Grill");
     expect(instructions).toContain("Accessibility needs: mobility support");
   });

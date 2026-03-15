@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { CirclePlus, LoaderCircle, Mail, PencilLine, ShieldAlert, ShieldCheck, Trash2, UserRound, X } from "lucide-react";
+import { ChevronDown, CirclePlus, LoaderCircle, Mail, PencilLine, ShieldAlert, ShieldCheck, Trash2, UserRound, X } from "lucide-react";
 
 import { canAccessBillingFeature } from "@/lib/billing";
 import type { SubscriptionTierValue, TripCollaboratorStateDto } from "@/lib/contracts";
@@ -36,6 +36,7 @@ export function TripPlannerSettingsDialog({
   const [draftName, setDraftName] = useState(tripName);
   const [inviteEmail, setInviteEmail] = useState("");
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [isWorkflowOpen, setIsWorkflowOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSavingName, setIsSavingName] = useState(false);
@@ -53,6 +54,7 @@ export function TripPlannerSettingsDialog({
       setInviteEmail("");
       setIsDeleteDialogOpen(false);
       setDeleteConfirmation("");
+      setIsWorkflowOpen(false);
       setError(null);
       setIsLoading(false);
       setIsSavingName(false);
@@ -120,6 +122,7 @@ export function TripPlannerSettingsDialog({
     setError(null);
     setIsDeleteDialogOpen(false);
     setDeleteConfirmation("");
+    setIsWorkflowOpen(false);
     if (!isCollaborationLocked) {
       void loadCollaborators(true);
     }
@@ -131,6 +134,7 @@ export function TripPlannerSettingsDialog({
     setDraftName(tripName);
     setInviteEmail("");
     setDeleteConfirmation("");
+    setIsWorkflowOpen(false);
     setError(null);
   }
 
@@ -500,7 +504,27 @@ export function TripPlannerSettingsDialog({
                 ) : null}
               </section>
 
-              <PlannerWorkflowPanel currentTier={currentTier} tripId={tripId} tripName={draftName.trim() || tripName} isOwner={isOwner} />
+              <section className="rounded-[24px] border border-[var(--card-border)] bg-[linear-gradient(180deg,#ffffff_0%,#fbfdff_100%)] shadow-[0_10px_24px_rgba(12,20,37,0.04)]">
+                <button
+                  type="button"
+                  onClick={() => setIsWorkflowOpen((open) => !open)}
+                  className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
+                  aria-expanded={isWorkflowOpen}
+                  aria-controls={`planner-workflow-${tripId}`}
+                >
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Workflow tools</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">Duplicate, archive, or save templates only when you need them.</p>
+                  </div>
+                  <ChevronDown className={`h-5 w-5 shrink-0 text-slate-500 transition ${isWorkflowOpen ? "rotate-180" : ""}`} />
+                </button>
+
+                {isWorkflowOpen ? (
+                  <div id={`planner-workflow-${tripId}`} className="border-t border-[var(--card-border)] px-4 pb-4 pt-1 sm:px-5 sm:pb-5">
+                    <PlannerWorkflowPanel currentTier={currentTier} tripId={tripId} tripName={draftName.trim() || tripName} isOwner={isOwner} compact />
+                  </div>
+                ) : null}
+              </section>
 
               {isOwner ? (
                 <section className="rounded-[24px] border border-[var(--card-border)] bg-[rgba(247,250,255,0.96)] px-4 py-4">

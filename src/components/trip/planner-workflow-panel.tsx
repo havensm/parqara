@@ -73,7 +73,6 @@ export function PlannerWorkflowPanel({
       }
 
       router.push(`/trips/${result.tripId}`);
-      router.refresh();
     });
   }
 

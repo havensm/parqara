@@ -26,6 +26,7 @@ export type PlannerContext = {
     status: TripStatusValue;
     visitDate: string;
     latestPlanSummary: string | null;
+    startingLocation: string | null;
     partySize: number;
     kidsAges: number[];
     thrillTolerance: string;
@@ -81,6 +82,7 @@ export async function getPlannerContext(userId: string, tripId: string): Promise
           status: focusedTrip.status,
           visitDate: focusedTrip.visitDate,
           latestPlanSummary: focusedTrip.latestPlanSummary,
+          startingLocation: focusedTrip.startingLocation,
           partySize: focusedTrip.partyProfile.partySize,
           kidsAges: focusedTrip.partyProfile.kidsAges,
           thrillTolerance: focusedTrip.partyProfile.thrillTolerance,

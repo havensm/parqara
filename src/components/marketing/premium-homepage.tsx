@@ -56,6 +56,9 @@ const typicalUseCases = [
     title: "A Friday date night",
     detail: "Dinner, sitter timing, one or two fun stops, and a backup if the night shifts.",
     icon: HeartHandshake,
+    image: generatedVisuals.homepage.dayOf,
+    imageAlt: "Date-night planning and day-of itinerary scene",
+    imageClassName: "object-cover object-center",
     tone:
       "bg-[radial-gradient(circle_at_top_left,rgba(255,141,107,0.2),transparent_26%),linear-gradient(180deg,rgba(255,247,243,0.96),rgba(255,255,255,0.92))]",
   },
@@ -64,6 +67,9 @@ const typicalUseCases = [
     title: "A Disney week with the family",
     detail: "Park days, dining, notes, and a shared plan that still works once the trip starts.",
     icon: Compass,
+    image: generatedVisuals.homepage.story,
+    imageAlt: "Family trip planning inspiration scene",
+    imageClassName: "object-cover object-center",
     tone:
       "bg-[radial-gradient(circle_at_top_left,rgba(99,167,255,0.2),transparent_26%),linear-gradient(180deg,rgba(241,247,255,0.96),rgba(255,255,255,0.92))]",
   },
@@ -137,6 +143,8 @@ export function PremiumHomepage({ currentTier, primaryHref, primaryLabel, second
         </div>
       </section>
 
+      <MaraChatPreview />
+
       <section id="use-cases" className="space-y-5 scroll-mt-32">
         <SectionIntro eyebrow="Typical use cases" title="A night out or a family trip." />
         <div className="grid gap-5 xl:grid-cols-2">
@@ -146,27 +154,33 @@ export function PremiumHomepage({ currentTier, primaryHref, primaryLabel, second
             return (
               <div
                 key={useCase.title}
-                className={`surface-shell premium-card-tilt overflow-hidden rounded-[34px] p-6 sm:p-7 ${useCase.tone}`}
+                className={`surface-shell premium-card-tilt overflow-hidden rounded-[34px] ${useCase.tone}`}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="max-w-2xl">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--muted)]">{useCase.eyebrow}</p>
-                    <h3 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight text-[var(--foreground)]">
-                      {useCase.title}
-                    </h3>
-                    <p className="mt-4 text-sm leading-7 text-[var(--muted)]">{useCase.detail}</p>
+                <div className="relative h-52 overflow-hidden border-b border-white/70 sm:h-56">
+                  <Image
+                    src={useCase.image}
+                    alt={useCase.imageAlt}
+                    fill
+                    sizes="(min-width: 1280px) 42vw, 100vw"
+                    className={useCase.imageClassName}
+                  />
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,17,30,0.06)_0%,rgba(8,17,30,0.54)_100%)]" />
+                  <div className="absolute right-5 top-5 flex h-12 w-12 items-center justify-center rounded-[18px] border border-white/70 bg-white/82 shadow-[0_14px_30px_rgba(12,20,37,0.08)]">
+                    <Icon className="h-5 w-5 text-[var(--foreground)]" />
                   </div>
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[20px] border border-white/75 bg-white/78 shadow-[0_14px_30px_rgba(12,20,37,0.08)]">
-                    <Icon className="h-6 w-6 text-[var(--foreground)]" />
-                  </div>
+                </div>
+                <div className="p-6 sm:p-7">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--muted)]">{useCase.eyebrow}</p>
+                  <h3 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight text-[var(--foreground)]">
+                    {useCase.title}
+                  </h3>
+                  <p className="mt-4 text-sm leading-7 text-[var(--muted)]">{useCase.detail}</p>
                 </div>
               </div>
             );
           })}
         </div>
       </section>
-
-      <MaraChatPreview />
 
       <section id="pricing" className="space-y-5 scroll-mt-32">
         <SectionIntro eyebrow="Pricing" title="Start free. Upgrade when you want more Mara." align="center" />
@@ -182,7 +196,7 @@ export function PremiumHomepage({ currentTier, primaryHref, primaryLabel, second
           <div className="space-y-3 lg:max-w-[48rem] lg:flex-1">
             <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-cyan-100/72">{signedIn ? "Welcome back" : "Create your account"}</p>
             <h2 className="font-[family-name:var(--font-display)] text-4xl font-semibold tracking-[-0.05em] text-white sm:text-5xl lg:text-[3.35rem] lg:leading-[0.96] lg:whitespace-nowrap">
-              {signedIn ? "Jump back into your planning home." : "Create your account and start planning with Mara."}
+              {signedIn ? "Back to planning." : "Create your account and start planning with Mara."}
             </h2>
             <p className="text-base leading-7 text-slate-300">{signedIn ? "Open Mara and shape the next adventure." : "Start planning in seconds."}</p>
           </div>

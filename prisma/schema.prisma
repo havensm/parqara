@@ -244,6 +244,7 @@ model Trip {
   userId                      String
   parkId                      String
   name                        String
+  startingLocation            String?
   visitDate                   DateTime
   status                      TripStatus              @default(DRAFT)
   plannerStatus               PlannerStatus           @default(ACTIVE)
@@ -447,6 +448,8 @@ model ParkStateSnapshot {
   @@index([tripId, effectiveTime])
   @@index([parkId, effectiveTime])
 }
+
+
 
 
 

@@ -43,17 +43,25 @@ export async function SiteSidebar() {
 
   return (
     <div className="space-y-4">
+      <SidebarNav adminEnabled={adminEnabled} currentTier={billing.currentTier} />
+
       <div className="rounded-[28px] border border-white/72 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(246,250,255,0.94))] p-4 shadow-[0_18px_36px_rgba(12,20,37,0.08)]">
-        <Link href="/profile" className="flex min-w-0 items-center gap-3 rounded-[18px] p-1 transition hover:bg-white/72">
-          <Avatar className="h-12 w-12 ring-2 ring-white/70 shadow-[0_10px_22px_rgba(12,20,37,0.10)]">
-            {user.profileImageDataUrl ? <AvatarImage src={user.profileImageDataUrl} alt={`${displayName} profile photo`} /> : null}
-            <AvatarFallback>{initials}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-[var(--foreground)]">{displayName}</p>
-            <p className="mt-1 truncate text-xs text-[var(--muted)]">{user.email}</p>
+        <div className="flex items-start justify-between gap-3">
+          <Link href="/profile" className="flex min-w-0 flex-1 items-center gap-3 rounded-[18px] p-1 transition hover:bg-white/72">
+            <Avatar className="h-12 w-12 ring-2 ring-white/70 shadow-[0_10px_22px_rgba(12,20,37,0.10)]">
+              {user.profileImageDataUrl ? <AvatarImage src={user.profileImageDataUrl} alt={`${displayName} profile photo`} /> : null}
+              <AvatarFallback>{initials}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-[var(--foreground)]">{displayName}</p>
+              <p className="mt-1 truncate text-xs text-[var(--muted)]">{user.email}</p>
+            </div>
+          </Link>
+
+          <div className="shrink-0 pt-1">
+            <SignOutButton />
           </div>
-        </Link>
+        </div>
 
         <div className="mt-4 flex items-center justify-between gap-3 rounded-[18px] border border-[var(--card-border)] bg-[var(--surface-muted)] px-3.5 py-3 text-sm">
           <div>
@@ -65,12 +73,7 @@ export async function SiteSidebar() {
           </Link>
         </div>
 
-        <div className="mt-4 flex justify-end">
-          <SignOutButton />
-        </div>
       </div>
-
-      <SidebarNav adminEnabled={adminEnabled} currentTier={billing.currentTier} />
     </div>
   );
 }

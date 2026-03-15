@@ -28,16 +28,17 @@ type TripPlannerConciergeProps = {
   onMessagesChange?: (messages: TripPlannerChatMessage[]) => void;
   refreshOnReply?: boolean;
   headerAction?: ReactNode;
+  starterMode?: boolean;
 };
 
 const textareaClassName =
   "min-h-[104px] w-full resize-none rounded-[22px] border border-[var(--card-border)] bg-white px-4 py-3 text-[15px] text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted)] focus:border-[rgba(27,107,99,0.32)]";
 
-function buildInitialMessages(firstName?: string | null, tripContext?: TripPlannerTripContext): TripPlannerChatMessage[] {
+function buildInitialMessages(firstName?: string | null, tripContext?: TripPlannerTripContext, starterMode = false): TripPlannerChatMessage[] {
   return [
     {
       role: "assistant",
-      content: buildTripPlannerWelcomeMessage(firstName, tripContext),
+      content: buildTripPlannerWelcomeMessage(firstName, tripContext, starterMode),
     },
   ];
 }
@@ -51,21 +52,22 @@ export function TripPlannerConcierge({
   onMessagesChange,
   refreshOnReply = false,
   headerAction,
+  starterMode = false,
 }: TripPlannerConciergeProps) {
   const router = useRouter();
-  const [messages, setMessages] = useState<TripPlannerChatMessage[]>(() => buildInitialMessages(firstName, tripContext));
+  const [messages, setMessages] = useState<TripPlannerChatMessage[]>(() => buildInitialMessages(firstName, tripContext, starterMode));
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const threadScrollRef = useRef<HTMLDivElement | null>(null);
 
-  const quickPrompts = (questions.length ? questions : getTripPlannerStarterPrompts(tripContext)).slice(0, tripContext ? 1 : 2);
+  const quickPrompts = (questions.length ? questions : getTripPlannerStarterPrompts(tripContext, starterMode)).slice(0, starterMode ? 2 : tripContext ? 1 : 2);
 
   useEffect(() => {
-    setMessages(buildInitialMessages(firstName, tripContext));
+    setMessages(buildInitialMessages(firstName, tripContext, starterMode));
     setDraft("");
     setError(null);
-  }, [firstName, tripContext, tripId]);
+  }, [firstName, starterMode, tripContext, tripId]);
 
   useEffect(() => {
     onMessagesChange?.(messages);
@@ -88,7 +90,7 @@ export function TripPlannerConcierge({
       return;
     }
 
-    setMessages(buildInitialMessages(firstName, tripContext));
+    setMessages(buildInitialMessages(firstName, tripContext, starterMode));
     setDraft("");
     setError(null);
   }
@@ -158,10 +160,10 @@ export function TripPlannerConcierge({
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Mara</p>
               <h2 className="mt-2 font-[family-name:var(--font-space-grotesk)] text-[1.85rem] font-semibold tracking-tight text-[var(--foreground)] sm:text-[2.05rem]">
-                {tripContext?.name ?? "Planner"}
+                {starterMode ? "Start planning" : tripContext?.name ?? "Planner"}
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-7 text-[var(--muted)]">
-                {tripContext ? `${tripContext.parkName} · ${tripContext.visitDate}` : "Open a planner to talk with Mara."}
+                {starterMode ? "Tell Mara what you want to plan." : tripContext ? `${tripContext.parkName} · ${tripContext.visitDate}` : "Open a planner to talk with Mara."}
               </p>
             </div>
           </div>
@@ -234,7 +236,7 @@ export function TripPlannerConcierge({
           <textarea
             className={textareaClassName}
             disabled={isPending}
-            placeholder={tripContext ? "What should we change?" : "Open a planner to talk with Mara."}
+            placeholder={starterMode ? "What do you want to plan?" : tripContext ? "What should we change?" : "Open a planner to talk with Mara."}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={(event) => {

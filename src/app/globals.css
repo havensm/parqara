@@ -52,10 +52,13 @@ html {
 body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at 12% 14%, rgba(244, 182, 73, 0.16), transparent 16%),
-    radial-gradient(circle at 86% 10%, rgba(99, 167, 255, 0.14), transparent 18%),
-    radial-gradient(circle at 74% 80%, rgba(28, 198, 170, 0.12), transparent 22%),
-    linear-gradient(180deg, #fffdf8 0%, #f8fbff 38%, #eef5fc 100%);
+    radial-gradient(circle at 8% 10%, rgba(255, 177, 112, 0.2), transparent 18%),
+    radial-gradient(circle at 24% 82%, rgba(244, 182, 73, 0.16), transparent 20%),
+    radial-gradient(circle at 52% 18%, rgba(156, 132, 255, 0.12), transparent 24%),
+    radial-gradient(circle at 82% 14%, rgba(99, 167, 255, 0.16), transparent 20%),
+    radial-gradient(circle at 88% 72%, rgba(28, 198, 170, 0.14), transparent 24%),
+    radial-gradient(circle at 68% 90%, rgba(255, 141, 107, 0.12), transparent 22%),
+    linear-gradient(180deg, #fffaf3 0%, #f6f9ff 38%, #eef6ff 100%);
   color: var(--foreground);
   font-family: var(--font-manrope), sans-serif;
   text-rendering: optimizeLegibility;
@@ -192,11 +195,30 @@ textarea {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 10% 12%, rgba(244, 182, 73, 0.16), transparent 18%),
-    radial-gradient(circle at 88% 14%, rgba(99, 167, 255, 0.14), transparent 18%),
-    radial-gradient(circle at 70% 74%, rgba(28, 198, 170, 0.12), transparent 22%),
-    linear-gradient(180deg, rgba(255, 250, 244, 0.92), rgba(242, 248, 255, 0.92));
+    radial-gradient(circle at 8% 10%, rgba(255, 183, 122, 0.22), transparent 20%),
+    radial-gradient(circle at 20% 78%, rgba(244, 182, 73, 0.18), transparent 22%),
+    radial-gradient(circle at 46% 16%, rgba(132, 114, 255, 0.14), transparent 22%),
+    radial-gradient(circle at 82% 14%, rgba(99, 167, 255, 0.18), transparent 20%),
+    radial-gradient(circle at 88% 72%, rgba(28, 198, 170, 0.16), transparent 24%),
+    radial-gradient(circle at 64% 92%, rgba(255, 141, 107, 0.12), transparent 22%),
+    linear-gradient(180deg, rgba(255, 250, 244, 0.9), rgba(244, 248, 255, 0.92));
 }
+
+.app-shell-scene__colorfields {
+  position: absolute;
+  inset: -8%;
+  background:
+    radial-gradient(circle at 14% 18%, rgba(255, 168, 96, 0.2), transparent 16%),
+    radial-gradient(circle at 32% 54%, rgba(255, 213, 108, 0.12), transparent 18%),
+    radial-gradient(circle at 58% 22%, rgba(132, 114, 255, 0.12), transparent 18%),
+    radial-gradient(circle at 78% 18%, rgba(111, 182, 255, 0.14), transparent 18%),
+    radial-gradient(circle at 84% 58%, rgba(39, 201, 177, 0.14), transparent 20%),
+    radial-gradient(circle at 62% 86%, rgba(255, 141, 107, 0.12), transparent 20%);
+  opacity: 0.9;
+  filter: blur(56px) saturate(1.02);
+  transform: scale(1.04);
+}
+
 
 .app-shell-scene__wallpaper {
   position: absolute;

@@ -45,9 +45,9 @@ export function PlannerLimitCard({
 
         if (result.nextPath) {
           router.push(result.nextPath);
+        } else {
+          router.refresh();
         }
-
-        router.refresh();
       } catch (actionError) {
         setError(actionError instanceof Error ? actionError.message : `Unable to ${action} this planner.`);
       } finally {

@@ -31,6 +31,7 @@ export function buildPlannerContextBlock(context: PlannerContext) {
   if (context.focusedTrip) {
     lines.push(`Focused trip: ${context.focusedTrip.name} at ${context.focusedTrip.parkName} on ${context.focusedTrip.visitDate} (${formatTripPlannerStatusLabel(context.focusedTrip.status)})`);
     lines.push(`Focused trip summary: ${formatPlannerValue(context.focusedTrip.latestPlanSummary)}`);
+    lines.push(`Focused trip starting location: ${formatPlannerValue(context.focusedTrip.startingLocation)}`);
     lines.push(
       `Focused trip party: ${context.focusedTrip.partySize} guest${context.focusedTrip.partySize === 1 ? "" : "s"}${
         context.focusedTrip.kidsAges.length ? `, kids ages ${context.focusedTrip.kidsAges.join(", ")}` : ""

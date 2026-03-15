@@ -5,7 +5,6 @@ import { canAccessBillingFeature } from "@/lib/billing";
 import type { ParkCatalogDto, SubscriptionTierValue, TripDetailDto } from "@/lib/contracts";
 
 import { TripForm } from "@/components/trip/trip-form";
-import { TripPlannerSettingsDialog } from "@/components/trip/trip-planner-settings-dialog";
 import { buttonStyles } from "@/components/ui/button";
 
 type PlannerDashboardDetailsProps = {
@@ -109,10 +108,13 @@ function DetailBlock({
 
 function LockedLiveNotice({ href, message }: { href: string; message: string }) {
   return (
-    <div className="rounded-[22px] border border-[rgba(244,182,73,0.18)] bg-[rgba(255,249,239,0.94)] px-4 py-3 text-sm text-[var(--amber-700)] shadow-[0_10px_24px_rgba(244,182,73,0.08)]">
-      <Link href={href} className="font-semibold underline decoration-[rgba(187,120,16,0.28)] underline-offset-4">
-        {message}
-      </Link>
+    <div className="rounded-[28px] border border-[rgba(244,182,73,0.14)] bg-[linear-gradient(135deg,rgba(255,250,242,0.98),rgba(255,253,249,0.94))] px-5 py-4 text-sm text-[var(--amber-700)] shadow-[0_8px_20px_rgba(244,182,73,0.06)]">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <p className="leading-6">{message}</p>
+        <Link href={href} className="font-semibold text-[var(--amber-700)] transition hover:text-[#9b640e]">
+          Upgrade
+        </Link>
+      </div>
     </div>
   );
 }
@@ -127,14 +129,6 @@ export function PlannerDashboardDetails({ currentTier, trip, catalog }: PlannerD
   if (trip.status === "DRAFT" && catalog) {
     return (
       <div className="space-y-4">
-        <div className="flex flex-col gap-3 rounded-[26px] border border-[var(--card-border)] bg-white px-4 py-4 shadow-[0_14px_30px_rgba(12,20,37,0.05)] sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Saved details</p>
-            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Edit the basics here.</p>
-          </div>
-          <TripPlannerSettingsDialog currentTier={currentTier} tripId={trip.id} tripName={trip.name} isOwner={trip.isOwner} />
-        </div>
-
         <TripForm catalog={catalog} initialTrip={trip} />
 
         {liveLocked ? <LockedLiveNotice href={upgradeHref} message="Live mode opens on Plus." /> : null}
@@ -192,12 +186,9 @@ export function PlannerDashboardDetails({ currentTier, trip, catalog }: PlannerD
         </div>
 
         <div className="border-t border-[var(--card-border)] px-5 py-5 sm:px-6 sm:py-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Route preview</p>
-              <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{nextItem ? `Next: ${nextItem.title}` : "No route yet."}</p>
-            </div>
-            <TripPlannerSettingsDialog currentTier={currentTier} tripId={trip.id} tripName={trip.name} isOwner={trip.isOwner} />
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Route preview</p>
+            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{nextItem ? `Next: ${nextItem.title}` : "No route yet."}</p>
           </div>
 
           <div className="mt-4 space-y-2.5">
