@@ -3,15 +3,11 @@ import { Agent, Runner, assistant, user, type AgentInputItem } from "@openai/age
 import type { TripPlannerChatMessage } from "@/lib/trip-planner-agent";
 
 import type { PlannerContext } from "@/server/services/mara-agent-context";
-import {
-  buildMaraInstructions,
-  buildPlannerContextBlock,
-  type MaraReplyMode,
-} from "@/server/services/mara-agent-prompt";
+import { buildMaraInstructions, buildPlannerContextBlock } from "@/server/services/mara-agent-prompt";
 
 const DEFAULT_HIGH_VALUE_MARA_MODEL = "gpt-5-mini";
 const DEFAULT_SPECIALIST_MARA_MODEL = "gpt-5-mini";
-const MARA_MESSAGE_HISTORY_LIMIT = 12;
+const MARA_MESSAGE_HISTORY_LIMIT = 8;
 
 type StructuredConversationState = {
   latestUserRequest: string;
@@ -22,7 +18,6 @@ type StructuredConversationState = {
 
 export type MaraRunContext = {
   plannerContext: PlannerContext;
-  replyMode: MaraReplyMode;
   conversation: StructuredConversationState;
 };
 
@@ -33,7 +28,6 @@ const maraRunner = new Runner({
 
 let cachedAgents:
   | {
-      preview: Agent<MaraRunContext>;
       intake: Agent<MaraRunContext>;
       destination: Agent<MaraRunContext>;
       itinerary: Agent<MaraRunContext>;
@@ -50,15 +44,6 @@ function getHighValueMaraModel() {
 
 function getSpecialistMaraModel() {
   return process.env.OPENAI_TRIP_PLANNER_SPECIALIST_MODEL || getHighValueMaraModel() || DEFAULT_SPECIALIST_MARA_MODEL;
-}
-
-function createPreviewAgent(model: string) {
-  return new Agent<MaraRunContext>({
-    name: "Mara Preview",
-    model,
-    handoffDescription: "Builds the single free-plan Mara preview.",
-    instructions: (runContext) => buildMaraInstructions(runContext.context.plannerContext, "preview"),
-  });
 }
 
 function createProfileIntakeAgent(model: string) {
@@ -141,7 +126,7 @@ function createSynthesisAgent(model: string) {
     handoffDescription: "Turns specialist notes back into Mara's user-facing response.",
     instructions: (runContext) =>
       [
-        buildMaraInstructions(runContext.context.plannerContext, "full"),
+        buildMaraInstructions(runContext.context.plannerContext),
         "You are the only user-facing speaker in this workflow.",
         "Use the specialist notes you receive to produce the final answer in Mara's voice.",
         "Do not mention internal agents, tools, orchestration, or specialist handoffs.",
@@ -155,7 +140,6 @@ function getAgents() {
 
   if (!cachedAgents || cachedHighValueModel !== highValueModel || cachedSpecialistModel !== specialistModel) {
     cachedAgents = {
-      preview: createPreviewAgent(highValueModel),
       intake: createProfileIntakeAgent(specialistModel),
       destination: createDestinationAgent(specialistModel),
       itinerary: createItineraryAgent(highValueModel),
@@ -230,30 +214,13 @@ export function mapTripPlannerMessagesToAgentInputItems(messages: TripPlannerCha
   });
 }
 
-export async function runMaraAgent(
-  plannerContext: PlannerContext,
-  messages: TripPlannerChatMessage[],
-  replyMode: MaraReplyMode = "full"
-) {
+export async function runMaraAgent(plannerContext: PlannerContext, messages: TripPlannerChatMessage[]) {
   const conversation = buildConversationState(plannerContext, messages);
   const runContext: MaraRunContext = {
     plannerContext,
-    replyMode,
     conversation,
   };
   const agents = getAgents();
-
-  if (replyMode === "preview") {
-    return runTextAgent(
-      agents.preview,
-      [
-        `Latest user request:\n${conversation.latestUserRequest}`,
-        `Recent user context:\n${conversation.recentUserContext}`,
-        "Build the single Free-plan preview now.",
-      ].join("\n\n"),
-      runContext
-    );
-  }
 
   const intakeSummary =
     (await runTextAgent(
@@ -315,4 +282,3 @@ export async function runMaraAgent(
     runContext
   );
 }
-

@@ -7,7 +7,6 @@ const mockApiError = vi.fn((error: unknown) =>
 const mockRequireApiUser = vi.fn();
 const mockGetUserBillingState = vi.fn();
 const mockReserveMaraUsage = vi.fn();
-const mockRollbackMaraUsageReservation = vi.fn();
 const mockGenerateTripPlannerReply = vi.fn();
 
 vi.mock("@/app/api/_utils", () => ({
@@ -21,7 +20,6 @@ vi.mock("@/lib/billing", () => ({
 
 vi.mock("@/server/services/mara-rate-limit-service", () => ({
   reserveMaraUsage: (...args: unknown[]) => mockReserveMaraUsage(...args),
-  rollbackMaraUsageReservation: (...args: unknown[]) => mockRollbackMaraUsageReservation(...args),
 }));
 
 vi.mock("@/server/services/trip-planner-agent", () => ({
@@ -35,28 +33,19 @@ describe("POST /api/assistant/trip-planner", () => {
     vi.clearAllMocks();
   });
 
-  it("returns the preview envelope for Free users", async () => {
+  it("returns the full-access envelope for Free users", async () => {
     mockRequireApiUser.mockResolvedValue({
       id: "user-1",
       subscriptionTier: "FREE",
       subscriptionStatus: "INACTIVE",
     });
-    mockGetUserBillingState
-      .mockReturnValueOnce({
-        currentTier: "FREE",
-        featureAccess: { aiConcierge: false },
-        maraStarterPreview: { usedReplies: 0, remainingReplies: 1, replyLimit: 1 },
-      })
-      .mockReturnValueOnce({
-        currentTier: "FREE",
-        featureAccess: { aiConcierge: false },
-        maraStarterPreview: { usedReplies: 1, remainingReplies: 0, replyLimit: 1 },
-      });
-    mockReserveMaraUsage.mockResolvedValue({
-      maraPreviewRepliesUsed: 1,
-      hadStarterReplyReservation: true,
+    mockGetUserBillingState.mockReturnValue({
+      currentTier: "FREE",
+      featureAccess: { aiConcierge: true },
+      maraStarterPreview: { usedReplies: 0, remainingReplies: 0, replyLimit: 1 },
     });
-    mockGenerateTripPlannerReply.mockResolvedValue("Here is the preview.");
+    mockReserveMaraUsage.mockResolvedValue(undefined);
+    mockGenerateTripPlannerReply.mockResolvedValue("Full planning reply.");
 
     const response = await POST(
       new Request("http://localhost/api/assistant/trip-planner", {
@@ -66,25 +55,17 @@ describe("POST /api/assistant/trip-planner", () => {
         },
         body: JSON.stringify({
           messages: [{ role: "user", content: "Help me plan lunch." }],
+          tripId: "trip-1",
         }),
       })
     );
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
-      reply: "Here is the preview.",
-      fullAccess: false,
-      usedStarterReplies: 1,
-      remainingStarterReplies: 0,
-      starterReplyLimit: 1,
+      reply: "Full planning reply.",
+      fullAccess: true,
     });
-    expect(mockGenerateTripPlannerReply).toHaveBeenCalledWith(
-      "user-1",
-      [{ role: "user", content: "Help me plan lunch." }],
-      undefined,
-      { replyMode: "preview" }
-    );
-    expect(mockRollbackMaraUsageReservation).not.toHaveBeenCalled();
+    expect(mockGenerateTripPlannerReply).toHaveBeenCalledWith("user-1", [{ role: "user", content: "Help me plan lunch." }], "trip-1");
   });
 
   it("returns the full-access envelope for paid Mara plans", async () => {
@@ -98,10 +79,7 @@ describe("POST /api/assistant/trip-planner", () => {
       featureAccess: { aiConcierge: true },
       maraStarterPreview: { usedReplies: 0, remainingReplies: 0, replyLimit: 1 },
     });
-    mockReserveMaraUsage.mockResolvedValue({
-      maraPreviewRepliesUsed: 0,
-      hadStarterReplyReservation: false,
-    });
+    mockReserveMaraUsage.mockResolvedValue(undefined);
     mockGenerateTripPlannerReply.mockResolvedValue("Full planning reply.");
 
     const response = await POST(
@@ -122,15 +100,10 @@ describe("POST /api/assistant/trip-planner", () => {
       reply: "Full planning reply.",
       fullAccess: true,
     });
-    expect(mockGenerateTripPlannerReply).toHaveBeenCalledWith(
-      "user-1",
-      [{ role: "user", content: "Build me a full plan." }],
-      "trip-1",
-      { replyMode: "full" }
-    );
+    expect(mockGenerateTripPlannerReply).toHaveBeenCalledWith("user-1", [{ role: "user", content: "Build me a full plan." }], "trip-1");
   });
 
-  it("rolls back the starter reservation when the AI reply fails", async () => {
+  it("returns the API error when the full Mara reply fails", async () => {
     mockRequireApiUser.mockResolvedValue({
       id: "user-1",
       subscriptionTier: "FREE",
@@ -138,13 +111,10 @@ describe("POST /api/assistant/trip-planner", () => {
     });
     mockGetUserBillingState.mockReturnValue({
       currentTier: "FREE",
-      featureAccess: { aiConcierge: false },
-      maraStarterPreview: { usedReplies: 0, remainingReplies: 1, replyLimit: 1 },
+      featureAccess: { aiConcierge: true },
+      maraStarterPreview: { usedReplies: 0, remainingReplies: 0, replyLimit: 1 },
     });
-    mockReserveMaraUsage.mockResolvedValue({
-      maraPreviewRepliesUsed: 1,
-      hadStarterReplyReservation: true,
-    });
+    mockReserveMaraUsage.mockResolvedValue(undefined);
     mockGenerateTripPlannerReply.mockRejectedValue(new Error("AI failed"));
 
     const response = await POST(
@@ -155,16 +125,12 @@ describe("POST /api/assistant/trip-planner", () => {
         },
         body: JSON.stringify({
           messages: [{ role: "user", content: "Help me plan lunch." }],
+          tripId: "trip-1",
         }),
       })
     );
 
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({ error: "AI failed" });
-    expect(mockRollbackMaraUsageReservation).toHaveBeenCalledWith({
-      userId: "user-1",
-      hadStarterReplyReservation: true,
-    });
   });
 });
-

@@ -58,6 +58,7 @@ for (const asset of selectedAssets) {
     prompt: asset.prompt,
     size: asset.size,
     quality: asset.quality,
+    ...(asset.background ? { background: asset.background } : {}),
   });
 
   const imageBase64 = result.data?.[0]?.b64_json;
@@ -69,3 +70,4 @@ for (const asset of selectedAssets) {
 }
 
 console.log("UI asset generation complete.");
+

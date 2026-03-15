@@ -1,21 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f5ff;
-  --background-soft: #eef6ff;
+  --background: #eff5ff;
+  --background-soft: #fff4e3;
   --foreground: #0f1d31;
   --muted: #60708a;
   --muted-strong: #40546f;
-  --surface: rgba(255, 255, 255, 0.9);
-  --surface-muted: rgba(247, 249, 255, 0.82);
+  --surface: rgba(255, 255, 255, 0.92);
+  --surface-muted: rgba(242, 247, 255, 0.88);
   --surface-strong: rgba(255, 255, 255, 0.98);
   --surface-dark: #0c1a2b;
-  --card-border: rgba(124, 149, 182, 0.16);
-  --card-border-strong: rgba(96, 128, 165, 0.24);
+  --card-border: rgba(116, 145, 176, 0.18);
+  --card-border-strong: rgba(82, 118, 160, 0.24);
   --ring: rgba(50, 201, 183, 0.26);
-  --shadow-soft: 0 22px 58px rgba(12, 20, 37, 0.08);
-  --shadow-panel: 0 34px 110px rgba(12, 20, 37, 0.12);
-  --shadow-float: 0 24px 70px rgba(12, 20, 37, 0.16);
+  --shadow-soft: 0 24px 60px rgba(12, 20, 37, 0.09);
+  --shadow-panel: 0 34px 112px rgba(12, 20, 37, 0.13);
+  --shadow-float: 0 26px 76px rgba(12, 20, 37, 0.17);
   --shadow-dark: 0 34px 90px rgba(8, 17, 30, 0.28);
   --teal-500: #1cc6aa;
   --teal-700: #126d64;
@@ -51,7 +51,11 @@ html {
 
 body {
   min-height: 100vh;
-  background: linear-gradient(180deg, #fbfcff 0%, #f6f8fd 46%, #eef4fb 100%);
+  background:
+    radial-gradient(circle at 12% 14%, rgba(244, 182, 73, 0.16), transparent 16%),
+    radial-gradient(circle at 86% 10%, rgba(99, 167, 255, 0.14), transparent 18%),
+    radial-gradient(circle at 74% 80%, rgba(28, 198, 170, 0.12), transparent 22%),
+    linear-gradient(180deg, #fffdf8 0%, #f8fbff 38%, #eef5fc 100%);
   color: var(--foreground);
   font-family: var(--font-manrope), sans-serif;
   text-rendering: optimizeLegibility;
@@ -107,15 +111,24 @@ textarea {
   background-clip: padding-box;
 }
 
+.soft-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dialog-scroll {
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
+
 .surface-panel {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(248, 251, 255, 0.98));
-  border: 1px solid rgba(214, 225, 240, 0.9);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(247, 251, 255, 0.95));
+  border: 1px solid rgba(216, 227, 241, 0.94);
   box-shadow: var(--shadow-soft);
 }
 
 .surface-shell {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 251, 255, 0.98));
-  border: 1px solid rgba(220, 229, 243, 0.94);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(246, 250, 255, 0.94));
+  border: 1px solid rgba(220, 229, 243, 0.9);
   box-shadow: var(--shadow-panel);
   backdrop-filter: none;
 }
@@ -137,9 +150,9 @@ textarea {
 .glass-chip {
   align-items: center;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.78);
-  background: rgba(255, 255, 255, 0.78);
-  box-shadow: 0 14px 30px rgba(12, 20, 37, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  background: linear-gradient(135deg, rgba(255, 250, 241, 0.82), rgba(244, 249, 255, 0.82));
+  box-shadow: 0 14px 30px rgba(12, 20, 37, 0.07);
   padding: 0.65rem 0.95rem;
 }
 
@@ -160,6 +173,97 @@ textarea {
 .premium-divider {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(124, 149, 182, 0.24), transparent);
+}
+
+.app-atlas-background {
+  position: relative;
+  isolation: isolate;
+}
+
+.app-shell-scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app-shell-scene__wash {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 10% 12%, rgba(244, 182, 73, 0.16), transparent 18%),
+    radial-gradient(circle at 88% 14%, rgba(99, 167, 255, 0.14), transparent 18%),
+    radial-gradient(circle at 70% 74%, rgba(28, 198, 170, 0.12), transparent 22%),
+    linear-gradient(180deg, rgba(255, 250, 244, 0.92), rgba(242, 248, 255, 0.92));
+}
+
+.app-shell-scene__wallpaper {
+  position: absolute;
+  inset: -3%;
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-size: cover;
+  mix-blend-mode: multiply;
+  opacity: 0.08;
+  filter: saturate(0.68) contrast(1.01) blur(2px);
+  transform: scale(1.02);
+}
+
+.app-shell-scene__texture {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 24%, rgba(22, 93, 97, 0.06) 0 2px, transparent 2px 100%),
+    radial-gradient(circle at 76% 30%, rgba(240, 180, 82, 0.05) 0 2px, transparent 2px 100%),
+    radial-gradient(circle at 64% 76%, rgba(47, 102, 211, 0.05) 0 2px, transparent 2px 100%),
+    repeating-linear-gradient(118deg, rgba(255, 255, 255, 0.14) 0 28px, rgba(15, 29, 49, 0.015) 28px 58px, transparent 58px 96px);
+  background-position: 0 0, 120px 80px, 240px 220px, center;
+  background-repeat: repeat, repeat, repeat, repeat;
+  background-size: 240px 240px, 260px 260px, 280px 280px, 100% 100%;
+  mix-blend-mode: multiply;
+  opacity: 0.2;
+}
+
+.app-shell-scene__routes {
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 1200'%3E%3Cg fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M-30 286 C 180 156 326 388 546 270 S 934 120 1142 258 S 1460 384 1650 252' stroke='%23165d61' stroke-width='5' stroke-opacity='0.045'/%3E%3Cpath d='M100 866 C 290 724 470 930 694 804 S 1068 650 1298 806 S 1516 910 1658 814' stroke='%232f66d3' stroke-width='4' stroke-opacity='0.035'/%3E%3Ccircle cx='272' cy='188' r='12' stroke='%23f0b452' stroke-width='2' stroke-opacity='0.05'/%3E%3Ccircle cx='1182' cy='314' r='14' stroke='%23165d61' stroke-width='2' stroke-opacity='0.04'/%3E%3Ccircle cx='862' cy='832' r='18' stroke='%232f66d3' stroke-width='2' stroke-opacity='0.04'/%3E%3C/g%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  mix-blend-mode: multiply;
+  opacity: 0.22;
+  filter: blur(1.4px);
+  transform: scale(1.02);
+}
+.app-atlas-background::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 40px;
+  background:
+    radial-gradient(circle at 10% 14%, rgba(244, 182, 73, 0.18), transparent 17%),
+    radial-gradient(circle at 88% 12%, rgba(99, 167, 255, 0.16), transparent 18%),
+    radial-gradient(circle at 68% 76%, rgba(28, 198, 170, 0.12), transparent 18%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.04));
+  pointer-events: none;
+  z-index: -2;
+}
+
+.app-atlas-background::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 40px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 1100'%3E%3Cg fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M-40 240 C 180 120 320 360 540 250 S 920 110 1120 240 S 1440 360 1660 230' stroke='%23126d64' stroke-width='6' stroke-opacity='0.10'/%3E%3Cpath d='M40 760 C 260 620 420 840 650 710 S 1020 560 1250 700 S 1500 850 1660 720' stroke='%232f66d3' stroke-width='5' stroke-opacity='0.08'/%3E%3Cpath d='M180 80 C 260 140 320 140 400 100' stroke='%23f4b649' stroke-width='4' stroke-opacity='0.10'/%3E%3Ccircle cx='278' cy='132' r='14' stroke='%23126d64' stroke-width='3' stroke-opacity='0.12'/%3E%3Ccircle cx='998' cy='562' r='18' stroke='%232f66d3' stroke-width='3' stroke-opacity='0.10'/%3E%3Ccircle cx='1320' cy='270' r='24' stroke='%23f4b649' stroke-width='3' stroke-opacity='0.10'/%3E%3Cpath d='M1260 150 a 54 54 0 1 1 0 108 a 54 54 0 1 1 0 -108' stroke='%23126d64' stroke-width='2' stroke-opacity='0.07'/%3E%3Cpath d='M220 640 a 72 72 0 1 1 0 144 a 72 72 0 1 1 0 -144' stroke='%232f66d3' stroke-width='2' stroke-opacity='0.06'/%3E%3C/g%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  mix-blend-mode: multiply;
+  opacity: 0.42;
+  pointer-events: none;
+  z-index: -1;
 }
 
 .premium-card-tilt {
@@ -282,4 +386,6 @@ textarea {
     transition: none !important;
   }
 }
+
+
 

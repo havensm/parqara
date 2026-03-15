@@ -80,7 +80,7 @@ export default async function NewTripPage({ searchParams }: { searchParams: Prom
     currentStep: draftTrip.currentStep,
     itineraryCount: draftTrip.itinerary.length,
   });
-  const tripContext = isStarterDraft ? undefined : buildTripPlannerTripContext(draftTrip);
+  const tripContext = buildTripPlannerTripContext(draftTrip);
   const questions = isStarterDraft ? [] : buildTripPlannerNeededQuestions(draftTrip);
   const tabs = buildTripWorkspaceTabs(trips);
   const plannerTabs = tabs.map((tab) => ({
@@ -97,7 +97,6 @@ export default async function NewTripPage({ searchParams }: { searchParams: Prom
       leadPanel={
         <MaraPlannerFocus
           currentTier={billing.currentTier}
-          maraStarterRepliesUsed={billing.maraStarterPreview.usedReplies}
           tripId={draftTrip.id}
           firstName={user.firstName ?? user.name ?? null}
           trip={draftTrip}
@@ -160,7 +159,6 @@ export default async function NewTripPage({ searchParams }: { searchParams: Prom
       rail={
         <PlannerWorkspaceRail
           currentTier={billing.currentTier}
-          maraStarterRepliesUsed={billing.maraStarterPreview.usedReplies}
           plannerLimitState={plannerLimitState}
           tabs={plannerTabs}
           activeTrip={{

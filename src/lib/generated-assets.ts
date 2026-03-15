@@ -1,4 +1,10 @@
 export const generatedVisuals = {
+  app: {
+    wallpaper: "/generated/app/parqara-shell-atlas-wallpaper.png",
+    compass: "/generated/app/parqara-shell-icon-compass.png",
+    pin: "/generated/app/parqara-shell-icon-pin.png",
+    calendar: "/generated/app/parqara-shell-icon-calendar.png",
+  },
   homepage: {
     hero: "/generated/homepage/parqara-hero-planning-suite.png",
     story: "/generated/homepage/parqara-weekend-atlas-scene.png",
@@ -15,4 +21,3 @@ export const generatedVisuals = {
     profile: "/generated/settings/parqara-profile-studio.png",
   },
 } as const;
-

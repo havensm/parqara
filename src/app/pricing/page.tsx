@@ -33,7 +33,7 @@ export default async function PricingPage({
           <SectionIntro
             eyebrow="Pricing"
             title="Premium planning without premium confusion."
-            description="Free covers the core planner. Plus unlocks unlimited Mara and live trip mode. Pro adds repeat-workflow and collaboration tools."
+            description="Every plan includes Mara. Plus adds more room and live mode. Pro adds scale, sharing, and workflow tools."
           />
 
           <div className="mt-6 flex flex-wrap gap-3">
@@ -47,8 +47,8 @@ export default async function PricingPage({
 
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             {[
-              ["Free", "Core planner, calendar, and one intentional Mara preview"],
-              ["Plus", "Unlimited Mara, live dashboard, and replans"],
+              ["Free", "Full Mara on one active planner"],
+              ["Plus", "3 active planners, live dashboard, and replans"],
               ["Pro", "Templates, versions, duplication, collaboration, and scale"],
             ].map(([label, detail]) => (
               <div key={label} className="rounded-[26px] border border-white/70 bg-white/70 px-4 py-4 shadow-[0_14px_30px_rgba(12,20,37,0.08)]">
@@ -84,8 +84,8 @@ export default async function PricingPage({
       <section className="space-y-5">
         <SectionIntro
           eyebrow="Compare plans"
-          title="Choose the level that matches how much planning help and workflow depth you want."
-          description="No message packs. No confusing credits. Just a clearer line between trying the product, using Mara fully, and stepping up into heavier planner workflows."
+          title="Choose the amount of planner room you need."
+          description="No message packs. No confusing credits. Just a clear line between one active plan, three, or ten."
         />
         <PricingGrid currentTier={billing?.currentTier} signedIn={Boolean(user)} />
       </section>
@@ -97,7 +97,7 @@ export default async function PricingPage({
           </div>
           <h2 className="mt-4 text-2xl font-semibold text-[var(--foreground)]">Free stays useful</h2>
           <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-            Trip setup, itinerary views, calendar access, notifications, and one active planner stay open so the product still feels complete before you upgrade.
+            Full Mara stays open on Free, with one active planner for the trip or outing you are working on now.
           </p>
         </Card>
 
@@ -107,7 +107,7 @@ export default async function PricingPage({
           </div>
           <h2 className="mt-4 text-2xl font-semibold text-[var(--foreground)]">Plus is the main plan</h2>
           <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-            Unlimited Mara, live mode, replans, and more planner room make Plus the full day-of planning tier for most people using Parqara seriously.
+            Plus is for people juggling a few plans at once and wanting live mode built in.
           </p>
         </Card>
 
@@ -125,13 +125,13 @@ export default async function PricingPage({
       <section className="surface-shell overflow-hidden rounded-[36px] px-6 py-7 sm:px-8 sm:py-8">
         <SectionIntro
           eyebrow="How access works"
-          title="Upgrade boundaries are meant to feel elegant and predictable."
-          description="Free gives you the product. Plus makes Mara and richer day-of planning fully available. Pro expands the workflow surface area instead of turning AI into a separate billing maze."
+          title="Plans are about room, not locked conversations."
+          description="Mara is included everywhere. Upgrading is about more active planners, live mode, and scale."
         />
         <div className="mt-5 grid gap-4 lg:grid-cols-3">
           {[
-            "Free users get a clean Mara preview after the basics are saved, not a paywall in the middle of a conversation.",
-            "Plus removes the planning ceiling so the premium experience feels continuous rather than metered.",
+            "Free includes full Mara on one active planner.",
+            "Plus gives you room for three active planners plus live mode and replans.",
             "Pro adds repeat-workflow value like templates and versions instead of just charging more for the same thing.",
           ].map((item) => (
             <div key={item} className="rounded-[26px] border border-white/70 bg-white/72 px-4 py-4 text-sm leading-7 text-[var(--muted)] shadow-[0_14px_30px_rgba(12,20,37,0.08)]">
@@ -146,3 +146,5 @@ export default async function PricingPage({
     </div>
   );
 }
+
+

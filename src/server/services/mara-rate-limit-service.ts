@@ -1,17 +1,11 @@
 import type { Prisma } from "@prisma/client/index";
 
-import { MARA_FREE_PREVIEW_REPLY_LIMIT, getPlanByTier } from "@/lib/billing";
 import type { SubscriptionTierValue } from "@/lib/contracts";
 import { db } from "@/lib/db";
 import { HttpError } from "@/lib/http-error";
 import { buildMaraRateLimitMessage, getMaraRateLimitRules } from "@/lib/mara-rate-limit";
 
 const MARA_REQUEST_RETENTION_MS = 2 * 24 * 60 * 60 * 1000;
-
-type MaraRequestReservation = {
-  maraPreviewRepliesUsed: number | null;
-  hadStarterReplyReservation: boolean;
-};
 
 type RequestLogEntry = {
   id: string;
@@ -49,6 +43,7 @@ function buildScopedRequestWhere(userId: string, currentRequest: RequestLogEntry
 }
 
 async function reserveMaraRateLimitSlot(userId: string, currentTier: SubscriptionTierValue) {
+  // We log first, then count inside each rolling window so burst traffic and retries are capped consistently.
   const requestLog = await db.maraRequestLog.create({
     data: {
       userId,
@@ -96,8 +91,6 @@ async function reserveMaraRateLimitSlot(userId: string, currentTier: Subscriptio
         },
       },
     });
-
-    return requestLog;
   } catch (error) {
     await db.maraRequestLog.deleteMany({
       where: {
@@ -106,90 +99,11 @@ async function reserveMaraRateLimitSlot(userId: string, currentTier: Subscriptio
     });
     throw error;
   }
-}
-
-async function reserveMaraStarterReply(userId: string, currentTier: SubscriptionTierValue) {
-  const updated = await db.user.updateMany({
-    where: {
-      id: userId,
-      maraPreviewRepliesUsed: {
-        lt: MARA_FREE_PREVIEW_REPLY_LIMIT,
-      },
-    },
-    data: {
-      maraPreviewRepliesUsed: {
-        increment: 1,
-      },
-    },
-  });
-
-  const usage = await db.user.findUnique({
-    where: {
-      id: userId,
-    },
-    select: {
-      maraPreviewRepliesUsed: true,
-    },
-  });
-
-  const usedReplies = usage?.maraPreviewRepliesUsed ?? MARA_FREE_PREVIEW_REPLY_LIMIT;
-
-  if (!updated.count) {
-    const replyLimit = MARA_FREE_PREVIEW_REPLY_LIMIT;
-    const remainingStarterReplies = Math.max(0, replyLimit - usedReplies);
-    throw new HttpError(
-      402,
-      `You have already used the Mara preview included on ${getPlanByTier(currentTier).name}. Upgrade to Plus to keep planning with unlimited Mara.`,
-      {
-        details: {
-          usedStarterReplies: usedReplies,
-          remainingStarterReplies,
-          starterReplyLimit: replyLimit,
-        },
-      }
-    );
-  }
-
-  return usedReplies;
 }
 
 export async function reserveMaraUsage(params: {
   userId: string;
   currentTier: SubscriptionTierValue;
-  hasFullAccess: boolean;
-}): Promise<MaraRequestReservation> {
-  const requestLog = await reserveMaraRateLimitSlot(params.userId, params.currentTier);
-
-  try {
-    const usedReplies = params.hasFullAccess ? null : await reserveMaraStarterReply(params.userId, params.currentTier);
-
-    return {
-      maraPreviewRepliesUsed: usedReplies,
-      hadStarterReplyReservation: !params.hasFullAccess,
-    };
-  } catch (error) {
-    await db.maraRequestLog.deleteMany({
-      where: {
-        id: requestLog.id,
-      },
-    });
-    throw error;
-  }
-}
-
-export async function rollbackMaraUsageReservation(params: { userId: string; hadStarterReplyReservation: boolean }) {
-  if (!params.hadStarterReplyReservation) {
-    return;
-  }
-
-  await db.user.update({
-    where: {
-      id: params.userId,
-    },
-    data: {
-      maraPreviewRepliesUsed: {
-        decrement: 1,
-      },
-    },
-  });
+}) {
+  await reserveMaraRateLimitSlot(params.userId, params.currentTier);
 }

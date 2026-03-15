@@ -62,8 +62,7 @@ export async function SiteHeader() {
   const initials = getInitials(displayName || "P");
   const navigationLinks: HeaderLink[] = user
     ? [
-        { href: "/app", label: "Home" },
-        { href: "/dashboard", label: "Planners" },
+        { href: "/dashboard", label: "Mara" },
         { href: "/calendar", label: "Calendar" },
         { href: "/billing", label: "Billing" },
         ...(adminUser ? [{ href: "/admin", label: "Admin" }] : []),

@@ -49,12 +49,12 @@ export function formatPlannerList(values: string[]) {
   return values.length ? values.map((value) => value.replaceAll("-", " ")).join(", ") : "Not set";
 }
 
-export async function getPlannerContext(userId: string, tripId?: string): Promise<PlannerContext> {
+export async function getPlannerContext(userId: string, tripId: string): Promise<PlannerContext> {
   const [user, onboarding, recentTrips, focusedTrip] = await Promise.all([
     getUserWithPreference(userId),
     getOnboardingState(userId),
     listDashboardTrips(userId),
-    tripId ? getTripDetail(userId, tripId) : Promise.resolve(null),
+    getTripDetail(userId, tripId),
   ]);
 
   return {

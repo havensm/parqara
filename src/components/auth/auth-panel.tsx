@@ -89,7 +89,7 @@ export function AuthPanel({ googleEnabled, mode }: AuthPanelProps) {
       throw new Error(result.error || "Authentication failed.");
     }
 
-    router.push(result.nextPath || "/app");
+    router.push(result.nextPath || "/dashboard");
     router.refresh();
   }
 

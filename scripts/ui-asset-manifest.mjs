@@ -1,5 +1,88 @@
 export const uiAssetManifest = [
   {
+    id: "app-shell-wallpaper",
+    out: "public/generated/app/parqara-shell-atlas-wallpaper.png",
+    size: "1536x1024",
+    quality: "high",
+    prompt: [
+      "Use case: stylized-concept",
+      "Asset type: full-page authenticated app wallpaper texture",
+      "Primary request: a premium full-bleed background scene for a travel-planning app, designed to sit behind a clean white interface without making the layout feel busy",
+      "Scene/background: a softly layered atlas-and-travel composition with route lines, map folds, passport-stamp motifs, itinerary notes, calendar hints, luggage textures, destination color washes, and elegant planning marks drifting through the frame",
+      "Subject: atmospheric travel-planning texture rather than a literal product screenshot, with subtle iconography for planning trips, nights out, weekends, and vacations",
+      "Style/medium: polished SaaS background art with realistic texture and gentle illustration cues",
+      "Composition/framing: wide full-page wallpaper with low-contrast detail distributed across the whole frame so it still works behind app cards and sidebars",
+      "Lighting/mood: warm, adventurous, confident, optimistic, sophisticated",
+      "Color palette: warm sand, sea-glass teal, soft sky blue, faded coral, parchment cream, deep navy accents",
+      "Materials/textures: paper grain, soft watercolor bloom, route ink, linen, faint embossed stamp marks",
+      "Quality: high",
+      "Constraints: absolutely no readable text, letters, numbers, labels, logos, or watermark anywhere; no literal UI cards, screens, windows, or people; details should feel decorative, travel-forward, and subtle enough for a background image",
+      "Avoid: stock-photo feel, noisy scrapbook clutter, hard geometric blocks, corporate dashboard look, childish travel stickers, harsh contrast"
+    ].join("\n")
+  },
+  {
+    id: "app-shell-icon-compass",
+    out: "public/generated/app/parqara-shell-icon-compass.png",
+    size: "1024x1024",
+    quality: "high",
+    background: "transparent",
+    prompt: [
+      "Use case: logo-brand",
+      "Asset type: travel-planning background icon with transparent background",
+      "Primary request: a single elegant compass rose icon for a premium trip-planning app background",
+      "Subject: one centered compass rose mark with refined linework and soft painterly detail, no container",
+      "Style/medium: premium editorial icon, halfway between a travel stamp and a modern brand emblem",
+      "Composition/framing: isolated centered icon on a fully transparent background, with generous breathing room around the mark",
+      "Lighting/mood: warm, adventurous, poised",
+      "Color palette: muted teal, warm amber, deep ink, soft parchment highlights",
+      "Materials/textures: inked linework, gentle paper-grain texture, subtle watercolor edges",
+      "Quality: high",
+      "Constraints: fully transparent background; absolutely no text, letters, numbers, logos, badges, circles around the icon, square tiles, shadow boxes, or watermark",
+      "Avoid: emoji style, childish illustration, clip-art, heavy 3D rendering, bright neon, thick sticker outlines"
+    ].join("\n")
+  },
+  {
+    id: "app-shell-icon-pin",
+    out: "public/generated/app/parqara-shell-icon-pin.png",
+    size: "1024x1024",
+    quality: "high",
+    background: "transparent",
+    prompt: [
+      "Use case: logo-brand",
+      "Asset type: travel-planning background icon with transparent background",
+      "Primary request: a single elegant destination pin icon for a premium trip-planning app background",
+      "Subject: one centered location-pin mark with a subtle route swirl or waypoint detail, no container",
+      "Style/medium: premium editorial icon, soft travel-stamp sophistication rather than a flat app icon",
+      "Composition/framing: isolated centered icon on a fully transparent background, balanced and readable at faint oversized background scale",
+      "Lighting/mood: warm, inviting, exploratory",
+      "Color palette: sea-glass teal, soft coral, muted navy, parchment cream highlights",
+      "Materials/textures: inked edge detail, watercolor fill, gentle paper texture",
+      "Quality: high",
+      "Constraints: fully transparent background; absolutely no text, letters, numbers, logos, badges, frames, square tiles, or watermark",
+      "Avoid: generic map-app iconography, emoji style, clip-art, heavy gloss, childish sticker treatment"
+    ].join("\n")
+  },
+  {
+    id: "app-shell-icon-calendar",
+    out: "public/generated/app/parqara-shell-icon-calendar.png",
+    size: "1024x1024",
+    quality: "high",
+    background: "transparent",
+    prompt: [
+      "Use case: logo-brand",
+      "Asset type: planning background icon with transparent background",
+      "Primary request: a single elegant planning-calendar icon for a premium trip-and-outing planning app background",
+      "Subject: one centered rounded calendar mark with subtle itinerary and route cues, no container",
+      "Style/medium: premium editorial icon with soft painterly travel-stamp detail",
+      "Composition/framing: isolated centered icon on a fully transparent background with generous negative space",
+      "Lighting/mood: calm, capable, adventurous",
+      "Color palette: soft sky blue, faded amber, muted teal, deep ink",
+      "Materials/textures: fine ink linework, watercolor wash, subtle paper texture",
+      "Quality: high",
+      "Constraints: fully transparent background; absolutely no readable text, letters, numbers, date numerals, logos, badges, square tiles, or watermark",
+      "Avoid: literal office calendar clip-art, enterprise UI icon feel, childish doodles, thick sticker outlines"
+    ].join("\n")
+  },  {
     id: "homepage-hero",
     out: "public/generated/homepage/parqara-hero-planning-suite.png",
     size: "1536x1024",
@@ -151,5 +234,6 @@ export const uiAssetManifest = [
 export function getUiAssetPromptList() {
   return uiAssetManifest.map(({ id, out, prompt }) => ({ id, out, prompt }));
 }
+
 
 

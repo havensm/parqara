@@ -51,7 +51,7 @@ export async function getCurrentUserStateIfAvailable(): Promise<SessionUserState
 
 export function getPostAuthRedirectPath(user?: unknown) {
   void user;
-  return "/app";
+  return "/dashboard";
 }
 
 export async function requireAuthenticatedUser() {
@@ -70,12 +70,12 @@ export async function requireCompletedOnboardingUser() {
 export async function requireAdminUser() {
   const user = await requireAuthenticatedUser();
   if (!isAdminEmail(user.email)) {
-    redirect("/app");
+    redirect("/dashboard");
   }
 
   return user;
 }
 
 export async function requireIncompleteOnboardingUser() {
-  redirect("/app");
+  redirect("/dashboard");
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { motion } from "motion/react";
 
 import type { TripWorkspaceTab } from "@/lib/trip-workspace";
 
@@ -23,16 +22,10 @@ export function AppFrame({
   void plannerTabs;
 
   return (
-    <div data-testid="app-frame" className="relative pb-28 xl:pb-0">
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
-        className="min-w-0"
-      >
-        {children}
-      </motion.div>
+    <div data-testid="app-frame" className="relative overflow-hidden pb-24 xl:pb-0">
+      <div className="relative min-w-0">{children}</div>
       <BottomTabBar />
     </div>
   );
 }
+

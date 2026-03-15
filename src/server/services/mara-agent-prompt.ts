@@ -6,8 +6,6 @@ import {
 
 import type { PlannerContext } from "@/server/services/mara-agent-context";
 
-export type MaraReplyMode = "preview" | "full";
-
 function formatPlannerValue(value: string | null | undefined) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : "Not set";
@@ -15,22 +13,6 @@ function formatPlannerValue(value: string | null | undefined) {
 
 function formatPlannerList(values: string[]) {
   return values.length ? values.map((value) => value.replaceAll("-", " ")).join(", ") : "Not set";
-}
-
-function buildFocusedTripBudgetHint(context: PlannerContext) {
-  if (context.budgetPreference && context.budgetPreference !== "Not set") {
-    return `${context.budgetPreference} budget with ${context.focusedTrip?.partySize ?? 1} traveler${context.focusedTrip?.partySize === 1 ? "" : "s"}`;
-  }
-
-  return `a flexible budget for ${context.focusedTrip?.partySize ?? 1} traveler${context.focusedTrip?.partySize === 1 ? "" : "s"}`;
-}
-
-function buildSampleDayLine(context: PlannerContext) {
-  if (context.focusedTrip?.itineraryPreview.length) {
-    return context.focusedTrip.itineraryPreview.slice(0, 3).join(" -> ");
-  }
-
-  return "Morning headliner -> early lunch -> calmer afternoon block";
 }
 
 export function buildPlannerContextBlock(context: PlannerContext) {
@@ -84,7 +66,7 @@ export function buildPlannerContextBlock(context: PlannerContext) {
   return lines.join("\n");
 }
 
-function buildFullMaraInstructions(context: PlannerContext) {
+export function buildMaraInstructions(context: PlannerContext) {
   return [
     `You are ${TRIP_PLANNER_PERSONA.name}, Parqara's ${TRIP_PLANNER_PERSONA.title}.`,
     "You sound warm, observant, practical, and quietly confident. You are never chirpy, flippant, or salesy.",
@@ -102,51 +84,6 @@ function buildFullMaraInstructions(context: PlannerContext) {
   ].join("\n");
 }
 
-export function buildPreviewInstructions(context: PlannerContext) {
-  return [
-    `You are ${TRIP_PLANNER_PERSONA.name}, Parqara's ${TRIP_PLANNER_PERSONA.title}.`,
-    "This run is the Free plan preview. Do not behave like an ongoing chat concierge.",
-    "Return one useful preview that helps the user understand Parqara's value without implying continuous access.",
-    "Use any focused trip details before asking for missing information. If the trip is still sparse, make light assumptions and label them clearly.",
-    "Respond with these short sections and bullets only: Starter recommendation, Rough budget range, Example day, Tailored suggestions, Next step.",
-    "The Example day should be partial and readable, not a full exhaustive itinerary.",
-    "The Next step should clearly say that full planning and revisions unlock on Plus.",
-    "Keep the whole reply under 180 words.",
-    "Saved profile context:",
-    buildPlannerContextBlock(context),
-  ].join("\n");
-}
-
-export function buildMaraInstructions(context: PlannerContext, mode: MaraReplyMode = "full") {
-  return mode === "preview" ? buildPreviewInstructions(context) : buildFullMaraInstructions(context);
-}
-
-function buildPreviewFallbackReply(context: PlannerContext) {
-  const tripLine = context.focusedTrip
-    ? `${context.focusedTrip.name} at ${context.focusedTrip.parkName} on ${context.focusedTrip.visitDate}`
-    : "the outing you are shaping";
-  const diningHint = context.focusedTrip?.diningPreferences.length
-    ? `Lean toward ${formatPlannerList(context.focusedTrip.diningPreferences)} stops so food does not become an afterthought.`
-    : "Protect one food stop before the busiest part of the day so the plan stays comfortable.";
-  const rideHint = context.focusedTrip?.preferredRideTypes.length
-    ? `Bias the route toward ${formatPlannerList(context.focusedTrip.preferredRideTypes)} first.`
-    : "Protect one high-value must-do early and leave the rest flexible.";
-
-  return [
-    "Starter recommendation",
-    `- Start from ${tripLine} and lock the first must-do plus the arrival window before filling in the rest.`,
-    "Rough budget range",
-    `- Plan around ${buildFocusedTripBudgetHint(context)} and leave a small cushion for food or pace changes.`,
-    "Example day",
-    `- ${buildSampleDayLine(context)}.`,
-    "Tailored suggestions",
-    `- ${rideHint}`,
-    `- ${diningHint}`,
-    "Next step",
-    "- Upgrade to Plus for unlimited Mara and full planning revisions inside this planner.",
-  ].join("\n");
-}
-
 function buildFullFallbackReply(context: PlannerContext, messages: TripPlannerChatMessage[]) {
   const userMessages = messages.filter((message) => message.role === "user");
   const defaultSummary = context.summaryItems.length ? context.summaryItems.join(", ") : "no saved planning defaults yet";
@@ -159,7 +96,9 @@ function buildFullFallbackReply(context: PlannerContext, messages: TripPlannerCh
       return [
         `I'm already looking at ${context.focusedTrip.name} at ${context.focusedTrip.parkName} on ${context.focusedTrip.visitDate}.`,
         `This trip is currently ${formatTripPlannerStatusLabel(context.focusedTrip.status).toLowerCase()}.`,
-        context.focusedTrip.latestPlanSummary ? `Current note: ${context.focusedTrip.latestPlanSummary}` : "I can use the saved trip details as context even before the itinerary is finalized.",
+        context.focusedTrip.latestPlanSummary
+          ? `Current note: ${context.focusedTrip.latestPlanSummary}`
+          : "I can use the saved trip details as context even before the itinerary is finalized.",
         "Tell me which direction you want:",
         "- fill in missing trip details",
         "- tighten the pace for this group",
@@ -209,10 +148,6 @@ function buildFullFallbackReply(context: PlannerContext, messages: TripPlannerCh
   ].join("\n");
 }
 
-export function buildFallbackReply(
-  context: PlannerContext,
-  messages: TripPlannerChatMessage[],
-  mode: MaraReplyMode = "full"
-) {
-  return mode === "preview" ? buildPreviewFallbackReply(context) : buildFullFallbackReply(context, messages);
+export function buildFallbackReply(context: PlannerContext, messages: TripPlannerChatMessage[]) {
+  return buildFullFallbackReply(context, messages);
 }

@@ -18,6 +18,7 @@ import { TripPlannerConcierge } from "@/components/assistant/trip-planner-concie
 import { DetailedItineraryView } from "@/components/trip/detailed-itinerary-view";
 import { PlannerWorkspaceRail } from "@/components/trip/planner-workspace-rail";
 import { PlannerWorkspaceShell } from "@/components/trip/planner-workspace-shell";
+import { TripPlannerSettingsDialog } from "@/components/trip/trip-planner-settings-dialog";
 import { TripWorkspaceHeader } from "@/components/trip/trip-workspace-header";
 
 export default async function TripItineraryPage({ params }: { params: Promise<{ tripId: string }> }) {
@@ -106,17 +107,24 @@ export default async function TripItineraryPage({ params }: { params: Promise<{ 
       maraPanel={
         <TripPlannerConcierge
           currentTier={billing.currentTier}
-          maraStarterRepliesUsed={billing.maraStarterPreview.usedReplies}
           tripId={trip.id}
           firstName={user.firstName ?? user.name ?? null}
           tripContext={tripContext}
           questions={questions}
+          headerAction={
+            <TripPlannerSettingsDialog
+              currentTier={billing.currentTier}
+              tripId={trip.id}
+              tripName={trip.name}
+              isOwner={trip.isOwner}
+              triggerMode="icon"
+            />
+          }
         />
       }
       rail={
         <PlannerWorkspaceRail
           currentTier={billing.currentTier}
-          maraStarterRepliesUsed={billing.maraStarterPreview.usedReplies}
           plannerLimitState={plannerLimitState}
           tabs={plannerTabs}
           activeTrip={{
