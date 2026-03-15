@@ -118,6 +118,7 @@ export function PlannerWorkflowPanel({
       }
 
       router.push(result.nextPath ?? "/dashboard");
+      router.refresh();
     });
   }
 

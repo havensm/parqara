@@ -266,6 +266,7 @@ export function TripPlannerSettingsDialog({
       }
 
       router.push(result.nextPath ?? "/dashboard");
+      router.refresh();
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : "Unable to delete this planner.");
       setIsDeleting(false);
