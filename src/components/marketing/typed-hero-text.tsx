@@ -2,11 +2,13 @@
 
 import { useEffect, useEffectEvent, useState } from "react";
 
-const heroPhrases = [
-  "Plan trips.",
-  "Plan weekends.",
-  "Plan nights out.",
-  "Plan family adventures.",
+const STATIC_PREFIX = "Plan";
+
+const heroSuffixes = [
+  " trips.",
+  " weekends.",
+  " nights out.",
+  " family adventures.",
 ] as const;
 
 const TYPE_DELAY_MS = 108;
@@ -20,7 +22,8 @@ export function TypedHeroText() {
   const [phase, setPhase] = useState<"typing" | "holding" | "deleting">("typing");
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
-  const currentPhrase = heroPhrases[phraseIndex] ?? heroPhrases[0];
+  const currentSuffix = heroSuffixes[phraseIndex] ?? heroSuffixes[0];
+  const currentPhrase = `${STATIC_PREFIX}${currentSuffix}`;
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -32,10 +35,10 @@ export function TypedHeroText() {
 
   const tick = useEffectEvent(() => {
     if (phase === "typing") {
-      const nextValue = currentPhrase.slice(0, visibleText.length + 1);
+      const nextValue = currentSuffix.slice(0, visibleText.length + 1);
       setVisibleText(nextValue);
 
-      if (nextValue === currentPhrase) {
+      if (nextValue === currentSuffix) {
         setPhase("holding");
       }
 
@@ -47,12 +50,12 @@ export function TypedHeroText() {
       return;
     }
 
-    const nextValue = currentPhrase.slice(0, Math.max(0, visibleText.length - 1));
+    const nextValue = currentSuffix.slice(0, Math.max(0, visibleText.length - 1));
     setVisibleText(nextValue);
 
     if (nextValue.length === 0) {
       setPhase("typing");
-      setPhraseIndex((current) => (current + 1) % heroPhrases.length);
+      setPhraseIndex((current) => (current + 1) % heroSuffixes.length);
     }
   });
 
@@ -80,10 +83,11 @@ export function TypedHeroText() {
   return (
     <div className="mx-auto max-w-5xl text-center">
       <h1
-        aria-label={prefersReducedMotion ? heroPhrases[0] : currentPhrase}
+        aria-label={prefersReducedMotion ? `${STATIC_PREFIX}${heroSuffixes[0]}` : currentPhrase}
         className="font-[family-name:var(--font-display)] text-5xl font-semibold tracking-[-0.07em] text-white sm:text-6xl lg:text-[6.4rem] lg:leading-[0.92]"
       >
-        <span aria-hidden="true">{prefersReducedMotion ? heroPhrases[0] : visibleText}</span>
+        <span aria-hidden="true">{STATIC_PREFIX}</span>
+        <span aria-hidden="true">{prefersReducedMotion ? heroSuffixes[0] : visibleText}</span>
         {!prefersReducedMotion ? (
           <span
             aria-hidden="true"

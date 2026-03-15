@@ -16,6 +16,7 @@ import {
 import { getPlannerLimitState } from "@/server/services/planner-entitlement-service";
 import {
   createDefaultDraftTrip,
+  findOrCreateDraftTrip,
   getDefaultParkSummary,
   getParkCatalog,
   getTripDetail,
@@ -93,7 +94,7 @@ export default async function DashboardPage({
   }
 
   if (!trips.length) {
-    const starterTrip = await createDefaultDraftTrip(user.id, defaultPark!.slug, defaultVisitDate);
+    const starterTrip = await findOrCreateDraftTrip(user.id, defaultPark!.slug, defaultVisitDate);
     trips = await listDashboardTrips(user.id);
 
     if (!tripId) {

@@ -30,6 +30,7 @@ export type TripPlannerTripContext = {
   id: string;
   name: string;
   parkName: string;
+  startingLocation: string | null;
   status: TripStatusValue;
   visitDate: string;
   summary: string | null;
@@ -68,13 +69,17 @@ export function formatTripPlannerStatusLabel(status: TripStatusValue) {
 }
 
 export function buildTripPlannerTripContext(
-  trip: Pick<TripDetailDto, "id" | "name" | "status" | "visitDate" | "latestPlanSummary" | "park" | "partyProfile" | "itinerary">
+  trip: Pick<TripDetailDto, "id" | "name" | "status" | "startingLocation" | "visitDate" | "latestPlanSummary" | "park" | "partyProfile" | "itinerary">
 ): TripPlannerTripContext {
   const detailTags = [
     `${trip.partyProfile.partySize} ${trip.partyProfile.partySize === 1 ? "guest" : "guests"}`,
     `Arrive ${trip.partyProfile.startTime}`,
     trip.itinerary.length ? `${trip.itinerary.length} planned ${trip.itinerary.length === 1 ? "stop" : "stops"}` : "Draft details saved",
   ];
+
+  if (trip.startingLocation) {
+    detailTags.push(`Start ${trip.startingLocation}`);
+  }
 
   if (trip.partyProfile.breakStart && trip.partyProfile.breakEnd) {
     detailTags.push(`Break ${trip.partyProfile.breakStart}-${trip.partyProfile.breakEnd}`);
@@ -84,6 +89,7 @@ export function buildTripPlannerTripContext(
     id: trip.id,
     name: trip.name,
     parkName: trip.park.name,
+    startingLocation: trip.startingLocation,
     status: trip.status,
     visitDate: formatTripDate(trip.visitDate),
     summary: trip.latestPlanSummary,
@@ -92,9 +98,13 @@ export function buildTripPlannerTripContext(
 }
 
 export function buildTripPlannerNeededQuestions(
-  trip: Pick<TripDetailDto, "status" | "name" | "partyProfile" | "park" | "itinerary">
+  trip: Pick<TripDetailDto, "status" | "name" | "startingLocation" | "partyProfile" | "park" | "itinerary">
 ) {
   const questions: string[] = [];
+
+  if (!trip.startingLocation) {
+    questions.push("Where are you starting from?");
+  }
 
   if (!trip.partyProfile.mustDoRideIds.length) {
     questions.push("What matters most?");
@@ -168,20 +178,35 @@ export const tripPlannerTripStarterPrompts = [
   "Show me what this plan is missing.",
 ] as const;
 
-export function getTripPlannerStarterPrompts(tripContext?: TripPlannerTripContext) {
+export const tripPlannerKickoffPrompts = [
+  "Plan a weekend trip.",
+  "Plan a night out.",
+  "Plan a family day.",
+  "Plan a park day.",
+] as const;
+
+export function getTripPlannerStarterPrompts(tripContext?: TripPlannerTripContext, starterMode = false) {
+  if (starterMode) {
+    return tripPlannerKickoffPrompts;
+  }
+
   return tripContext ? tripPlannerTripStarterPrompts : tripPlannerStarterPrompts;
 }
 
-export function buildTripPlannerWelcomeMessage(firstName?: string | null, tripContext?: TripPlannerTripContext) {
+export function buildTripPlannerWelcomeMessage(firstName?: string | null, tripContext?: TripPlannerTripContext, starterMode = false) {
   const greeting = firstName?.trim() ? `Hi ${firstName}.` : "Hi.";
 
   if (tripContext) {
+    if (starterMode) {
+      return `${greeting} What do you want to plan?`;
+    }
+
     return [
       `${greeting} I'm looking at ${tripContext.name}.`,
-      `${tripContext.parkName} · ${tripContext.visitDate}`,
+      `${tripContext.parkName} · ${tripContext.visitDate}${tripContext.startingLocation ? ` · Start ${tripContext.startingLocation}` : ""}`,
       "Tell me what to change, protect, or figure out next.",
     ].join("\n");
   }
 
-  return [`${greeting} Open a planner and I will work from that trip.`].join("\n");
+  return `${greeting} Open a planner and I will work from that trip.`;
 }

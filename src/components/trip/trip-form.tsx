@@ -14,6 +14,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import type { ParkCatalogDto, TripDetailDto } from "@/lib/contracts";
+import { emitTripStartingLocationEvent } from "@/lib/trip-starting-location";
 import { cn } from "@/lib/utils";
 
 import { PlannerSectionKicker } from "@/components/trip/planner-section-kicker";
@@ -23,6 +24,7 @@ import { Card } from "@/components/ui/card";
 
 type TripFormValues = {
   name: string;
+  startingLocation: string;
   visitDate: string;
   partySizeInput: string;
   kidsAgesInput: string;
@@ -40,6 +42,7 @@ type SaveState = "idle" | "saving" | "saved" | "error";
 
 type PersistableDraftPayload = Partial<{
   name: string;
+  startingLocation: string | null;
   visitDate: string;
   partySize: number;
   kidsAges: number[];
@@ -173,6 +176,7 @@ function buildInitialValues(initialTrip: TripDetailDto, startBlank: boolean): Tr
   if (startBlank) {
     return {
       name: "",
+      startingLocation: "",
       visitDate: "",
       partySizeInput: "",
       kidsAgesInput: "",
@@ -189,6 +193,7 @@ function buildInitialValues(initialTrip: TripDetailDto, startBlank: boolean): Tr
 
   return {
     name: initialTrip.name,
+    startingLocation: initialTrip.startingLocation ?? "",
     visitDate: initialTrip.visitDate,
     partySizeInput: String(initialTrip.partyProfile.partySize),
     kidsAgesInput: initialTrip.partyProfile.kidsAges.join(", "),
@@ -206,11 +211,16 @@ function buildInitialValues(initialTrip: TripDetailDto, startBlank: boolean): Tr
 function buildPersistableDraftPayload(values: TripFormValues): PersistableDraftPayload | null {
   const payload: PersistableDraftPayload = {};
   const trimmedName = values.name.trim();
+  const trimmedStartingLocation = values.startingLocation.trim();
   const parsedPartySize = parsePartySize(values.partySizeInput);
   const parsedKidsAges = parseKidsAges(values.kidsAgesInput);
 
   if (trimmedName.length >= 3) {
     payload.name = trimmedName;
+  }
+
+  if (trimmedStartingLocation) {
+    payload.startingLocation = trimmedStartingLocation;
   }
 
   if (values.visitDate) {
@@ -276,15 +286,17 @@ function buildDraftClearingPayload(
     (previousPayload.preferredRideTypes?.length ?? 0) > 0 ||
     (previousPayload.diningPreferences?.length ?? 0) > 0;
   const shouldClearKidsAges = !values.kidsAgesInput.trim() && hadSavedKidsAges;
+  const shouldClearStartingLocation = !values.startingLocation.trim() && typeof previousPayload.startingLocation === "string" && previousPayload.startingLocation.trim().length > 0;
   const shouldClearBreakWindow =
     !values.breakStart && !values.breakEnd && Boolean(previousPayload.breakStart || previousPayload.breakEnd);
 
-  if (!hadSavedCollectionSelections && !shouldClearKidsAges && !shouldClearBreakWindow) {
+  if (!hadSavedCollectionSelections && !shouldClearKidsAges && !shouldClearStartingLocation && !shouldClearBreakWindow) {
     return null;
   }
 
   return {
     ...(shouldClearKidsAges ? { kidsAges: [] } : {}),
+    ...(shouldClearStartingLocation ? { startingLocation: null } : {}),
     mustDoRideIds: values.mustDoRideIds,
     preferredRideTypes: values.preferredRideTypes,
     diningPreferences: values.diningPreferences,
@@ -428,6 +440,10 @@ export function TripForm({ catalog, initialTrip }: { catalog: ParkCatalogDto; in
   }, [values]);
 
   useEffect(() => {
+    emitTripStartingLocationEvent(initialTrip.id, values.startingLocation);
+  }, [initialTrip.id, values.startingLocation]);
+
+  useEffect(() => {
     if (!hasHydrated.current) {
       hasHydrated.current = true;
       return;
@@ -484,6 +500,12 @@ export function TripForm({ catalog, initialTrip }: { catalog: ParkCatalogDto; in
       value: values.visitDate || "Choose a visit date",
       detail: values.startTime ? `Start ${values.startTime}` : "Set arrival time",
       icon: CalendarDays,
+    },
+    {
+      label: "Start",
+      value: values.startingLocation.trim() || "Add a starting point",
+      detail: values.startingLocation.trim() ? "Pinned on the trip map" : "Save a hotel, home, or neighborhood",
+      icon: MapPinned,
     },
     {
       label: "Group",
@@ -617,6 +639,16 @@ export function TripForm({ catalog, initialTrip }: { catalog: ParkCatalogDto; in
                 value={values.startTime}
                 onChange={(event) => updateValues({ startTime: event.currentTarget.value })}
                 className={inputClassName}
+              />
+            </label>
+
+            <label className="text-sm text-slate-600">
+              Starting location
+              <input
+                value={values.startingLocation}
+                onChange={(event) => updateValues({ startingLocation: event.currentTarget.value })}
+                className={inputClassName}
+                placeholder="Hotel, home, or neighborhood"
               />
             </label>
 
@@ -804,7 +836,7 @@ export function TripForm({ catalog, initialTrip }: { catalog: ParkCatalogDto; in
         </div>
       </details>
 
-      <div className="mt-6 flex flex-col gap-3 border-t border-slate-200/80 pt-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-6 flex flex-col gap-3 rounded-[28px] border border-slate-200/80 bg-[var(--surface-muted)]/72 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-5">
         <p className="text-sm text-slate-500">Mara leads the direction. These saved details keep the planner grounded.</p>
         <div className="flex flex-col gap-3 sm:flex-row">
           <Button type="button" variant="secondary" onClick={() => void handleSave()} disabled={saveState === "saving" || isGenerating}>

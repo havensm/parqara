@@ -73,7 +73,6 @@ export function PlannerWorkflowPanel({
       }
 
       router.push(`/trips/${result.tripId}`);
-      router.refresh();
     });
   }
 
@@ -119,7 +118,6 @@ export function PlannerWorkflowPanel({
       }
 
       router.push(result.nextPath ?? "/dashboard");
-      router.refresh();
     });
   }
 

@@ -111,14 +111,13 @@ export function ProfilePeopleManager() {
 
   return (
     <Card className="p-6 sm:p-7">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Saved contacts</p>
           <h2 className="mt-3 font-[family-name:var(--font-space-grotesk)] text-2xl font-semibold tracking-tight text-slate-950">
             Saved contacts
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">
-            Keep frequent planners ready to add to the next trip.
+            Add people once and reuse them in future planners.
           </p>
         </div>
       </div>
@@ -127,7 +126,7 @@ export function ProfilePeopleManager() {
         <label className="block text-sm font-medium text-slate-700" htmlFor="profile-people-email">
           Add by email
         </label>
-        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="mt-3 flex flex-col gap-3">
           <div className="min-w-0 flex-1">
             <div className="relative">
               <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -141,8 +140,8 @@ export function ProfilePeopleManager() {
               />
             </div>
           </div>
-          <Button type="button" onClick={addPerson} disabled={isPending || !email.trim()}>
-            {isPending ? "Saving..." : "Save contact"}
+          <Button type="button" onClick={addPerson} disabled={isPending || !email.trim()} className="w-full justify-center">
+            {isPending ? "Saving..." : "Save"}
           </Button>
         </div>
       </div>

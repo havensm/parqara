@@ -8,8 +8,24 @@ const timeField = z
   .or(z.literal(""))
   .transform((value) => (value === "" ? null : value));
 
+const startingLocationField = z
+  .string()
+  .trim()
+  .max(140)
+  .or(z.literal(""))
+  .or(z.null())
+  .transform((value) => {
+    if (value === null) {
+      return null;
+    }
+
+    const trimmed = value.trim();
+    return trimmed === "" ? null : trimmed;
+  });
+
 const tripSetupBaseSchema = z.object({
   name: z.string().trim().min(3).max(80).optional(),
+  startingLocation: startingLocationField.optional(),
   parkSlug: z.string().min(1),
   visitDate: z.string().date(),
   partySize: z.coerce.number().int().min(1).max(12),

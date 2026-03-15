@@ -59,6 +59,7 @@ export function RootChrome({
     <div className="relative isolate min-h-screen overflow-x-clip">
       <div aria-hidden className="app-shell-scene">
         <div className="app-shell-scene__wash" />
+        <div className="app-shell-scene__colorfields" />
         <div
           className="app-shell-scene__wallpaper"
           style={{

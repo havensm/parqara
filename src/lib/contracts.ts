@@ -84,6 +84,7 @@ export type TripDetailDto = {
   isOwner: boolean;
   status: TripStatusValue;
   plannerStatus: PlannerStatusValue;
+  startingLocation: string | null;
   visitDate: string;
   simulatedTime: string | null;
   currentStep: number;
@@ -98,6 +99,7 @@ export type DashboardTripDto = {
   name: string;
   status: TripStatusValue;
   plannerStatus: PlannerStatusValue;
+  startingLocation: string | null;
   visitDate: string;
   parkName: string;
   itineraryCount: number;
@@ -235,3 +237,4 @@ export type SummaryDto = {
   highlights: string[];
   latestPlanSummary: string | null;
 };
+

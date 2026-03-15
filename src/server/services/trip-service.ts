@@ -326,6 +326,7 @@ function requireActivePlanner<T extends { plannerStatus: "ACTIVE" | "ARCHIVED" }
 type PlannerSnapshotTrip = {
   id: string;
   name: string;
+  startingLocation: string | null;
   plannerStatus: "ACTIVE" | "ARCHIVED";
   status: "DRAFT" | "PLANNED" | "LIVE" | "COMPLETED";
   visitDate: Date;
@@ -373,6 +374,7 @@ function buildPlannerSnapshot(trip: PlannerSnapshotTrip) {
   return {
     id: trip.id,
     name: trip.name,
+    startingLocation: trip.startingLocation,
     plannerStatus: trip.plannerStatus,
     status: trip.status,
     visitDate: formatIsoDate(trip.visitDate),
@@ -805,6 +807,7 @@ function serializeDashboardTrip(
   trip: {
     id: string;
     name: string;
+    startingLocation: string | null;
     status: DashboardTripDto["status"];
     plannerStatus: DashboardTripDto["plannerStatus"];
     visitDate: Date;
@@ -822,6 +825,7 @@ function serializeDashboardTrip(
     name: trip.name,
     status: trip.status,
     plannerStatus: trip.plannerStatus,
+    startingLocation: trip.startingLocation,
     visitDate: formatIsoDate(trip.visitDate),
     parkName: trip.park.name,
     itineraryCount: trip.itineraryItems.length,
@@ -888,6 +892,7 @@ export async function createTrip(userId: string, input: import("zod").infer<type
       userId,
       parkId: park.park.id,
       name: input.name?.trim() || `${park.park.name} ${format(new Date(input.visitDate), "MMM d")}`,
+      startingLocation: input.startingLocation ?? null,
       visitDate: visitDateTime,
       status: "DRAFT",
       plannerStatus: "ACTIVE",
@@ -932,6 +937,7 @@ export async function updateTrip(userId: string, tripId: string, input: import("
     where: { id: trip.id },
     data: {
       name: nextName,
+      startingLocation: input.startingLocation === undefined ? trip.startingLocation : input.startingLocation,
       visitDate: nextVisitDateTime,
       currentStep: input.currentStep ?? trip.currentStep,
       simulatedTime:
@@ -1198,6 +1204,7 @@ export async function getTripDetail(userId: string, tripId: string): Promise<Tri
     isOwner: trip.userId === userId,
     status: trip.status,
     plannerStatus: trip.plannerStatus,
+    startingLocation: trip.startingLocation,
     visitDate: formatIsoDate(trip.visitDate),
     simulatedTime: trip.simulatedTime ? formatDateTime(trip.simulatedTime) : null,
     currentStep: trip.currentStep,
