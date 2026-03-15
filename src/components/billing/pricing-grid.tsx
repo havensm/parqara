@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Check, Sparkles } from "lucide-react";
 
@@ -51,6 +52,22 @@ const tierStyles = {
   },
 } as const;
 
+
+function PricingActionLink({ href, className, children }: { href: string; className: string; children: ReactNode }) {
+  if (href.startsWith("/api/")) {
+    return (
+      <a href={href} className={className}>
+        {children}
+      </a>
+    );
+  }
+
+  return (
+    <Link href={href} className={className}>
+      {children}
+    </Link>
+  );
+}
 function getPlanAction(planTier: SubscriptionTierValue, currentTier: SubscriptionTierValue | undefined, signedIn: boolean) {
   if (!signedIn || !currentTier) {
     return {
@@ -207,13 +224,13 @@ export function PricingGrid({
               {showActions ? (
                 <div className="pt-1">
                   {action.href ? (
-                    <Link
+                    <PricingActionLink
                       href={action.href}
                       className={buttonStyles({ variant: styles.buttonVariant, size: isCompact ? "sm" : "default" }) + " w-full gap-2"}
                     >
                       {action.label}
                       <ArrowUpRight className="h-4 w-4" />
-                    </Link>
+                    </PricingActionLink>
                   ) : (
                     <span
                       className={
@@ -248,3 +265,4 @@ export function PricingGrid({
     </div>
   );
 }
+

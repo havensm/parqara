@@ -6,6 +6,22 @@ import { cn } from "@/lib/utils";
 
 import { buttonStyles } from "@/components/ui/button";
 
+function ActionLink({ href, className, children }: { href: string; className: string; children: ReactNode }) {
+  if (href.startsWith("/api/")) {
+    return (
+      <a href={href} className={className}>
+        {children}
+      </a>
+    );
+  }
+
+  return (
+    <Link href={href} className={className}>
+      {children}
+    </Link>
+  );
+}
+
 export function TopUtilityBar({
   eyebrow,
   title,
@@ -50,15 +66,15 @@ export function TopUtilityBar({
         {(actionHref && actionLabel) || (secondaryActionHref && secondaryActionLabel) ? (
           <div className="flex flex-wrap gap-3 xl:justify-end">
             {secondaryActionHref && secondaryActionLabel ? (
-              <Link href={secondaryActionHref} className={buttonStyles({ variant: "secondary", size: "default" })}>
+              <ActionLink href={secondaryActionHref} className={buttonStyles({ variant: "secondary", size: "default" })}>
                 {secondaryActionLabel}
-              </Link>
+              </ActionLink>
             ) : null}
             {actionHref && actionLabel ? (
-              <Link href={actionHref} className={cn(buttonStyles({ variant: "primary", size: "default" }), "whitespace-nowrap")}>
+              <ActionLink href={actionHref} className={cn(buttonStyles({ variant: "primary", size: "default" }), "whitespace-nowrap")}>
                 {actionLabel}
                 <ArrowRight className="h-4 w-4" />
-              </Link>
+              </ActionLink>
             ) : null}
           </div>
         ) : null}

@@ -6,6 +6,7 @@ import { Manrope, Space_Grotesk } from "next/font/google";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteSidebar } from "@/components/layout/site-sidebar";
 import { MarketingHeader } from "@/components/layout/marketing-header";
+import { LegacyServiceWorkerCleanup } from "@/components/layout/legacy-service-worker-cleanup";
 import { RootChrome } from "@/components/layout/root-chrome";
 import { RouteScrollManager } from "@/components/layout/route-scroll-manager";
 
@@ -33,6 +34,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang="en">
       <body className={`${manrope.variable} ${spaceGrotesk.variable} antialiased`}>
+        <LegacyServiceWorkerCleanup />
         <Suspense fallback={null}>
           <RouteScrollManager />
         </Suspense>

@@ -97,9 +97,9 @@ export default async function ProfilePage({
                 Open billing
               </Link>
               {nextUpgradePlan ? (
-                <Link href={getBillingCheckoutHref(nextUpgradeTier!)} className={buttonStyles({ variant: "secondary", size: "default" }) + " w-full justify-center"}>
+                <a href={getBillingCheckoutHref(nextUpgradeTier!)} className={buttonStyles({ variant: "secondary", size: "default" }) + " w-full justify-center"}>
                   Upgrade to {nextUpgradePlan.name}
-                </Link>
+                </a>
               ) : (
                 <Link href="/pricing" className={buttonStyles({ variant: "secondary", size: "default" }) + " w-full justify-center"}>
                   View pricing

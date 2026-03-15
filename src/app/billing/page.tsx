@@ -99,9 +99,9 @@ export default async function BillingPage({
               </p>
               <div className="mt-5 flex flex-wrap gap-3">
                 {nextUpgradePlan ? (
-                  <Link href={getBillingCheckoutHref(nextUpgradeTier!)} className={buttonStyles({ variant: "primary", size: "default" })}>
+                  <a href={getBillingCheckoutHref(nextUpgradeTier!)} className={buttonStyles({ variant: "primary", size: "default" })}>
                     Upgrade to {nextUpgradePlan.name}
-                  </Link>
+                  </a>
                 ) : null}
                 <Link href="/pricing" className={buttonStyles({ variant: "secondary", size: "default" })}>
                   Compare plans
@@ -114,13 +114,13 @@ export default async function BillingPage({
         <Card tone="solid" className="p-6">
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">Billing actions</p>
           <div className="mt-5 flex flex-col gap-3">
-            <Link href={BILLING_PORTAL_HREF} className={buttonStyles({ variant: "primary", size: "default" }) + " w-full justify-center"}>
+            <a href={BILLING_PORTAL_HREF} className={buttonStyles({ variant: "primary", size: "default" }) + " w-full justify-center"}>
               Manage billing
-            </Link>
+            </a>
             {nextUpgradePlan ? (
-              <Link href={getBillingCheckoutHref(nextUpgradeTier!)} className={buttonStyles({ variant: "secondary", size: "default" }) + " w-full justify-center"}>
+              <a href={getBillingCheckoutHref(nextUpgradeTier!)} className={buttonStyles({ variant: "secondary", size: "default" }) + " w-full justify-center"}>
                 Upgrade to {nextUpgradePlan.name}
-              </Link>
+              </a>
             ) : null}
             <Link href="/profile" className={buttonStyles({ variant: "ghost", size: "default" }) + " w-full justify-center"}>
               Back to profile
@@ -191,6 +191,4 @@ function BillingRow({
     </div>
   );
 }
-
-
 
