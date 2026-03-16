@@ -2,13 +2,15 @@ import Link from "next/link";
 import { CalendarDays, Route, Users2, WandSparkles, type LucideIcon } from "lucide-react";
 
 import { canAccessBillingFeature } from "@/lib/billing";
-import type { SubscriptionTierValue, TripDetailDto } from "@/lib/contracts";
+import type { ParkCatalogDto, SubscriptionTierValue, TripDetailDto } from "@/lib/contracts";
 
+import { TripForm } from "@/components/trip/trip-form";
 import { buttonStyles } from "@/components/ui/button";
 
 type PlannerDashboardDetailsProps = {
   currentTier: SubscriptionTierValue;
   trip: TripDetailDto;
+  catalog?: ParkCatalogDto | null;
 };
 
 function formatVisitDate(value: string) {
@@ -119,12 +121,36 @@ function LockedLiveNotice({ href, message }: { href: string; message: string }) 
   );
 }
 
-export function PlannerDashboardDetails({ currentTier, trip }: PlannerDashboardDetailsProps) {
+export function PlannerDashboardDetails({ currentTier, trip, catalog }: PlannerDashboardDetailsProps) {
   const upgradeHref = currentTier === "FREE" ? "/pricing" : "/billing";
   const primaryAction = getPrimaryAction(trip, currentTier, upgradeHref);
   const nextItem = trip.itinerary.find((item) => item.status === "PLANNED") ?? trip.itinerary[0] ?? null;
   const routePreview = trip.itinerary.slice(0, 4);
   const liveLocked = primaryAction.locked;
+
+  if (trip.status === "DRAFT" && catalog) {
+    return (
+      <div className="space-y-4">
+        <div className="overflow-hidden rounded-[30px] border border-[var(--card-border)] bg-white shadow-[0_18px_40px_rgba(12,20,37,0.05)]">
+          <div className="border-b border-[var(--card-border)] px-5 py-5 sm:px-6 sm:py-6">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Build the first route</p>
+            <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-[-0.04em] text-[var(--foreground)] sm:text-[2.15rem]">
+              Save the basics, then build the plan.
+            </h2>
+            <p className="mt-2 text-sm leading-7 text-[var(--muted)]">
+              Mara shapes the direction. These controls still save the planner basics and build the first route.
+            </p>
+          </div>
+
+          <div className="p-5 sm:p-6">
+            <TripForm catalog={catalog} initialTrip={trip} />
+          </div>
+        </div>
+
+        {liveLocked ? <LockedLiveNotice href={upgradeHref} message="Live mode opens on Plus." /> : null}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

@@ -1,22 +1,16 @@
 import { addDays } from "date-fns";
 import { redirect } from "next/navigation";
 
-import { getUserBillingState } from "@/lib/billing";
 import { isAdminEmail } from "@/lib/admin";
 import { requireCompletedOnboardingUser } from "@/lib/auth/guards";
-import {
-  buildTripPlannerNeededQuestions,
-  buildTripPlannerTripContext,
-} from "@/lib/trip-planner-agent";
-import {
-  buildTripWorkspaceTabs,
-  isPlannerKickoffDraft,
-  pickDefaultTrip,
-} from "@/lib/trip-workspace";
+import { getUserBillingState } from "@/lib/billing";
+import { buildTripPlannerNeededQuestions, buildTripPlannerTripContext } from "@/lib/trip-planner-agent";
+import { buildTripWorkspaceTabs, isPlannerKickoffDraft, pickDefaultTrip } from "@/lib/trip-workspace";
 import { getPlannerLimitState } from "@/server/services/planner-entitlement-service";
 import {
   createDefaultDraftTrip,
   getDefaultParkSummary,
+  getParkCatalog,
   getTripDetail,
   listDashboardTrips,
 } from "@/server/services/trip-service";
@@ -127,6 +121,7 @@ export default async function DashboardPage({
   });
   const tripContext = buildTripPlannerTripContext(activeTrip);
   const questions = isStarterDraft ? [] : buildTripPlannerNeededQuestions(activeTrip);
+  const catalog = activeTrip.status === "DRAFT" ? await getParkCatalog(activeTrip.park.slug) : null;
   const plannerTabs = buildTripWorkspaceTabs(trips).map((tab) => ({
     ...tab,
     href: buildDashboardHref({ tripId: tab.id, ...preservedDashboardParams }),
@@ -162,11 +157,9 @@ export default async function DashboardPage({
           />
         }
       >
-        {activeTrip.status === "DRAFT" ? null : (
-          <section data-tour-id="planning-panel">
-            <PlannerDashboardDetails currentTier={billing.currentTier} trip={activeTrip} />
-          </section>
-        )}
+        <section data-tour-id="planning-panel">
+          <PlannerDashboardDetails currentTier={billing.currentTier} trip={activeTrip} catalog={catalog} />
+        </section>
       </PlannerWorkspaceShell>
       <FirstTimePlannerTour enabled={showFirstTimeTour} preview={previewFirstTimeTour} />
     </>
