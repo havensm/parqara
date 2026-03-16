@@ -10,6 +10,7 @@ import { createSession } from "@/lib/auth/session";
 import { getAppOrigin } from "@/lib/auth/google";
 import { db } from "@/lib/db";
 import { claimPendingTripInvitesForUser } from "@/server/services/trip-service";
+import { claimPendingTripPeopleForUser } from "@/server/services/trip-people-service";
 import { claimPendingUserContactInvitesForUser } from "@/server/services/user-service";
 
 function redirectToSignIn(request: Request, error: string) {
@@ -64,6 +65,7 @@ export async function GET(request: Request) {
   }
 
   await claimPendingTripInvitesForUser(user.id, user.email);
+    await claimPendingTripPeopleForUser(user.id, user.email);
   await claimPendingUserContactInvitesForUser(user.id, user.email);
   await createSession(user.id);
 

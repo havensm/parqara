@@ -1,6 +1,7 @@
-import type { TripStatusValue } from "@/lib/contracts";
+import type { TripAccessRoleValue, TripStatusValue } from "@/lib/contracts";
 import { buildPreferenceSummary } from "@/lib/onboarding";
 import { getTripDetail, listDashboardTrips } from "@/server/services/trip-service";
+import { getTripLogisticsContextForMara } from "@/server/services/trip-people-service";
 import { getOnboardingState, getUserWithPreference } from "@/server/services/user-service";
 
 export type PlannerContext = {
@@ -14,6 +15,11 @@ export type PlannerContext = {
   dietaryPreferences: string[];
   accessibilityNeeds: string[];
   additionalNotes: string;
+  plannerAccessRole: TripAccessRoleValue;
+  logisticsScopedToViewer: boolean;
+  logisticsRosterSummary: string[];
+  logisticsTaskSummary: string[];
+  viewerTaskSummary: string[];
   recentTrips: Array<{
     name: string;
     parkName: string;
@@ -51,11 +57,12 @@ export function formatPlannerList(values: string[]) {
 }
 
 export async function getPlannerContext(userId: string, tripId: string): Promise<PlannerContext> {
-  const [user, onboarding, recentTrips, focusedTrip] = await Promise.all([
+  const [user, onboarding, recentTrips, focusedTrip, logisticsContext] = await Promise.all([
     getUserWithPreference(userId),
     getOnboardingState(userId),
     listDashboardTrips(userId),
     getTripDetail(userId, tripId),
+    getTripLogisticsContextForMara(userId, tripId),
   ]);
 
   return {
@@ -69,6 +76,11 @@ export async function getPlannerContext(userId: string, tripId: string): Promise
     dietaryPreferences: onboarding.values.dietaryPreferences,
     accessibilityNeeds: onboarding.values.accessibilityNeeds,
     additionalNotes: onboarding.values.additionalNotes,
+    plannerAccessRole: logisticsContext.plannerAccessRole,
+    logisticsScopedToViewer: logisticsContext.scopedToViewer,
+    logisticsRosterSummary: logisticsContext.rosterSummary,
+    logisticsTaskSummary: logisticsContext.logisticsSummary,
+    viewerTaskSummary: logisticsContext.viewerTasks,
     recentTrips: recentTrips.slice(0, 3).map((trip) => ({
       name: trip.name,
       parkName: trip.parkName,

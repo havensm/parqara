@@ -3,9 +3,9 @@
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, LoaderCircle, RotateCcw, SendHorizontal } from "lucide-react";
+import { ChevronDown, LoaderCircle, RotateCcw, Save, SendHorizontal, X } from "lucide-react";
 
-import type { SubscriptionTierValue } from "@/lib/contracts";
+import type { SubscriptionTierValue, TripLiveSnapshotProposalDto } from "@/lib/contracts";
 import {
   buildTripPlannerWelcomeMessage,
   getTripPlannerStarterPrompts,
@@ -29,6 +29,7 @@ type TripPlannerConciergeProps = {
   refreshOnReply?: boolean;
   headerAction?: ReactNode;
   starterMode?: boolean;
+  onSnapshotApproved?: () => void;
 };
 
 const textareaClassName =
@@ -43,44 +44,62 @@ function buildInitialMessages(firstName?: string | null, tripContext?: TripPlann
   ];
 }
 
-function buildMaraWorkingSteps(lastUserMessage: string, tripContext?: TripPlannerTripContext, starterMode = false) {
+function buildMaraWorkingStatus(lastUserMessage: string, tripContext?: TripPlannerTripContext, starterMode = false) {
   const normalized = lastUserMessage.toLowerCase();
-  const steps: string[] = [];
 
   if (starterMode) {
-    steps.push("Pulling out the basics.");
-  } else if (tripContext) {
-    steps.push(`Checking ${tripContext.name}.`);
+    return "Pulling out the basics.";
   }
 
   if (/budget|cheap|affordable|under \$|\$/i.test(normalized)) {
-    steps.push("Keeping budget in view.");
+    return "Keeping budget in view.";
   }
 
   if (/food|dinner|lunch|restaurant|snack|dessert/i.test(normalized)) {
-    steps.push("Looking at food and timing.");
+    return "Looking at food and timing.";
   }
 
   if (/walk|route|pace|stress|easy|relaxed/i.test(normalized)) {
-    steps.push("Checking pace and route tradeoffs.");
+    return "Checking pace and route tradeoffs.";
   }
 
   if (/kid|family|stroller|baby|child|children/i.test(normalized)) {
-    steps.push("Checking group fit.");
+    return "Checking group fit.";
   }
 
   if (/start|hotel|home|leave|drive|parking|location/i.test(normalized)) {
-    steps.push("Working through where the day should start.");
+    return "Working through where the day should start.";
   }
 
   if (/ride|must-do|priority|show|attraction/i.test(normalized)) {
-    steps.push("Protecting the main must-dos.");
+    return "Protecting the main must-dos.";
   }
 
-  steps.push("Pressure-testing the plan.");
-  steps.push("Looking for the cleanest next move.");
+  if (tripContext) {
+    return `Shaping ${tripContext.name}.`;
+  }
 
-  return Array.from(new Set(steps)).slice(0, 3);
+  return "Looking for the cleanest next move.";
+}
+
+async function parsePlannerReplyResponse(response: Response) {
+  const contentType = response.headers.get("content-type") ?? "";
+
+  if (contentType.includes("application/json")) {
+    return (await response.json()) as {
+      error?: string;
+      reply?: string;
+      snapshotProposal?: TripLiveSnapshotProposalDto | null;
+    };
+  }
+
+  const text = await response.text();
+  const trimmed = text.trim();
+  const isHtml = trimmed.startsWith("<!DOCTYPE") || trimmed.startsWith("<html") || trimmed.startsWith("<body") || trimmed.startsWith("<");
+
+  return {
+    error: isHtml ? "Mara took too long to respond. Try again." : trimmed || "Mara could not respond right now.",
+  };
 }
 
 export function TripPlannerConcierge({
@@ -93,25 +112,27 @@ export function TripPlannerConcierge({
   refreshOnReply = false,
   headerAction,
   starterMode = false,
+  onSnapshotApproved,
 }: TripPlannerConciergeProps) {
   const router = useRouter();
   const [messages, setMessages] = useState<TripPlannerChatMessage[]>(() => buildInitialMessages(firstName, tripContext, starterMode));
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
-  const [thinkingStepIndex, setThinkingStepIndex] = useState(0);
+  const [snapshotProposal, setSnapshotProposal] = useState<TripLiveSnapshotProposalDto | null>(null);
+  const [isApprovingSnapshot, setIsApprovingSnapshot] = useState(false);
   const [isPending, startTransition] = useTransition();
   const threadScrollRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLDivElement | null>(null);
   const activeTripIdRef = useRef(tripId);
 
-  const quickPrompts = (questions.length ? questions : getTripPlannerStarterPrompts(tripContext, starterMode)).slice(0, starterMode ? 2 : tripContext ? 1 : 2);
+  const quickPrompts = questions.length ? questions : getTripPlannerStarterPrompts(tripContext, starterMode);
   const latestUserMessage = useMemo(
     () => [...messages].reverse().find((message) => message.role === "user")?.content ?? "",
     [messages]
   );
-  const maraWorkingSteps = useMemo(
-    () => buildMaraWorkingSteps(latestUserMessage, tripContext, starterMode),
+  const maraWorkingStatus = useMemo(
+    () => buildMaraWorkingStatus(latestUserMessage, tripContext, starterMode),
     [latestUserMessage, starterMode, tripContext]
   );
 
@@ -125,6 +146,7 @@ export function TripPlannerConcierge({
     setDraft("");
     setError(null);
     setIsSuggestionsOpen(false);
+    setSnapshotProposal(null);
   }, [firstName, starterMode, tripContext, tripId]);
 
   useEffect(() => {
@@ -143,23 +165,8 @@ export function TripPlannerConcierge({
     });
   }, [isPending, messages]);
 
-  useEffect(() => {
-    if (!isPending) {
-      setThinkingStepIndex(0);
-      return;
-    }
-
-    setThinkingStepIndex(0);
-
-    const interval = window.setInterval(() => {
-      setThinkingStepIndex((current) => (current + 1) % Math.max(maraWorkingSteps.length, 1));
-    }, 1400);
-
-    return () => window.clearInterval(interval);
-  }, [isPending, maraWorkingSteps]);
-
   function resetConversation() {
-    if (isPending) {
+    if (isPending || isApprovingSnapshot) {
       return;
     }
 
@@ -167,6 +174,7 @@ export function TripPlannerConcierge({
     setDraft("");
     setError(null);
     setIsSuggestionsOpen(false);
+    setSnapshotProposal(null);
   }
 
   function sendMessage(content: string) {
@@ -185,6 +193,7 @@ export function TripPlannerConcierge({
     setDraft("");
     setError(null);
     setIsSuggestionsOpen(false);
+    setSnapshotProposal(null);
 
     startTransition(async () => {
       try {
@@ -199,10 +208,7 @@ export function TripPlannerConcierge({
           }),
         });
 
-        const result = (await response.json()) as {
-          error?: string;
-          reply?: string;
-        };
+        const result = await parsePlannerReplyResponse(response);
 
         if (!response.ok || !result.reply) {
           throw new Error(result.error || "Mara could not respond right now.");
@@ -210,6 +216,7 @@ export function TripPlannerConcierge({
 
         const resolvedMessages: TripPlannerChatMessage[] = [...nextMessages, { role: "assistant", content: result.reply }];
         setMessages(resolvedMessages);
+        setSnapshotProposal(result.snapshotProposal ?? null);
 
         if (refreshOnReply) {
           router.refresh();
@@ -218,6 +225,48 @@ export function TripPlannerConcierge({
         setError(submitError instanceof Error ? submitError.message : "Mara could not respond right now.");
       }
     });
+  }
+
+  async function approveSnapshotProposal() {
+    if (!snapshotProposal || isApprovingSnapshot) {
+      return;
+    }
+
+    setIsApprovingSnapshot(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/trips/${tripId}/live-snapshot`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          snapshot: snapshotProposal.snapshot,
+          label: "Snapshot approved from Mara",
+        }),
+      });
+      const result = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        throw new Error(result.error || "Unable to update the live snapshot.");
+      }
+
+      setSnapshotProposal(null);
+      onSnapshotApproved?.();
+      router.refresh();
+    } catch (approveError) {
+      setError(approveError instanceof Error ? approveError.message : "Unable to update the live snapshot.");
+    } finally {
+      setIsApprovingSnapshot(false);
+    }
+  }
+
+  function dismissSnapshotProposal() {
+    if (isApprovingSnapshot) {
+      return;
+    }
+
+    setSnapshotProposal(null);
   }
 
   function handleComposerFocus() {
@@ -254,7 +303,7 @@ export function TripPlannerConcierge({
 
           <div className="flex items-center gap-2 sm:justify-end">
             {headerAction}
-            <Button type="button" variant="ghost" size="sm" onClick={resetConversation} disabled={isPending}>
+            <Button type="button" variant="ghost" size="sm" onClick={resetConversation} disabled={isPending || isApprovingSnapshot}>
               <RotateCcw className="h-4 w-4" />
               Reset
             </Button>
@@ -294,7 +343,7 @@ export function TripPlannerConcierge({
                     <LoaderCircle className="h-4 w-4 animate-spin" />
                     Working through it...
                   </div>
-                  <p className="text-[var(--foreground)]">{maraWorkingSteps[thinkingStepIndex] ?? "Looking for the cleanest next move."}</p>
+                  <p className="text-[var(--foreground)]">{maraWorkingStatus}</p>
                 </div>
               </div>
             </div>
@@ -303,10 +352,38 @@ export function TripPlannerConcierge({
 
         {error ? <div className="mt-4 rounded-[20px] border border-[#efc1bc] bg-[#fff0ee] px-4 py-3 text-sm text-[#b14b41]">{error}</div> : null}
 
+        {snapshotProposal ? (
+          <div className="mt-4 rounded-[24px] border border-[rgba(18,109,100,0.14)] bg-[linear-gradient(180deg,rgba(243,252,250,0.98),rgba(255,255,255,0.98))] p-4 shadow-[0_10px_24px_rgba(12,20,37,0.04)]">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Live snapshot update</p>
+                <p className="mt-2 text-sm font-semibold text-[var(--foreground)]">{snapshotProposal.summary}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {snapshotProposal.changes.map((change) => (
+                    <span key={`${change.field}-${change.nextValue}`} className="rounded-full border border-[rgba(18,109,100,0.14)] bg-white px-3 py-1.5 text-sm text-[var(--foreground)]">
+                      {change.label}: {change.nextValue}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                <Button type="button" variant="secondary" size="sm" onClick={dismissSnapshotProposal} disabled={isApprovingSnapshot}>
+                  <X className="h-4 w-4" />
+                  Not now
+                </Button>
+                <Button type="button" size="sm" onClick={() => void approveSnapshotProposal()} disabled={isApprovingSnapshot}>
+                  {isApprovingSnapshot ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  Update snapshot
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         <div ref={composerRef} className="mt-4 rounded-[24px] border border-[var(--card-border)] bg-white p-3 sm:p-4">
           <textarea
             className={textareaClassName}
-            disabled={isPending}
+            disabled={isPending || isApprovingSnapshot}
             placeholder={starterMode ? "What do you want to plan?" : tripContext ? "What should we change?" : "Open a planner to talk with Mara."}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
@@ -319,7 +396,7 @@ export function TripPlannerConcierge({
             }}
           />
           <div className="mt-3 flex justify-end">
-            <Button type="button" onClick={() => sendMessage(draft)} disabled={isPending || !draft.trim()}>
+            <Button type="button" onClick={() => sendMessage(draft)} disabled={isPending || isApprovingSnapshot || !draft.trim()}>
               <SendHorizontal className="h-4 w-4" />
               Send
             </Button>
@@ -345,7 +422,7 @@ export function TripPlannerConcierge({
                     key={prompt}
                     type="button"
                     onClick={() => sendMessage(prompt)}
-                    disabled={isPending}
+                    disabled={isPending || isApprovingSnapshot}
                     className="rounded-[16px] border border-[var(--card-border)] bg-[var(--surface-muted)] px-3.5 py-2 text-sm text-[var(--foreground)] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {prompt}

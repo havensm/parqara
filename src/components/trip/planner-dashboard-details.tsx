@@ -39,9 +39,7 @@ function formatTimeLabel(value: string) {
 }
 
 function getAverageWait(trip: TripDetailDto) {
-  return Math.round(
-    trip.itinerary.reduce((total, item) => total + item.predictedWaitMinutes, 0) / Math.max(trip.itinerary.length, 1)
-  );
+  return Math.round(trip.itinerary.reduce((total, item) => total + item.predictedWaitMinutes, 0) / Math.max(trip.itinerary.length, 1));
 }
 
 function getGroupSummary(trip: TripDetailDto) {
@@ -121,6 +119,27 @@ function LockedLiveNotice({ href, message }: { href: string; message: string }) 
   );
 }
 
+function DraftReadOnlyNotice() {
+  return (
+    <div className="overflow-hidden rounded-[30px] border border-[var(--card-border)] bg-white shadow-[0_18px_40px_rgba(12,20,37,0.05)]">
+      <div className="border-b border-[var(--card-border)] px-5 py-5 sm:px-6 sm:py-6">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Pinned basics</p>
+        <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-[-0.04em] text-[var(--foreground)] sm:text-[2.15rem]">
+          Shared trip basics are set by editors.
+        </h2>
+        <p className="mt-2 text-sm leading-7 text-[var(--muted)]">
+          You can still work through your assigned logistics with Mara, but only planners with edit access can change the shared trip basics.
+        </p>
+      </div>
+      <div className="p-5 sm:p-6">
+        <div className="rounded-[24px] border border-dashed border-[var(--card-border)] bg-[var(--surface-muted)] px-4 py-5 text-sm leading-7 text-[var(--muted)]">
+          Ask Mara what you need for your part of the trip, then use the logistics board to mark tasks done.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function PlannerDashboardDetails({ currentTier, trip, catalog }: PlannerDashboardDetailsProps) {
   const upgradeHref = currentTier === "FREE" ? "/pricing" : "/billing";
   const primaryAction = getPrimaryAction(trip, currentTier, upgradeHref);
@@ -128,9 +147,9 @@ export function PlannerDashboardDetails({ currentTier, trip, catalog }: PlannerD
   const routePreview = trip.itinerary.slice(0, 4);
   const liveLocked = primaryAction.locked;
 
-  if (trip.status === "DRAFT" && catalog) {
-    return (
-      <div className="space-y-4">
+  if (trip.status === "DRAFT") {
+    if (catalog && trip.canEdit) {
+      return (
         <div className="overflow-hidden rounded-[30px] border border-[var(--card-border)] bg-white shadow-[0_18px_40px_rgba(12,20,37,0.05)]">
           <div className="border-b border-[var(--card-border)] px-5 py-5 sm:px-6 sm:py-6">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Build the first route</p>
@@ -143,13 +162,13 @@ export function PlannerDashboardDetails({ currentTier, trip, catalog }: PlannerD
           </div>
 
           <div className="p-5 sm:p-6">
-            <TripForm catalog={catalog} initialTrip={trip} />
+            <TripForm catalog={catalog} initialTrip={trip} liveNotice={liveLocked ? { href: upgradeHref, message: "Live mode opens on Plus." } : null} />
           </div>
         </div>
+      );
+    }
 
-        {liveLocked ? <LockedLiveNotice href={upgradeHref} message="Live mode opens on Plus." /> : null}
-      </div>
-    );
+    return <DraftReadOnlyNotice />;
   }
 
   return (
@@ -210,10 +229,7 @@ export function PlannerDashboardDetails({ currentTier, trip, catalog }: PlannerD
           <div className="mt-4 space-y-2.5">
             {routePreview.length ? (
               routePreview.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex flex-col gap-2 rounded-[20px] border border-[var(--card-border)] bg-[var(--surface-muted)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
-                >
+                <div key={item.id} className="flex flex-col gap-2 rounded-[20px] border border-[var(--card-border)] bg-[var(--surface-muted)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-[var(--foreground)]">{item.title}</p>
                     <p className="mt-1 text-sm leading-6 text-[var(--muted)]">{item.reason}</p>

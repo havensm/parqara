@@ -8,6 +8,7 @@ import { createSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { signUpSchema } from "@/lib/validation/auth";
 import { claimPendingTripInvitesForUser } from "@/server/services/trip-service";
+import { claimPendingTripPeopleForUser } from "@/server/services/trip-people-service";
 import { claimPendingUserContactInvitesForUser } from "@/server/services/user-service";
 
 export const runtime = "nodejs";
@@ -45,6 +46,7 @@ export async function POST(request: Request) {
     });
 
     await claimPendingTripInvitesForUser(user.id, user.email);
+    await claimPendingTripPeopleForUser(user.id, user.email);
     await claimPendingUserContactInvitesForUser(user.id, user.email);
     await createSession(user.id);
     return NextResponse.json({ nextPath: getPostAuthRedirectPath(user), ok: true });
