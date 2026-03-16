@@ -45,7 +45,10 @@ describe("POST /api/assistant/trip-planner", () => {
       maraStarterPreview: { usedReplies: 0, remainingReplies: 0, replyLimit: 1 },
     });
     mockReserveMaraUsage.mockResolvedValue(undefined);
-    mockGenerateTripPlannerReply.mockResolvedValue("Full planning reply.");
+    mockGenerateTripPlannerReply.mockResolvedValue({
+      reply: "Full planning reply.",
+      snapshotProposal: null,
+    });
 
     const response = await POST(
       new Request("http://localhost/api/assistant/trip-planner", {
@@ -63,6 +66,7 @@ describe("POST /api/assistant/trip-planner", () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
       reply: "Full planning reply.",
+      snapshotProposal: null,
       fullAccess: true,
     });
     expect(mockGenerateTripPlannerReply).toHaveBeenCalledWith("user-1", [{ role: "user", content: "Help me plan lunch." }], "trip-1");
@@ -80,7 +84,10 @@ describe("POST /api/assistant/trip-planner", () => {
       maraStarterPreview: { usedReplies: 0, remainingReplies: 0, replyLimit: 1 },
     });
     mockReserveMaraUsage.mockResolvedValue(undefined);
-    mockGenerateTripPlannerReply.mockResolvedValue("Full planning reply.");
+    mockGenerateTripPlannerReply.mockResolvedValue({
+      reply: "Full planning reply.",
+      snapshotProposal: null,
+    });
 
     const response = await POST(
       new Request("http://localhost/api/assistant/trip-planner", {
@@ -98,6 +105,7 @@ describe("POST /api/assistant/trip-planner", () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
       reply: "Full planning reply.",
+      snapshotProposal: null,
       fullAccess: true,
     });
     expect(mockGenerateTripPlannerReply).toHaveBeenCalledWith("user-1", [{ role: "user", content: "Build me a full plan." }], "trip-1");

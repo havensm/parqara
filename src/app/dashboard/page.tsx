@@ -10,7 +10,6 @@ import { getPlannerLimitState } from "@/server/services/planner-entitlement-serv
 import {
   createDefaultDraftTrip,
   getDefaultParkSummary,
-  getParkCatalog,
   getTripDetail,
   listDashboardTrips,
 } from "@/server/services/trip-service";
@@ -18,10 +17,10 @@ import {
 import { ParksUnavailableState } from "@/components/app/parks-unavailable-state";
 import { FirstTimePlannerTour } from "@/components/onboarding/first-time-planner-tour";
 import { MaraPlannerFocus } from "@/components/trip/mara-planner-focus";
-import { PlannerDashboardDetails } from "@/components/trip/planner-dashboard-details";
 import { PlannerEmptyState } from "@/components/trip/planner-empty-state";
 import { PlannerWorkspaceShell } from "@/components/trip/planner-workspace-shell";
 import { PlannerWorkspaceTabs } from "@/components/trip/planner-workspace-tabs";
+import { TripLogisticsBoard } from "@/components/trip/trip-logistics-board";
 
 type DashboardSearchParams = {
   create?: string;
@@ -95,7 +94,6 @@ export default async function DashboardPage({
     redirect(createPlannerHref);
   }
 
-  // Empty planner state is explicit now so deleting the last planner does not silently recreate one.
   if (!trips.length) {
     return (
       <PlannerEmptyState
@@ -121,7 +119,6 @@ export default async function DashboardPage({
   });
   const tripContext = buildTripPlannerTripContext(activeTrip);
   const questions = isStarterDraft ? [] : buildTripPlannerNeededQuestions(activeTrip);
-  const catalog = activeTrip.status === "DRAFT" ? await getParkCatalog(activeTrip.park.slug) : null;
   const plannerTabs = buildTripWorkspaceTabs(trips).map((tab) => ({
     ...tab,
     href: buildDashboardHref({ tripId: tab.id, ...preservedDashboardParams }),
@@ -157,11 +154,14 @@ export default async function DashboardPage({
           />
         }
       >
-        <section data-tour-id="planning-panel">
-          <PlannerDashboardDetails currentTier={billing.currentTier} trip={activeTrip} catalog={catalog} />
+        <section id="trip-logistics-board" data-tour-id="planning-panel">
+          <TripLogisticsBoard tripId={activeTrip.id} />
         </section>
       </PlannerWorkspaceShell>
       <FirstTimePlannerTour enabled={showFirstTimeTour} preview={previewFirstTimeTour} />
     </>
   );
 }
+
+
+

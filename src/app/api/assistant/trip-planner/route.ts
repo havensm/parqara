@@ -20,10 +20,11 @@ export async function POST(request: Request) {
       currentTier: billing.currentTier,
     });
 
-    const reply = await generateTripPlannerReply(user.id, body.messages, body.tripId);
+    const result = await generateTripPlannerReply(user.id, body.messages, body.tripId);
 
     return NextResponse.json({
-      reply,
+      reply: result.reply,
+      snapshotProposal: result.snapshotProposal,
       fullAccess: true,
     });
   } catch (error) {

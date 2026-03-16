@@ -1,7 +1,11 @@
+import type {
+  TripLiveSnapshotProposalDto,
+} from "@/lib/contracts";
 import type { TripPlannerChatMessage } from "@/lib/trip-planner-agent";
 
 import { getPlannerContext } from "@/server/services/mara-agent-context";
 import { buildFallbackReply } from "@/server/services/mara-agent-prompt";
+import { buildTripLiveSnapshotProposalState } from "@/server/services/trip-live-snapshot-service";
 import { runMaraAgent } from "@/server/services/mara-agent-sdk";
 
 const MARA_REPLY_TIMEOUT_MS = 18000;
@@ -23,17 +27,30 @@ async function runMaraAgentWithTimeout(context: Awaited<ReturnType<typeof getPla
   }
 }
 
-export async function generateTripPlannerReply(userId: string, messages: TripPlannerChatMessage[], tripId: string) {
+export async function generateTripPlannerReply(
+  userId: string,
+  messages: TripPlannerChatMessage[],
+  tripId: string
+): Promise<{ reply: string; snapshotProposal: TripLiveSnapshotProposalDto | null }> {
   const context = await getPlannerContext(userId, tripId);
 
-  if (!process.env.OPENAI_API_KEY) {
-    return buildFallbackReply(context, messages);
+  let reply = buildFallbackReply(context, messages);
+
+  if (process.env.OPENAI_API_KEY) {
+    try {
+      const agentReply = await runMaraAgentWithTimeout(context, messages);
+      if (agentReply) {
+        reply = agentReply;
+      }
+    } catch {
+      reply = buildFallbackReply(context, messages);
+    }
   }
 
-  try {
-    const reply = await runMaraAgentWithTimeout(context, messages);
-    return reply || buildFallbackReply(context, messages);
-  } catch {
-    return buildFallbackReply(context, messages);
-  }
+  const snapshotProposal = await buildTripLiveSnapshotProposalState(userId, tripId, messages, reply).catch(() => null);
+
+  return {
+    reply,
+    snapshotProposal,
+  };
 }

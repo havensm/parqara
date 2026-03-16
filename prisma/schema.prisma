@@ -78,6 +78,40 @@ enum PlannerStatus {
   ARCHIVED
 }
 
+enum TripAccessRole {
+  NONE
+  VIEW
+  EDIT
+}
+
+enum TripAttendanceStatus {
+  INVITED
+  ATTENDING
+  MAYBE
+  NOT_ATTENDING
+}
+
+enum TripLogisticsCategory {
+  DOCS
+  TRANSPORT
+  GEAR
+  TIME_OFF
+  LODGING
+  OTHER
+}
+
+enum TripLogisticsTaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  BLOCKED
+}
+
+enum TripLogisticsTaskSource {
+  MARA
+  MANUAL
+}
+
 enum ThrillTolerance {
   LOW
   MEDIUM
@@ -145,6 +179,10 @@ model User {
   plannerVersions               PlannerVersion[]         @relation("PlannerVersionAuthor")
   plannerTemplates              PlannerTemplate[]
   plannerExports                PlannerExport[]          @relation("PlannerExportOwner")
+  tripPeople                     TripPerson[]             @relation("TripPersonMember")
+  invitedTripPeople              TripPerson[]             @relation("TripPersonInviter")
+  createdTripLogisticsTasks      TripLogisticsTask[]      @relation("TripLogisticsTaskCreator")
+  liveSnapshotRevisions         TripLiveSnapshotRevision[] @relation("TripLiveSnapshotRevisionAuthor")
 }
 
 model MaraRequestLog {
@@ -255,6 +293,8 @@ model Trip {
   currentLocationAttractionId String?
   latestPlanSummary           String?
   summary                     Json?
+  liveSnapshot                Json?
+  liveSnapshotUpdatedAt       DateTime?
   createdAt                   DateTime                @default(now())
   updatedAt                   DateTime                @updatedAt
   currentLocation             Attraction?             @relation("TripCurrentLocation", fields: [currentLocationAttractionId], references: [id], onDelete: SetNull)
@@ -264,8 +304,11 @@ model Trip {
   snapshots                   ParkStateSnapshot[]
   collaborators               TripCollaborator[]
   pendingInvites              TripCollaboratorInvite[]
+  people                      TripPerson[]
+  logisticsTasks              TripLogisticsTask[]
   notifications               Notification[]
   plannerVersions             PlannerVersion[]
+  liveSnapshotRevisions       TripLiveSnapshotRevision[]
   plannerExports              PlannerExport[]
   user                        User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -286,6 +329,20 @@ model PlannerVersion {
 
   @@index([tripId, createdAt])
   @@index([userId, createdAt])
+}
+
+model TripLiveSnapshotRevision {
+  id              String   @id @default(cuid())
+  tripId          String
+  createdByUserId String?
+  label           String
+  snapshot        Json
+  createdAt       DateTime @default(now())
+  trip            Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  createdByUser   User?    @relation("TripLiveSnapshotRevisionAuthor", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([tripId, createdAt])
+  @@index([createdByUserId, createdAt])
 }
 
 model PlannerTemplate {
@@ -332,18 +389,67 @@ model PartyProfile {
 }
 
 model TripCollaborator {
-  id        String   @id @default(cuid())
-  tripId    String
-  userId    String
-  createdAt DateTime @default(now())
-  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String         @id @default(cuid())
+  tripId     String
+  userId     String
+  accessRole TripAccessRole @default(EDIT)
+  createdAt  DateTime       @default(now())
+  trip       Trip           @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([tripId, userId])
   @@index([userId])
 }
 
 
+
+model TripPerson {
+  id                String               @id @default(cuid())
+  tripId            String
+  userId            String?
+  invitedByUserId   String
+  email             String
+  displayName       String?
+  attendanceStatus  TripAttendanceStatus @default(INVITED)
+  plannerAccessRole TripAccessRole       @default(NONE)
+  inviteAcceptedAt  DateTime?
+  lastInvitedAt     DateTime?
+  lastRemindedAt    DateTime?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  invitedByUser     User                 @relation("TripPersonInviter", fields: [invitedByUserId], references: [id], onDelete: Cascade)
+  trip              Trip                 @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user              User?                @relation("TripPersonMember", fields: [userId], references: [id], onDelete: SetNull)
+  tasks             TripLogisticsTask[]
+
+  @@unique([tripId, email])
+  @@index([userId])
+  @@index([tripId, attendanceStatus])
+}
+
+model TripLogisticsTask {
+  id             String                  @id @default(cuid())
+  tripId         String
+  assigneePersonId String
+  createdByUserId String
+  title          String
+  category       TripLogisticsCategory
+  status         TripLogisticsTaskStatus @default(TODO)
+  source         TripLogisticsTaskSource @default(MANUAL)
+  dueDate        DateTime?
+  note           String?
+  reminderNote   String?
+  lastRemindedAt DateTime?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  assignee       TripPerson              @relation(fields: [assigneePersonId], references: [id], onDelete: Cascade)
+  createdByUser  User                    @relation("TripLogisticsTaskCreator", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  trip           Trip                    @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId, assigneePersonId])
+  @@index([tripId, status])
+  @@index([assigneePersonId, status])
+}
 
 model UserContact {
   id            String   @id @default(cuid())
@@ -460,6 +566,7 @@ model ParkStateSnapshot {
   @@index([tripId, effectiveTime])
   @@index([parkId, effectiveTime])
 }
+
 
 
 

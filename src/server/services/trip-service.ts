@@ -16,6 +16,7 @@ import type {
 } from "@/lib/contracts";
 import { addMinutesSafe, combineDateAndTime, formatDateTime, formatIsoDate } from "@/lib/date-utils";
 import { db } from "@/lib/db";
+import { normalizeTripLiveSnapshot } from "@/lib/trip-live-snapshot";
 import { HttpError } from "@/lib/http-error";
 import { sendPlannerInviteEmail } from "@/lib/planner-invite-email";
 import { tripSetupSchema, tripUpdateSchema } from "@/lib/validation/trip";
@@ -25,6 +26,7 @@ import { createProviderSuite } from "@/server/providers/factory";
 import { diningPreferenceOptions, preferredRideTypes } from "@/server/providers/mock/mock-data";
 import { createNotifications, createOperationalNotificationsForTrip, createTripMemberNotifications } from "@/server/services/notification-service";
 import { ensurePlannerCanBeCreated } from "@/server/services/planner-entitlement-service";
+import { ensureTripPeopleSeeded, getTripAccessContext } from "@/server/services/trip-people-service";
 import { saveUserPerson } from "@/server/services/user-service";
 
 function requirePartyProfile<T extends { partyProfile: PartyProfile | null }>(trip: T): asserts trip is T & { partyProfile: PartyProfile } {
@@ -116,6 +118,7 @@ function buildUserDisplayName(user: { email: string; firstName: string | null; l
 function serializeCollaboratorMember(member: {
   id: string;
   userId: string;
+  accessRole: "NONE" | "VIEW" | "EDIT";
   user: { email: string; firstName: string | null; lastName: string | null; name: string | null };
 }): TripCollaboratorDto {
   return {
@@ -123,6 +126,7 @@ function serializeCollaboratorMember(member: {
     userId: member.userId,
     email: member.user.email,
     name: buildUserDisplayName(member.user),
+    accessRole: member.accessRole,
   };
 }
 
@@ -132,6 +136,7 @@ function serializeOwner(user: { id: string; email: string; firstName: string | n
     userId: user.id,
     email: user.email,
     name: buildUserDisplayName(user),
+    accessRole: "EDIT",
   };
 }
 
@@ -192,7 +197,7 @@ async function getAccessibleTrip(userId: string, tripId: string) {
   const trip = await db.trip.findFirst({
     where: {
       id: tripId,
-      OR: [{ userId }, { collaborators: { some: { userId } } }],
+      OR: [{ userId }, { collaborators: { some: { userId } } }, { people: { some: { userId } } }],
     },
     include: {
       park: true,
@@ -219,7 +224,7 @@ async function getAccessibleTripForCollaboration(userId: string, tripId: string)
   const trip = await db.trip.findFirst({
     where: {
       id: tripId,
-      OR: [{ userId }, { collaborators: { some: { userId } } }],
+      OR: [{ userId }, { collaborators: { some: { userId } } }, { people: { some: { userId } } }],
     },
     include: {
       park: {
@@ -823,7 +828,7 @@ export async function listDashboardTrips(userId: string): Promise<DashboardTripD
   const trips = await db.trip.findMany({
     where: {
       plannerStatus: "ACTIVE",
-      OR: [{ userId }, { collaborators: { some: { userId } } }],
+      OR: [{ userId }, { collaborators: { some: { userId } } }, { people: { some: { userId } } }],
     },
     include: {
       park: true,
@@ -901,6 +906,7 @@ export async function createTrip(userId: string, input: import("zod").infer<type
     { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
   );
 
+  await ensureTripPeopleSeeded(trip.id);
   await recordPlannerVersion(userId, trip.id, "Planner created");
 
   return { tripId: trip.id };
@@ -908,6 +914,10 @@ export async function createTrip(userId: string, input: import("zod").infer<type
 
 export async function updateTrip(userId: string, tripId: string, input: import("zod").infer<typeof tripUpdateSchema>) {
   const trip = await getAccessibleTrip(userId, tripId);
+  const access = await getTripAccessContext(userId, tripId);
+  if (!access.canEdit) {
+    throw new HttpError(403, "You do not have edit access to this planner.");
+  }
   requirePartyProfile(trip);
   requireActivePlanner(trip);
 
@@ -959,7 +969,6 @@ export async function updateTrip(userId: string, tripId: string, input: import("
 
   return { tripId: updated.id };
 }
-
 export async function archiveTrip(userId: string, tripId: string) {
   const trip = await getManageableTrip(userId, tripId, "Only the trip owner can archive this planner.");
   requireActivePlanner(trip);
@@ -1068,6 +1077,7 @@ export async function duplicateTrip(userId: string, tripId: string) {
     return createdTrip;
   }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
+  await ensureTripPeopleSeeded(duplicatedTrip.id);
   await recordPlannerVersion(userId, duplicatedTrip.id, `Duplicated from ${trip.name}`);
 
   return { tripId: duplicatedTrip.id };
@@ -1160,6 +1170,10 @@ export async function deleteTrip(userId: string, tripId: string) {
 
 export async function generateTripItinerary(userId: string, tripId: string) {
   const trip = await getAccessibleTrip(userId, tripId);
+  const access = await getTripAccessContext(userId, tripId);
+  if (!access.canEdit) {
+    throw new HttpError(403, "You do not have edit access to this planner.");
+  }
   requireActivePlanner(trip);
   return persistPlan({
     trip,
@@ -1172,6 +1186,10 @@ export async function generateTripItinerary(userId: string, tripId: string) {
 
 export async function replanTrip(userId: string, tripId: string) {
   const trip = await getAccessibleTrip(userId, tripId);
+  const access = await getTripAccessContext(userId, tripId);
+  if (!access.canEdit) {
+    throw new HttpError(403, "You do not have edit access to this planner.");
+  }
   requireActivePlanner(trip);
   return persistPlan({
     trip,
@@ -1183,13 +1201,15 @@ export async function replanTrip(userId: string, tripId: string) {
 }
 
 export async function getTripDetail(userId: string, tripId: string): Promise<TripDetailDto> {
-  const trip = await getAccessibleTrip(userId, tripId);
+  const [trip, access] = await Promise.all([getAccessibleTrip(userId, tripId), getTripAccessContext(userId, tripId)]);
   requirePartyProfile(trip);
 
   return {
     id: trip.id,
     name: trip.name,
     isOwner: trip.userId === userId,
+    canEdit: access.canEdit,
+    plannerAccessRole: access.plannerAccessRole,
     status: trip.status,
     plannerStatus: trip.plannerStatus,
     startingLocation: trip.startingLocation,
@@ -1197,6 +1217,8 @@ export async function getTripDetail(userId: string, tripId: string): Promise<Tri
     simulatedTime: trip.simulatedTime ? formatDateTime(trip.simulatedTime) : null,
     currentStep: trip.currentStep,
     latestPlanSummary: trip.latestPlanSummary,
+    liveSnapshot: normalizeTripLiveSnapshot(trip.liveSnapshot),
+    liveSnapshotUpdatedAt: trip.liveSnapshotUpdatedAt ? trip.liveSnapshotUpdatedAt.toISOString() : null,
     park: {
       id: trip.park.id,
       slug: trip.park.slug,
@@ -1210,7 +1232,6 @@ export async function getTripDetail(userId: string, tripId: string): Promise<Tri
     itinerary: trip.itineraryItems.map(serializeItineraryItem),
   };
 }
-
 export async function getTripCollaboratorState(userId: string, tripId: string): Promise<TripCollaboratorStateDto> {
   const trip = await getAccessibleTripForCollaboration(userId, tripId);
   const people = trip.userId === userId ? await getSavedPeople(userId) : [];
@@ -1288,6 +1309,7 @@ export async function claimPendingTripInvitesForUser(userId: string, email: stri
       data: {
         tripId: invite.tripId,
         userId,
+        accessRole: "EDIT",
       },
     });
 
@@ -1364,6 +1386,7 @@ export async function addTripCollaborator(
       data: {
         tripId: trip.id,
         userId: collaborator.id,
+        accessRole: "EDIT",
       },
     });
 
@@ -1649,6 +1672,10 @@ export async function getLiveDashboard(userId: string, tripId: string) {
 
 export async function completeCurrentItem(userId: string, tripId: string) {
   const trip = await getAccessibleTrip(userId, tripId);
+  const access = await getTripAccessContext(userId, tripId);
+  if (!access.canEdit) {
+    throw new HttpError(403, "You do not have edit access to this planner.");
+  }
   requireActivePlanner(trip);
   const nextItem = trip.itineraryItems.find((item) => item.status === "PLANNED");
   if (!nextItem) {
@@ -1698,37 +1725,23 @@ export async function completeCurrentItem(userId: string, tripId: string) {
       type: "PLANNER",
       severity: "info",
       title: "Trip completed",
-      detail: `${nextItem.title} was marked complete and the shared trip is now finished.`,
+      detail: `${trip.name} is wrapped and the final summary is ready.`,
       actionHref: `/trips/${trip.id}/summary`,
     });
-
-    return getTripSummary(userId, tripId);
+  } else {
+    const followingItem = remainingPlannedItems[0];
+    await db.trip.update({
+      where: { id: trip.id },
+      data: {
+        currentStep: followingItem.order,
+        simulatedTime: nextItem.endTime,
+        currentLocationAttractionId: nextItem.attractionId,
+      },
+    });
   }
 
-  await db.trip.update({
-    where: { id: trip.id },
-    data: {
-      status: "LIVE",
-      currentStep: nextItem.order,
-      simulatedTime: nextItem.endTime,
-      currentLocationAttractionId: nextItem.attractionId,
-    },
-  });
-
-  await createTripMemberNotifications({
-    tripId: trip.id,
-    actorUserId: userId,
-    excludeUserIds: [userId],
-    type: "PLANNER",
-    severity: "info",
-    title: "Planner progress updated",
-    detail: `${nextItem.title} was marked complete in the shared planner.`,
-    actionHref: `/trips/${trip.id}/live`,
-  });
-
-  return getLiveDashboard(userId, tripId);
+  return getTripSummary(userId, tripId);
 }
-
 export async function getTripSummary(userId: string, tripId: string): Promise<SummaryDto> {
   const trip = await getAccessibleTrip(userId, tripId);
   const completedItems = trip.itineraryItems.filter((item) => item.status === "COMPLETED");
@@ -1764,6 +1777,9 @@ export async function getTripSummary(userId: string, tripId: string): Promise<Su
     latestPlanSummary: trip.latestPlanSummary,
   };
 }
+
+
+
 
 
 

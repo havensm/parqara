@@ -13,6 +13,12 @@ export type ItineraryItemStatusValue =
   | "CANCELLED";
 export type SubscriptionTierValue = "FREE" | "PLUS" | "PRO";
 export type SubscriptionStatusValue = "INACTIVE" | "TRIALING" | "ACTIVE" | "PAST_DUE" | "CANCELED" | "UNPAID";
+export type TripAccessRoleValue = "NONE" | "VIEW" | "EDIT";
+export type TripAttendanceStatusValue = "INVITED" | "ATTENDING" | "MAYBE" | "NOT_ATTENDING";
+export type TripLogisticsCategoryValue = "DOCS" | "TRANSPORT" | "GEAR" | "TIME_OFF" | "LODGING" | "OTHER";
+export type TripLogisticsTaskStatusValue = "TODO" | "IN_PROGRESS" | "DONE" | "BLOCKED";
+export type TripLogisticsTaskSourceValue = "MARA" | "MANUAL";
+export type TripLiveSnapshotStatusValue = "DRAFT" | "CONFIRMED";
 
 export type AttractionOption = {
   id: string;
@@ -78,10 +84,55 @@ export type ItineraryItemDto = {
   kidFriendly: boolean | null;
 };
 
+export type TripLiveSnapshotDto = {
+  destination: string | null;
+  duration: string | null;
+  groupSummary: string | null;
+  travelSummary: string | null;
+  lodgingSummary: string | null;
+  activities: string[];
+  supplies: string[];
+  latestTakeaway: string | null;
+  mapQuery: string | null;
+  status: TripLiveSnapshotStatusValue;
+};
+
+export type TripLiveSnapshotChangeDto = {
+  field: keyof TripLiveSnapshotDto;
+  label: string;
+  nextValue: string;
+};
+
+export type TripLiveSnapshotProposalDto = {
+  tripId: string;
+  snapshot: TripLiveSnapshotDto;
+  changes: TripLiveSnapshotChangeDto[];
+  summary: string;
+};
+
+export type TripLiveSnapshotRevisionDto = {
+  id: string;
+  label: string;
+  createdAt: string;
+  createdByName: string;
+  snapshot: TripLiveSnapshotDto;
+};
+
+export type TripLiveSnapshotStateDto = {
+  tripId: string;
+  canManage: boolean;
+  canRevert: boolean;
+  currentSnapshot: TripLiveSnapshotDto | null;
+  currentSnapshotUpdatedAt: string | null;
+  revisions: TripLiveSnapshotRevisionDto[];
+};
+
 export type TripDetailDto = {
   id: string;
   name: string;
   isOwner: boolean;
+  canEdit: boolean;
+  plannerAccessRole: TripAccessRoleValue;
   status: TripStatusValue;
   plannerStatus: PlannerStatusValue;
   startingLocation: string | null;
@@ -89,6 +140,8 @@ export type TripDetailDto = {
   simulatedTime: string | null;
   currentStep: number;
   latestPlanSummary: string | null;
+  liveSnapshot: TripLiveSnapshotDto | null;
+  liveSnapshotUpdatedAt: string | null;
   park: ParkCatalogDto["park"];
   partyProfile: PartyProfileDto;
   itinerary: ItineraryItemDto[];
@@ -136,6 +189,7 @@ export type TripCollaboratorDto = {
   userId: string;
   email: string;
   name: string;
+  accessRole: TripAccessRoleValue;
 };
 
 export type UserPersonDto = {
@@ -157,6 +211,62 @@ export type TripCollaboratorStateDto = {
   collaborators: TripCollaboratorDto[];
   pendingInvites: TripPendingInviteDto[];
   people: UserPersonDto[];
+};
+
+export type TripPersonDto = {
+  id: string;
+  tripId: string;
+  userId: string | null;
+  email: string;
+  name: string;
+  attendanceStatus: TripAttendanceStatusValue;
+  plannerAccessRole: TripAccessRoleValue;
+  isOwner: boolean;
+  isRegistered: boolean;
+  inviteAcceptedAt: string | null;
+  lastInvitedAt: string | null;
+  lastRemindedAt: string | null;
+  createdAt: string;
+};
+
+export type TripPeopleStateDto = {
+  tripId: string;
+  canManage: boolean;
+  isOwner: boolean;
+  owner: TripPersonDto;
+  people: TripPersonDto[];
+};
+
+export type TripLogisticsTaskDto = {
+  id: string;
+  tripId: string;
+  assigneePersonId: string;
+  title: string;
+  category: TripLogisticsCategoryValue;
+  status: TripLogisticsTaskStatusValue;
+  source: TripLogisticsTaskSourceValue;
+  dueDate: string | null;
+  note: string | null;
+  reminderNote: string | null;
+  lastRemindedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  assignee: TripPersonDto;
+};
+
+export type TripLogisticsGroupDto = {
+  person: TripPersonDto;
+  completion: {
+    done: number;
+    total: number;
+  };
+  tasks: TripLogisticsTaskDto[];
+};
+
+export type TripLogisticsBoardDto = {
+  tripId: string;
+  canManage: boolean;
+  groups: TripLogisticsGroupDto[];
 };
 
 export type ProfilePendingInviteDto = {
@@ -243,5 +353,4 @@ export type SummaryDto = {
   highlights: string[];
   latestPlanSummary: string | null;
 };
-
 

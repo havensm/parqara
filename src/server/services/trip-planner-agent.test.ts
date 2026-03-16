@@ -5,6 +5,7 @@ import type { PlannerContext } from "@/server/services/mara-agent-context";
 const mockGetPlannerContext = vi.fn();
 const mockBuildFallbackReply = vi.fn();
 const mockRunMaraAgent = vi.fn();
+const mockBuildTripLiveSnapshotProposalState = vi.fn();
 
 vi.mock("@/server/services/mara-agent-context", () => ({
   getPlannerContext: (...args: unknown[]) => mockGetPlannerContext(...args),
@@ -16,6 +17,10 @@ vi.mock("@/server/services/mara-agent-prompt", () => ({
 
 vi.mock("@/server/services/mara-agent-sdk", () => ({
   runMaraAgent: (...args: unknown[]) => mockRunMaraAgent(...args),
+}));
+
+vi.mock("@/server/services/trip-live-snapshot-service", () => ({
+  buildTripLiveSnapshotProposalState: (...args: unknown[]) => mockBuildTripLiveSnapshotProposalState(...args),
 }));
 
 import { generateTripPlannerReply } from "@/server/services/trip-planner-agent";
@@ -31,16 +36,23 @@ const sampleContext: PlannerContext = {
   dietaryPreferences: [],
   accessibilityNeeds: [],
   additionalNotes: "",
+  plannerAccessRole: "EDIT",
+  logisticsScopedToViewer: false,
+  logisticsRosterSummary: [],
+  logisticsTaskSummary: [],
+  viewerTaskSummary: [],
   recentTrips: [],
   focusedTrip: null,
 };
 
 describe("generateTripPlannerReply", () => {
   const originalApiKey = process.env.OPENAI_API_KEY;
+  const userMessages = [{ role: "user", content: "Help me plan a trip." }] as const;
 
   beforeEach(() => {
     mockGetPlannerContext.mockResolvedValue(sampleContext);
     mockBuildFallbackReply.mockReturnValue("fallback reply");
+    mockBuildTripLiveSnapshotProposalState.mockResolvedValue(null);
   });
 
   afterEach(() => {
@@ -56,33 +68,36 @@ describe("generateTripPlannerReply", () => {
   it("uses the deterministic fallback when no OpenAI key is configured", async () => {
     delete process.env.OPENAI_API_KEY;
 
-    const reply = await generateTripPlannerReply("user-1", [{ role: "user", content: "Help me plan a trip." }], "trip-123");
+    const result = await generateTripPlannerReply("user-1", [...userMessages], "trip-123");
 
-    expect(reply).toBe("fallback reply");
+    expect(result).toEqual({ reply: "fallback reply", snapshotProposal: null });
     expect(mockRunMaraAgent).not.toHaveBeenCalled();
     expect(mockGetPlannerContext).toHaveBeenCalledWith("user-1", "trip-123");
-    expect(mockBuildFallbackReply).toHaveBeenCalledWith(sampleContext, [{ role: "user", content: "Help me plan a trip." }]);
+    expect(mockBuildFallbackReply).toHaveBeenCalledWith(sampleContext, [...userMessages]);
+    expect(mockBuildTripLiveSnapshotProposalState).toHaveBeenCalledWith("user-1", "trip-123", [...userMessages], "fallback reply");
   });
 
   it("returns the SDK reply when the run succeeds", async () => {
     process.env.OPENAI_API_KEY = "test-key";
     mockRunMaraAgent.mockResolvedValue("sdk reply");
 
-    const reply = await generateTripPlannerReply("user-1", [{ role: "user", content: "Help me plan a trip." }], "trip-123");
+    const result = await generateTripPlannerReply("user-1", [...userMessages], "trip-123");
 
-    expect(reply).toBe("sdk reply");
+    expect(result).toEqual({ reply: "sdk reply", snapshotProposal: null });
     expect(mockGetPlannerContext).toHaveBeenCalledWith("user-1", "trip-123");
-    expect(mockRunMaraAgent).toHaveBeenCalledWith(sampleContext, [{ role: "user", content: "Help me plan a trip." }]);
+    expect(mockRunMaraAgent).toHaveBeenCalledWith(sampleContext, [...userMessages]);
+    expect(mockBuildTripLiveSnapshotProposalState).toHaveBeenCalledWith("user-1", "trip-123", [...userMessages], "sdk reply");
   });
 
   it("falls back when the SDK run fails", async () => {
     process.env.OPENAI_API_KEY = "test-key";
     mockRunMaraAgent.mockRejectedValue(new Error("SDK failed"));
 
-    const reply = await generateTripPlannerReply("user-1", [{ role: "user", content: "Help me plan a trip." }], "trip-123");
+    const result = await generateTripPlannerReply("user-1", [...userMessages], "trip-123");
 
-    expect(reply).toBe("fallback reply");
+    expect(result).toEqual({ reply: "fallback reply", snapshotProposal: null });
     expect(mockGetPlannerContext).toHaveBeenCalledWith("user-1", "trip-123");
-    expect(mockBuildFallbackReply).toHaveBeenCalledWith(sampleContext, [{ role: "user", content: "Help me plan a trip." }]);
+    expect(mockBuildFallbackReply).toHaveBeenCalledWith(sampleContext, [...userMessages]);
+    expect(mockBuildTripLiveSnapshotProposalState).toHaveBeenCalledWith("user-1", "trip-123", [...userMessages], "fallback reply");
   });
 });
