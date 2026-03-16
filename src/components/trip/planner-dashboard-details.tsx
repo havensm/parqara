@@ -130,24 +130,24 @@ export function PlannerDashboardDetails({ currentTier, trip, catalog }: PlannerD
 
   if (trip.status === "DRAFT" && catalog) {
     return (
-      <div className="space-y-4">
-        <div className="overflow-hidden rounded-[30px] border border-[var(--card-border)] bg-white shadow-[0_18px_40px_rgba(12,20,37,0.05)]">
-          <div className="border-b border-[var(--card-border)] px-5 py-5 sm:px-6 sm:py-6">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Build the first route</p>
-            <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-[-0.04em] text-[var(--foreground)] sm:text-[2.15rem]">
-              Save the basics, then build the plan.
-            </h2>
-            <p className="mt-2 text-sm leading-7 text-[var(--muted)]">
-              Mara shapes the direction. These controls still save the planner basics and build the first route.
-            </p>
-          </div>
-
-          <div className="p-5 sm:p-6">
-            <TripForm catalog={catalog} initialTrip={trip} />
-          </div>
+      <div className="overflow-hidden rounded-[30px] border border-[var(--card-border)] bg-white shadow-[0_18px_40px_rgba(12,20,37,0.05)]">
+        <div className="border-b border-[var(--card-border)] px-5 py-5 sm:px-6 sm:py-6">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Build the first route</p>
+          <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-[-0.04em] text-[var(--foreground)] sm:text-[2.15rem]">
+            Save the basics, then build the plan.
+          </h2>
+          <p className="mt-2 text-sm leading-7 text-[var(--muted)]">
+            Mara shapes the direction. These controls still save the planner basics and build the first route.
+          </p>
         </div>
 
-        {liveLocked ? <LockedLiveNotice href={upgradeHref} message="Live mode opens on Plus." /> : null}
+        <div className="p-5 sm:p-6">
+          <TripForm
+            catalog={catalog}
+            initialTrip={trip}
+            liveNotice={liveLocked ? { href: upgradeHref, message: "Live mode opens on Plus." } : null}
+          />
+        </div>
       </div>
     );
   }

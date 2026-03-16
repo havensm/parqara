@@ -43,44 +43,60 @@ function buildInitialMessages(firstName?: string | null, tripContext?: TripPlann
   ];
 }
 
-function buildMaraWorkingSteps(lastUserMessage: string, tripContext?: TripPlannerTripContext, starterMode = false) {
+function buildMaraWorkingStatus(lastUserMessage: string, tripContext?: TripPlannerTripContext, starterMode = false) {
   const normalized = lastUserMessage.toLowerCase();
-  const steps: string[] = [];
 
   if (starterMode) {
-    steps.push("Pulling out the basics.");
-  } else if (tripContext) {
-    steps.push(`Checking ${tripContext.name}.`);
+    return "Pulling out the basics.";
   }
 
   if (/budget|cheap|affordable|under \$|\$/i.test(normalized)) {
-    steps.push("Keeping budget in view.");
+    return "Keeping budget in view.";
   }
 
   if (/food|dinner|lunch|restaurant|snack|dessert/i.test(normalized)) {
-    steps.push("Looking at food and timing.");
+    return "Looking at food and timing.";
   }
 
   if (/walk|route|pace|stress|easy|relaxed/i.test(normalized)) {
-    steps.push("Checking pace and route tradeoffs.");
+    return "Checking pace and route tradeoffs.";
   }
 
   if (/kid|family|stroller|baby|child|children/i.test(normalized)) {
-    steps.push("Checking group fit.");
+    return "Checking group fit.";
   }
 
   if (/start|hotel|home|leave|drive|parking|location/i.test(normalized)) {
-    steps.push("Working through where the day should start.");
+    return "Working through where the day should start.";
   }
 
   if (/ride|must-do|priority|show|attraction/i.test(normalized)) {
-    steps.push("Protecting the main must-dos.");
+    return "Protecting the main must-dos.";
   }
 
-  steps.push("Pressure-testing the plan.");
-  steps.push("Looking for the cleanest next move.");
+  if (tripContext) {
+    return `Shaping ${tripContext.name}.`;
+  }
 
-  return Array.from(new Set(steps)).slice(0, 3);
+  return "Looking for the cleanest next move.";
+}
+async function parsePlannerReplyResponse(response: Response) {
+  const contentType = response.headers.get("content-type") ?? "";
+
+  if (contentType.includes("application/json")) {
+    return (await response.json()) as {
+      error?: string;
+      reply?: string;
+    };
+  }
+
+  const text = await response.text();
+  const trimmed = text.trim();
+  const isHtml = trimmed.startsWith("<!DOCTYPE") || trimmed.startsWith("<html") || trimmed.startsWith("<body") || trimmed.startsWith("<");
+
+  return {
+    error: isHtml ? "Mara took too long to respond. Try again." : trimmed || "Mara could not respond right now.",
+  };
 }
 
 export function TripPlannerConcierge({
@@ -99,19 +115,18 @@ export function TripPlannerConcierge({
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
-  const [thinkingStepIndex, setThinkingStepIndex] = useState(0);
   const [isPending, startTransition] = useTransition();
   const threadScrollRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLDivElement | null>(null);
   const activeTripIdRef = useRef(tripId);
 
-  const quickPrompts = (questions.length ? questions : getTripPlannerStarterPrompts(tripContext, starterMode)).slice(0, starterMode ? 2 : tripContext ? 1 : 2);
+  const quickPrompts = questions.length ? questions : getTripPlannerStarterPrompts(tripContext, starterMode);
   const latestUserMessage = useMemo(
     () => [...messages].reverse().find((message) => message.role === "user")?.content ?? "",
     [messages]
   );
-  const maraWorkingSteps = useMemo(
-    () => buildMaraWorkingSteps(latestUserMessage, tripContext, starterMode),
+  const maraWorkingStatus = useMemo(
+    () => buildMaraWorkingStatus(latestUserMessage, tripContext, starterMode),
     [latestUserMessage, starterMode, tripContext]
   );
 
@@ -143,20 +158,6 @@ export function TripPlannerConcierge({
     });
   }, [isPending, messages]);
 
-  useEffect(() => {
-    if (!isPending) {
-      setThinkingStepIndex(0);
-      return;
-    }
-
-    setThinkingStepIndex(0);
-
-    const interval = window.setInterval(() => {
-      setThinkingStepIndex((current) => (current + 1) % Math.max(maraWorkingSteps.length, 1));
-    }, 1400);
-
-    return () => window.clearInterval(interval);
-  }, [isPending, maraWorkingSteps]);
 
   function resetConversation() {
     if (isPending) {
@@ -199,10 +200,7 @@ export function TripPlannerConcierge({
           }),
         });
 
-        const result = (await response.json()) as {
-          error?: string;
-          reply?: string;
-        };
+        const result = await parsePlannerReplyResponse(response);
 
         if (!response.ok || !result.reply) {
           throw new Error(result.error || "Mara could not respond right now.");
@@ -294,7 +292,7 @@ export function TripPlannerConcierge({
                     <LoaderCircle className="h-4 w-4 animate-spin" />
                     Working through it...
                   </div>
-                  <p className="text-[var(--foreground)]">{maraWorkingSteps[thinkingStepIndex] ?? "Looking for the cleanest next move."}</p>
+                  <p className="text-[var(--foreground)]">{maraWorkingStatus}</p>
                 </div>
               </div>
             </div>
@@ -359,3 +357,8 @@ export function TripPlannerConcierge({
     </Card>
   );
 }
+
+
+
+
+
