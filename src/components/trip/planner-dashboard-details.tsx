@@ -39,7 +39,9 @@ function formatTimeLabel(value: string) {
 }
 
 function getAverageWait(trip: TripDetailDto) {
-  return Math.round(trip.itinerary.reduce((total, item) => total + item.predictedWaitMinutes, 0) / Math.max(trip.itinerary.length, 1));
+  return Math.round(
+    trip.itinerary.reduce((total, item) => total + item.predictedWaitMinutes, 0) / Math.max(trip.itinerary.length, 1)
+  );
 }
 
 function getGroupSummary(trip: TripDetailDto) {
@@ -129,7 +131,21 @@ export function PlannerDashboardDetails({ currentTier, trip, catalog }: PlannerD
   if (trip.status === "DRAFT" && catalog) {
     return (
       <div className="space-y-4">
-        <TripForm catalog={catalog} initialTrip={trip} />
+        <div className="overflow-hidden rounded-[30px] border border-[var(--card-border)] bg-white shadow-[0_18px_40px_rgba(12,20,37,0.05)]">
+          <div className="border-b border-[var(--card-border)] px-5 py-5 sm:px-6 sm:py-6">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Build the first route</p>
+            <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-[-0.04em] text-[var(--foreground)] sm:text-[2.15rem]">
+              Save the basics, then build the plan.
+            </h2>
+            <p className="mt-2 text-sm leading-7 text-[var(--muted)]">
+              Mara shapes the direction. These controls still save the planner basics and build the first route.
+            </p>
+          </div>
+
+          <div className="p-5 sm:p-6">
+            <TripForm catalog={catalog} initialTrip={trip} />
+          </div>
+        </div>
 
         {liveLocked ? <LockedLiveNotice href={upgradeHref} message="Live mode opens on Plus." /> : null}
       </div>
@@ -142,8 +158,10 @@ export function PlannerDashboardDetails({ currentTier, trip, catalog }: PlannerD
         <div className="flex flex-col gap-4 border-b border-[var(--card-border)] px-5 py-5 sm:px-6 sm:py-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-3xl">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Current plan</p>
-            <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-[-0.04em] text-[var(--foreground)] sm:text-[2.15rem]">Plan snapshot.</h2>
-            <p className="mt-2 text-sm leading-7 text-[var(--muted)]">This is Mara&apos;s live view of the planner, built from your pinned basics.</p>
+            <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-[-0.04em] text-[var(--foreground)] sm:text-[2.15rem]">
+              Plan snapshot.
+            </h2>
+            <p className="mt-2 text-sm leading-7 text-[var(--muted)]">This is Mara&apos;s live view of the planner, based on what she knows so far.</p>
           </div>
 
           <div className="flex flex-wrap gap-3">
@@ -156,7 +174,7 @@ export function PlannerDashboardDetails({ currentTier, trip, catalog }: PlannerD
           </div>
         </div>
 
-        <div className="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-4 sm:p-6">
+        <div className="grid gap-3 p-5 sm:p-6 md:grid-cols-2 xl:grid-cols-4">
           <DetailBlock
             label="When"
             value={`${formatVisitDate(trip.visitDate)} at ${trip.partyProfile.startTime}`}
@@ -192,7 +210,10 @@ export function PlannerDashboardDetails({ currentTier, trip, catalog }: PlannerD
           <div className="mt-4 space-y-2.5">
             {routePreview.length ? (
               routePreview.map((item) => (
-                <div key={item.id} className="flex flex-col gap-2 rounded-[20px] border border-[var(--card-border)] bg-[var(--surface-muted)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div
+                  key={item.id}
+                  className="flex flex-col gap-2 rounded-[20px] border border-[var(--card-border)] bg-[var(--surface-muted)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+                >
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-[var(--foreground)]">{item.title}</p>
                     <p className="mt-1 text-sm leading-6 text-[var(--muted)]">{item.reason}</p>
@@ -216,9 +237,3 @@ export function PlannerDashboardDetails({ currentTier, trip, catalog }: PlannerD
     </div>
   );
 }
-
-
-
-
-
-

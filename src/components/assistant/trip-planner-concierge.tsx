@@ -1,9 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { LoaderCircle, RotateCcw, SendHorizontal } from "lucide-react";
+import { ChevronDown, LoaderCircle, RotateCcw, SendHorizontal } from "lucide-react";
 
 import type { SubscriptionTierValue } from "@/lib/contracts";
 import {
@@ -43,6 +43,46 @@ function buildInitialMessages(firstName?: string | null, tripContext?: TripPlann
   ];
 }
 
+function buildMaraWorkingSteps(lastUserMessage: string, tripContext?: TripPlannerTripContext, starterMode = false) {
+  const normalized = lastUserMessage.toLowerCase();
+  const steps: string[] = [];
+
+  if (starterMode) {
+    steps.push("Pulling out the basics.");
+  } else if (tripContext) {
+    steps.push(`Checking ${tripContext.name}.`);
+  }
+
+  if (/budget|cheap|affordable|under \$|\$/i.test(normalized)) {
+    steps.push("Keeping budget in view.");
+  }
+
+  if (/food|dinner|lunch|restaurant|snack|dessert/i.test(normalized)) {
+    steps.push("Looking at food and timing.");
+  }
+
+  if (/walk|route|pace|stress|easy|relaxed/i.test(normalized)) {
+    steps.push("Checking pace and route tradeoffs.");
+  }
+
+  if (/kid|family|stroller|baby|child|children/i.test(normalized)) {
+    steps.push("Checking group fit.");
+  }
+
+  if (/start|hotel|home|leave|drive|parking|location/i.test(normalized)) {
+    steps.push("Working through where the day should start.");
+  }
+
+  if (/ride|must-do|priority|show|attraction/i.test(normalized)) {
+    steps.push("Protecting the main must-dos.");
+  }
+
+  steps.push("Pressure-testing the plan.");
+  steps.push("Looking for the cleanest next move.");
+
+  return Array.from(new Set(steps)).slice(0, 3);
+}
+
 export function TripPlannerConcierge({
   firstName,
   tripId,
@@ -58,16 +98,33 @@ export function TripPlannerConcierge({
   const [messages, setMessages] = useState<TripPlannerChatMessage[]>(() => buildInitialMessages(firstName, tripContext, starterMode));
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
+  const [thinkingStepIndex, setThinkingStepIndex] = useState(0);
   const [isPending, startTransition] = useTransition();
   const threadScrollRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLDivElement | null>(null);
+  const activeTripIdRef = useRef(tripId);
 
   const quickPrompts = (questions.length ? questions : getTripPlannerStarterPrompts(tripContext, starterMode)).slice(0, starterMode ? 2 : tripContext ? 1 : 2);
+  const latestUserMessage = useMemo(
+    () => [...messages].reverse().find((message) => message.role === "user")?.content ?? "",
+    [messages]
+  );
+  const maraWorkingSteps = useMemo(
+    () => buildMaraWorkingSteps(latestUserMessage, tripContext, starterMode),
+    [latestUserMessage, starterMode, tripContext]
+  );
 
   useEffect(() => {
+    if (activeTripIdRef.current === tripId) {
+      return;
+    }
+
+    activeTripIdRef.current = tripId;
     setMessages(buildInitialMessages(firstName, tripContext, starterMode));
     setDraft("");
     setError(null);
+    setIsSuggestionsOpen(false);
   }, [firstName, starterMode, tripContext, tripId]);
 
   useEffect(() => {
@@ -86,6 +143,21 @@ export function TripPlannerConcierge({
     });
   }, [isPending, messages]);
 
+  useEffect(() => {
+    if (!isPending) {
+      setThinkingStepIndex(0);
+      return;
+    }
+
+    setThinkingStepIndex(0);
+
+    const interval = window.setInterval(() => {
+      setThinkingStepIndex((current) => (current + 1) % Math.max(maraWorkingSteps.length, 1));
+    }, 1400);
+
+    return () => window.clearInterval(interval);
+  }, [isPending, maraWorkingSteps]);
+
   function resetConversation() {
     if (isPending) {
       return;
@@ -94,6 +166,7 @@ export function TripPlannerConcierge({
     setMessages(buildInitialMessages(firstName, tripContext, starterMode));
     setDraft("");
     setError(null);
+    setIsSuggestionsOpen(false);
   }
 
   function sendMessage(content: string) {
@@ -111,6 +184,7 @@ export function TripPlannerConcierge({
     setMessages(nextMessages);
     setDraft("");
     setError(null);
+    setIsSuggestionsOpen(false);
 
     startTransition(async () => {
       try {
@@ -215,30 +289,17 @@ export function TripPlannerConcierge({
             <div className="flex justify-start">
               <div className="max-w-[85%] rounded-[22px] border border-[var(--card-border)] bg-white px-4 py-3 text-sm text-[var(--muted)] shadow-[0_10px_24px_rgba(12,20,37,0.04)]">
                 <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">Mara</p>
-                <div className="flex items-center gap-2">
-                  <LoaderCircle className="h-4 w-4 animate-spin" />
-                  Thinking...
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
+                    Working through it...
+                  </div>
+                  <p className="text-[var(--foreground)]">{maraWorkingSteps[thinkingStepIndex] ?? "Looking for the cleanest next move."}</p>
                 </div>
               </div>
             </div>
           ) : null}
         </div>
-
-        {quickPrompts.length ? (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {quickPrompts.map((prompt) => (
-              <button
-                key={prompt}
-                type="button"
-                onClick={() => sendMessage(prompt)}
-                disabled={isPending}
-                className="rounded-[16px] border border-[var(--card-border)] bg-white px-3.5 py-2 text-sm text-[var(--foreground)] transition hover:bg-[var(--surface-muted)] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {prompt}
-              </button>
-            ))}
-          </div>
-        ) : null}
 
         {error ? <div className="mt-4 rounded-[20px] border border-[#efc1bc] bg-[#fff0ee] px-4 py-3 text-sm text-[#b14b41]">{error}</div> : null}
 
@@ -264,6 +325,36 @@ export function TripPlannerConcierge({
             </Button>
           </div>
         </div>
+
+        {quickPrompts.length ? (
+          <div className="mt-3 rounded-[22px] border border-[var(--card-border)] bg-white/80 p-2.5 sm:p-3">
+            <button
+              type="button"
+              onClick={() => setIsSuggestionsOpen((open) => !open)}
+              className="flex w-full items-center justify-between gap-3 rounded-[18px] px-3 py-2 text-left text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--surface-muted)]"
+              aria-expanded={isSuggestionsOpen}
+              aria-controls={`planner-prompt-suggestions-${tripId}`}
+            >
+              <span>Prompt ideas</span>
+              <ChevronDown className={cn("h-4 w-4 text-[var(--muted)] transition", isSuggestionsOpen ? "rotate-180" : "")} />
+            </button>
+            {isSuggestionsOpen ? (
+              <div id={`planner-prompt-suggestions-${tripId}`} className="mt-2 flex flex-wrap gap-2 px-1 pb-1">
+                {quickPrompts.map((prompt) => (
+                  <button
+                    key={prompt}
+                    type="button"
+                    onClick={() => sendMessage(prompt)}
+                    disabled={isPending}
+                    className="rounded-[16px] border border-[var(--card-border)] bg-[var(--surface-muted)] px-3.5 py-2 text-sm text-[var(--foreground)] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </Card>
   );

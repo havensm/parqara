@@ -1,18 +1,11 @@
 import { addDays } from "date-fns";
 import { redirect } from "next/navigation";
 
-import { getUserBillingState } from "@/lib/billing";
 import { isAdminEmail } from "@/lib/admin";
 import { requireCompletedOnboardingUser } from "@/lib/auth/guards";
-import {
-  buildTripPlannerNeededQuestions,
-  buildTripPlannerTripContext,
-} from "@/lib/trip-planner-agent";
-import {
-  buildTripWorkspaceTabs,
-  isPlannerKickoffDraft,
-  pickDefaultTrip,
-} from "@/lib/trip-workspace";
+import { getUserBillingState } from "@/lib/billing";
+import { buildTripPlannerNeededQuestions, buildTripPlannerTripContext } from "@/lib/trip-planner-agent";
+import { buildTripWorkspaceTabs, isPlannerKickoffDraft, pickDefaultTrip } from "@/lib/trip-workspace";
 import { getPlannerLimitState } from "@/server/services/planner-entitlement-service";
 import {
   createDefaultDraftTrip,
@@ -126,9 +119,9 @@ export default async function DashboardPage({
     currentStep: activeTrip.currentStep,
     itineraryCount: activeTrip.itinerary.length,
   });
-  const catalog = activeTrip.status === "DRAFT" ? await getParkCatalog(activeTrip.park.slug) : null;
   const tripContext = buildTripPlannerTripContext(activeTrip);
   const questions = isStarterDraft ? [] : buildTripPlannerNeededQuestions(activeTrip);
+  const catalog = activeTrip.status === "DRAFT" ? await getParkCatalog(activeTrip.park.slug) : null;
   const plannerTabs = buildTripWorkspaceTabs(trips).map((tab) => ({
     ...tab,
     href: buildDashboardHref({ tripId: tab.id, ...preservedDashboardParams }),

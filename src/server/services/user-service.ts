@@ -1,8 +1,9 @@
 import type { Prisma } from "@prisma/client/index";
 import { OnboardingStatus, SubscriptionStatus, SubscriptionTier } from "@prisma/client/index";
 
-import type { ProfilePeopleStateDto, UserPersonDto } from "@/lib/contracts";
+import type { ProfilePendingInviteDto, ProfilePeopleStateDto, UserPersonDto } from "@/lib/contracts";
 import { db } from "@/lib/db";
+import { sendContactInviteEmail } from "@/lib/contact-invite-email";
 import { HttpError } from "@/lib/http-error";
 import { clampOnboardingStep, emptyOnboardingValues, onboardingDraftSchema, onboardingSubmissionSchema, type OnboardingValues } from "@/lib/onboarding";
 import { profileSettingsSchema } from "@/lib/profile";
@@ -232,33 +233,55 @@ export async function updateProfileSettings(userId: string, input: unknown) {
   };
 }
 
+function serializePendingUserContactInvite(invite: { id: string; email: string }): ProfilePendingInviteDto {
+  return {
+    id: invite.id,
+    email: invite.email,
+  };
+}
+
 export async function getProfilePeopleState(userId: string): Promise<ProfilePeopleStateDto> {
-  const people = await db.userContact.findMany({
-    where: {
-      ownerUserId: userId,
-    },
-    include: {
-      contactUser: {
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          name: true,
-        },
+  const [people, pendingInvites] = await Promise.all([
+    db.userContact.findMany({
+      where: {
+        ownerUserId: userId,
       },
-    },
-    orderBy: [
-      {
+      include: {
         contactUser: {
-          email: "asc",
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            name: true,
+          },
         },
       },
-    ],
-  });
+      orderBy: [
+        {
+          contactUser: {
+            email: "asc",
+          },
+        },
+      ],
+    }),
+    db.userContactInvite.findMany({
+      where: {
+        ownerUserId: userId,
+      },
+      select: {
+        id: true,
+        email: true,
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+    }),
+  ]);
 
   return {
     people: people.map(serializeUserPerson),
+    pendingInvites: pendingInvites.map(serializePendingUserContactInvite),
   };
 }
 
@@ -282,34 +305,160 @@ export async function saveUserPerson(ownerUserId: string, contactUserId: string)
   });
 }
 
-export async function addUserPersonByEmail(ownerUserId: string, email: string): Promise<ProfilePeopleStateDto> {
+export async function claimPendingUserContactInvitesForUser(userId: string, email: string) {
   const normalizedEmail = email.trim().toLowerCase();
   if (!normalizedEmail) {
-    throw new HttpError(400, "Email is required.");
+    return;
   }
 
-  const person = await db.user.findUnique({
+  const invites = await db.userContactInvite.findMany({
     where: {
       email: normalizedEmail,
     },
     select: {
       id: true,
-      email: true,
-      firstName: true,
-      lastName: true,
-      name: true,
+      ownerUserId: true,
+    },
+    orderBy: {
+      createdAt: "asc",
     },
   });
 
-  if (!person) {
-    throw new HttpError(400, "That email does not belong to a Parqara account yet.");
+  for (const invite of invites) {
+    if (invite.ownerUserId !== userId) {
+      await saveUserPerson(invite.ownerUserId, userId);
+    }
+
+    await db.userContactInvite.delete({
+      where: {
+        id: invite.id,
+      },
+    });
+  }
+}
+
+export async function addUserPersonByEmail(ownerUserId: string, email: string, appOrigin: string): Promise<ProfilePeopleStateDto> {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) {
+    throw new HttpError(400, "Email is required.");
   }
 
-  if (person.id === ownerUserId) {
+  const [owner, person] = await Promise.all([
+    db.user.findUnique({
+      where: {
+        id: ownerUserId,
+      },
+      select: {
+        email: true,
+        firstName: true,
+        lastName: true,
+        name: true,
+      },
+    }),
+    db.user.findUnique({
+      where: {
+        email: normalizedEmail,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        name: true,
+      },
+    }),
+  ]);
+
+  if (!owner) {
+    throw new HttpError(404, "User not found.");
+  }
+
+  if (normalizedEmail === owner.email.toLowerCase()) {
     throw new HttpError(400, "You already have access to your own planners.");
   }
 
-  await saveUserPerson(ownerUserId, person.id);
+  if (person) {
+    await Promise.all([
+      saveUserPerson(ownerUserId, person.id),
+      db.userContactInvite.deleteMany({
+        where: {
+          ownerUserId,
+          email: normalizedEmail,
+        },
+      }),
+    ]);
+
+    return getProfilePeopleState(ownerUserId);
+  }
+
+  const existingInvite = await db.userContactInvite.findUnique({
+    where: {
+      ownerUserId_email: {
+        ownerUserId,
+        email: normalizedEmail,
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (existingInvite) {
+    throw new HttpError(400, "An invite has already been sent to that email.");
+  }
+
+  const invite = await db.userContactInvite.create({
+    data: {
+      ownerUserId,
+      email: normalizedEmail,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  try {
+    await sendContactInviteEmail({
+      to: normalizedEmail,
+      inviterName: buildDisplayName(owner),
+      actionUrl: `${appOrigin}/signup?email=${encodeURIComponent(normalizedEmail)}`,
+    });
+  } catch (error) {
+    await db.userContactInvite
+      .delete({
+        where: {
+          id: invite.id,
+        },
+      })
+      .catch(() => undefined);
+
+    throw error;
+  }
+
+  return getProfilePeopleState(ownerUserId);
+}
+
+export async function removePendingUserPersonInvite(ownerUserId: string, inviteId: string): Promise<ProfilePeopleStateDto> {
+  const invite = await db.userContactInvite.findFirst({
+    where: {
+      id: inviteId,
+      ownerUserId,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!invite) {
+    throw new HttpError(404, "Invite not found.");
+  }
+
+  await db.userContactInvite.delete({
+    where: {
+      id: invite.id,
+    },
+  });
+
   return getProfilePeopleState(ownerUserId);
 }
 
@@ -390,5 +539,7 @@ export async function adminSetSubscriptionTierByEmail(input: {
     subscriptionStatus: updatedUser.subscriptionStatus,
   };
 }
+
+
 
 

@@ -9,7 +9,10 @@ export const generatedVisuals = {
     hero: "/generated/homepage/parqara-hero-planning-suite.png",
     story: "/generated/homepage/parqara-weekend-atlas-scene.png",
     dayOf: "/generated/homepage/parqara-day-of-itinerary-scene.png",
-    dateNight: "/generated/homepage/parqara-date-night-scene.png",
+    dateNight: "/generated/homepage/parqara-date-night-scene-refreshed.png",
+  },
+  roadmap: {
+    sixMonthTimeline: "/generated/roadmap/parqara-six-month-roadmap-timeline.png",
   },
   planners: {
     studio: "/generated/planners/parqara-planner-studio.png",

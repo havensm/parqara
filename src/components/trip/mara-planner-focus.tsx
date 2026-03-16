@@ -160,7 +160,7 @@ function StartingLocationPanel({ startingLocation }: { startingLocation: string 
   if (!startingLocation) {
     return (
       <div className="rounded-[24px] border border-dashed border-[var(--card-border)] bg-[var(--surface-muted)] px-4 py-5 text-sm text-[var(--muted)]">
-        Add a starting location in planner basics and Mara will pin it here.
+        Tell Mara where you are starting from and the map will appear here.
       </div>
     );
   }
@@ -205,8 +205,7 @@ function StarterPlanNote() {
       <div className="rounded-[24px] border border-dashed border-[var(--card-border)] bg-[var(--surface-muted)] px-5 py-5 sm:px-6">
         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Nothing saved yet</p>
         <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">
-          Tell Mara the basics like where you want to go, when you want to go, who is coming, and where you are starting from.
-          Your pinned basics and Mara&apos;s latest take will show up here as you plan.
+          Tell Mara what you want to plan. She&apos;ll ask for the missing pieces and build this snapshot as the planner takes shape.
         </p>
       </div>
     </div>
@@ -292,7 +291,7 @@ export function MaraPlannerFocus({
               <h3 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-[-0.04em] text-[var(--foreground)] sm:text-[2.15rem]">Live snapshot</h3>
               {starterMode ? (
                 <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                  Nothing is pinned yet. Tell Mara the basics and this snapshot will build up here.
+                  Nothing is saved yet. Mara will ask for the missing pieces and build this snapshot as you chat.
                 </p>
               ) : (
                 <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
@@ -313,7 +312,7 @@ export function MaraPlannerFocus({
                 <DetailBlock
                   label="Who"
                   value={getConversationGroupSummary(userConversationText, trip)}
-                  detail={`Saved group: ${getSavedGroupSummary(trip)}`}
+                  detail={`Known group: ${getSavedGroupSummary(trip)}`}
                   icon={Users}
                 />
                 <DetailBlock
@@ -370,6 +369,9 @@ export function MaraPlannerFocus({
     </div>
   );
 }
+
+
+
 
 
 

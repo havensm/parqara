@@ -15,6 +15,7 @@ import {
 } from "@/lib/auth/google";
 import { db } from "@/lib/db";
 import { claimPendingTripInvitesForUser } from "@/server/services/trip-service";
+import { claimPendingUserContactInvitesForUser } from "@/server/services/user-service";
 
 function redirectToSignIn(request: Request, error: string) {
   return NextResponse.redirect(new URL(`/login?error=${error}`, getAppOrigin(request)));
@@ -94,6 +95,7 @@ export async function GET(request: Request) {
     }
 
     await claimPendingTripInvitesForUser(user.id, user.email);
+    await claimPendingUserContactInvitesForUser(user.id, user.email);
     await createSession(user.id);
     return NextResponse.redirect(new URL(getPostAuthRedirectPath(user), getAppOrigin(request)));
   } catch {

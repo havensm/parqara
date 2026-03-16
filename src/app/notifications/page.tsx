@@ -1,8 +1,9 @@
 import { BellRing, CloudRain, Plane, Users2 } from "lucide-react";
 
-import { getUserBillingState } from "@/lib/billing";
-import { requireCompletedOnboardingUser } from "@/lib/auth/guards";
 import { isAdminEmail } from "@/lib/admin";
+import { requireCompletedOnboardingUser } from "@/lib/auth/guards";
+import { getUserBillingState } from "@/lib/billing";
+import type { NotificationDto } from "@/lib/contracts";
 import { listUserNotifications } from "@/server/services/notification-service";
 
 import { AppShell } from "@/components/app/app-shell";
@@ -14,12 +15,12 @@ export default async function NotificationsPage() {
   const adminEnabled = isAdminEmail(user.email);
   const center = await listUserNotifications(user.id, 50);
   const plannerCount = center.notifications.filter(
-    (notification) => notification.type === "PLANNER" || notification.type === "COLLABORATION"
+    (notification: NotificationDto) => notification.type === "PLANNER" || notification.type === "COLLABORATION"
   ).length;
   const operationsCount = center.notifications.filter(
-    (notification) => notification.type === "WEATHER" || notification.type === "RIDE_STATUS"
+    (notification: NotificationDto) => notification.type === "WEATHER" || notification.type === "RIDE_STATUS"
   ).length;
-  const travelCount = center.notifications.filter((notification) => notification.type === "TRAVEL").length;
+  const travelCount = center.notifications.filter((notification: NotificationDto) => notification.type === "TRAVEL").length;
 
   return (
     <AppShell
@@ -63,14 +64,3 @@ function InboxVisualCard({ label, value, tone }: { label: string; value: string;
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
