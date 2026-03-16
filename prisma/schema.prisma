@@ -139,6 +139,7 @@ model User {
   maraRequestLogs               MaraRequestLog[]
   people                        UserContact[]            @relation("UserContactOwner")
   listedInPeople                UserContact[]            @relation("UserContactMember")
+  sentUserContactInvites        UserContactInvite[]      @relation("UserContactInviteSender")
   sentTripCollaboratorInvites   TripCollaboratorInvite[] @relation("TripCollaboratorInviteSender")
   feedbackEntries               Feedback[]
   plannerVersions               PlannerVersion[]         @relation("PlannerVersionAuthor")
@@ -356,6 +357,17 @@ model UserContact {
   @@index([contactUserId])
 }
 
+model UserContactInvite {
+  id          String   @id @default(cuid())
+  ownerUserId String
+  email       String
+  createdAt   DateTime @default(now())
+  ownerUser   User     @relation("UserContactInviteSender", fields: [ownerUserId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerUserId, email])
+  @@index([email])
+}
+
 model TripCollaboratorInvite {
   id              String   @id @default(cuid())
   tripId           String
@@ -448,6 +460,8 @@ model ParkStateSnapshot {
   @@index([tripId, effectiveTime])
   @@index([parkId, effectiveTime])
 }
+
+
 
 
 

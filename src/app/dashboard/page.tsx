@@ -17,7 +17,6 @@ import { getPlannerLimitState } from "@/server/services/planner-entitlement-serv
 import {
   createDefaultDraftTrip,
   getDefaultParkSummary,
-  getParkCatalog,
   getTripDetail,
   listDashboardTrips,
 } from "@/server/services/trip-service";
@@ -126,7 +125,6 @@ export default async function DashboardPage({
     currentStep: activeTrip.currentStep,
     itineraryCount: activeTrip.itinerary.length,
   });
-  const catalog = activeTrip.status === "DRAFT" ? await getParkCatalog(activeTrip.park.slug) : null;
   const tripContext = buildTripPlannerTripContext(activeTrip);
   const questions = isStarterDraft ? [] : buildTripPlannerNeededQuestions(activeTrip);
   const plannerTabs = buildTripWorkspaceTabs(trips).map((tab) => ({
@@ -164,9 +162,11 @@ export default async function DashboardPage({
           />
         }
       >
-        <section data-tour-id="planning-panel">
-          <PlannerDashboardDetails currentTier={billing.currentTier} trip={activeTrip} catalog={catalog} />
-        </section>
+        {activeTrip.status === "DRAFT" ? null : (
+          <section data-tour-id="planning-panel">
+            <PlannerDashboardDetails currentTier={billing.currentTier} trip={activeTrip} />
+          </section>
+        )}
       </PlannerWorkspaceShell>
       <FirstTimePlannerTour enabled={showFirstTimeTour} preview={previewFirstTimeTour} />
     </>

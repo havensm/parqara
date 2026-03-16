@@ -159,8 +159,14 @@ export type TripCollaboratorStateDto = {
   people: UserPersonDto[];
 };
 
+export type ProfilePendingInviteDto = {
+  id: string;
+  email: string;
+};
+
 export type ProfilePeopleStateDto = {
   people: UserPersonDto[];
+  pendingInvites: ProfilePendingInviteDto[];
 };
 
 export type AppNotificationTypeValue = "SYSTEM" | "TRAVEL" | "WEATHER" | "RIDE_STATUS" | "PLANNER" | "COLLABORATION";
@@ -237,4 +243,5 @@ export type SummaryDto = {
   highlights: string[];
   latestPlanSummary: string | null;
 };
+
 

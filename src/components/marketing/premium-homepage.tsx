@@ -34,7 +34,7 @@ const featureCards = [
     title: "A live plan for the day",
     detail: "Keep the day moving with live timing and a clear next step.",
     icon: CalendarRange,
-    image: generatedVisuals.homepage.dateNight,
+    image: generatedVisuals.homepage.dayOf,
     imageAlt: "Day-of planning and itinerary scene",
     imageClassName: "object-cover object-center",
     tone: "bg-[rgba(239,245,255,0.92)] text-[var(--sky-700)]",
@@ -214,5 +214,4 @@ export function PremiumHomepage({ currentTier, primaryHref, primaryLabel, second
     </div>
   );
 }
-
 

@@ -22,6 +22,7 @@ import {
   PROFILE_IMAGE_MAX_DIMENSION,
   type ProfileSettingsValues,
 } from "@/lib/profile";
+import { cn } from "@/lib/utils";
 
 import { ChoiceChip, SelectionTile } from "@/components/onboarding/selection-tile";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -95,7 +96,6 @@ async function createProfileImageDataUrl(file: File) {
       throw new Error("Could not prepare that image.");
     }
 
-    // Keep uploaded avatars lightweight and consistent before they are saved.
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
     const profileImageDataUrl = canvas.toDataURL("image/webp", 0.86);
 
@@ -243,120 +243,124 @@ export function ProfilePreferencesForm({
       </Card>
 
       <Card className="p-6 sm:p-7">
-        <SectionHeader title="Planning defaults" description="The preferences Mara should reach for first when a new planner starts." />
-        <div className="mt-6 grid gap-8 xl:grid-cols-2">
-          <div className="space-y-6">
-            <FieldGroup title="Adventure types" description="What you plan most often.">
-              <div className="flex flex-wrap gap-3">
-                {adventureTypeOptions.map((option) => (
-                  <ChoiceChip
-                    key={option}
-                    selected={values.preferredAdventureTypes.includes(option)}
-                    onClick={() => updateValues({ preferredAdventureTypes: toggleMultiValue(values.preferredAdventureTypes, option) })}
-                  >
-                    {option}
-                  </ChoiceChip>
-                ))}
-              </div>
-            </FieldGroup>
-
-            <FieldGroup title="Typical group size" description="Who you usually plan for.">
-              <div className="flex flex-wrap gap-3">
-                {groupSizeOptions.map((option) => (
-                  <ChoiceChip key={option} selected={values.typicalGroupSize === option} onClick={() => updateValues({ typicalGroupSize: option })}>
-                    {option}
-                  </ChoiceChip>
-                ))}
-              </div>
-            </FieldGroup>
-
-            <FieldGroup title="Children in the mix" description="Useful for pacing and fit.">
-              <div className="flex flex-wrap gap-3">
-                {childrenAgeOptions.map((option) => (
-                  <ChoiceChip key={option} selected={values.childrenAgeProfile === option} onClick={() => updateValues({ childrenAgeProfile: option })}>
-                    {option}
-                  </ChoiceChip>
-                ))}
-              </div>
-            </FieldGroup>
-
-            <FieldGroup title="Budget and distance" description="Guardrails for recommendations.">
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm font-medium text-slate-700">Budget</p>
-                  <div className="mt-3 flex flex-wrap gap-3">
-                    {budgetPreferenceOptions.map((option) => (
-                      <ChoiceChip key={option} selected={values.budgetPreference === option} onClick={() => updateValues({ budgetPreference: option })}>
-                        {option}
-                      </ChoiceChip>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-700">Travel distance</p>
-                  <div className="mt-3 flex flex-wrap gap-3">
-                    {travelDistanceOptions.map((option) => (
-                      <ChoiceChip
-                        key={option}
-                        selected={values.travelDistancePreference === option}
-                        onClick={() => updateValues({ travelDistancePreference: option })}
-                      >
-                        {option}
-                      </ChoiceChip>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </FieldGroup>
-          </div>
-
-          <div className="space-y-6">
-            <FieldGroup title="Top priorities" description="Choose up to three things Mara should optimize for.">
-              <div className="flex flex-wrap gap-3">
-                {planningPriorityOptions.map((option) => {
-                  const selected = values.planningPriorities.includes(option);
-                  const disabled = !selected && values.planningPriorities.length >= 3;
-                  return (
-                    <button
+        <SectionHeader title="Planning defaults" description="What Mara should assume first when a new planner starts." />
+        <div className="mt-6 grid gap-4 xl:grid-cols-2">
+          <DefaultsPanel title="Common plans" description="Who and what you usually plan for.">
+            <div className="space-y-6">
+              <FieldGroup title="Adventure types" description="What you open most often.">
+                <div className="flex flex-wrap gap-3">
+                  {adventureTypeOptions.map((option) => (
+                    <ChoiceChip
                       key={option}
-                      type="button"
-                      disabled={disabled}
-                      onClick={() => updateValues({ planningPriorities: togglePriority(values.planningPriorities, option) })}
-                      className={`rounded-full border px-4 py-2.5 text-sm font-semibold transition ${
-                        selected
-                          ? "border-[#b9ddd6] bg-[#edf8f4] text-[#18544d]"
-                          : disabled
-                            ? "border-slate-200 bg-slate-50 text-slate-300"
-                            : "border-slate-200 bg-white text-slate-600 hover:border-[#c9d8d1]"
-                      }`}
+                      selected={values.preferredAdventureTypes.includes(option)}
+                      onClick={() => updateValues({ preferredAdventureTypes: toggleMultiValue(values.preferredAdventureTypes, option) })}
                     >
                       {option}
-                    </button>
-                  );
-                })}
-              </div>
-            </FieldGroup>
+                    </ChoiceChip>
+                  ))}
+                </div>
+              </FieldGroup>
 
-            <FieldGroup title="Plan feel" description="How structured you want your plans to feel.">
-              <div className="grid gap-3">
-                {planningStyleOptions.map((option) => (
-                  <SelectionTile key={option} selected={values.planningStyle === option} onClick={() => updateValues({ planningStyle: option })}>
-                    {option}
-                  </SelectionTile>
-                ))}
-              </div>
-            </FieldGroup>
+              <FieldGroup title="Typical group size" description="Who you usually plan for.">
+                <div className="flex flex-wrap gap-3">
+                  {groupSizeOptions.map((option) => (
+                    <ChoiceChip key={option} selected={values.typicalGroupSize === option} onClick={() => updateValues({ typicalGroupSize: option })}>
+                      {option}
+                    </ChoiceChip>
+                  ))}
+                </div>
+              </FieldGroup>
 
-            <FieldGroup title="Help level" description="How much Mara should do by default.">
-              <div className="grid gap-3">
-                {planningHelpLevelOptions.map((option) => (
-                  <SelectionTile key={option} selected={values.planningHelpLevel === option} onClick={() => updateValues({ planningHelpLevel: option })}>
-                    {option}
-                  </SelectionTile>
-                ))}
-              </div>
-            </FieldGroup>
-          </div>
+              <FieldGroup title="Children in the mix" description="Useful for pace and fit.">
+                <div className="flex flex-wrap gap-3">
+                  {childrenAgeOptions.map((option) => (
+                    <ChoiceChip key={option} selected={values.childrenAgeProfile === option} onClick={() => updateValues({ childrenAgeProfile: option })}>
+                      {option}
+                    </ChoiceChip>
+                  ))}
+                </div>
+              </FieldGroup>
+            </div>
+          </DefaultsPanel>
+
+          <DefaultsPanel title="Guardrails" description="The boundaries Mara should protect first.">
+            <div className="space-y-6">
+              <FieldGroup title="Budget" description="How expensive a plan should feel.">
+                <div className="flex flex-wrap gap-3">
+                  {budgetPreferenceOptions.map((option) => (
+                    <ChoiceChip key={option} selected={values.budgetPreference === option} onClick={() => updateValues({ budgetPreference: option })}>
+                      {option}
+                    </ChoiceChip>
+                  ))}
+                </div>
+              </FieldGroup>
+
+              <FieldGroup title="Travel distance" description="How far you usually want to go.">
+                <div className="flex flex-wrap gap-3">
+                  {travelDistanceOptions.map((option) => (
+                    <ChoiceChip
+                      key={option}
+                      selected={values.travelDistancePreference === option}
+                      onClick={() => updateValues({ travelDistancePreference: option })}
+                    >
+                      {option}
+                    </ChoiceChip>
+                  ))}
+                </div>
+              </FieldGroup>
+
+              <FieldGroup title="Top priorities" description="Choose up to three things Mara should optimize for.">
+                <div className="flex flex-wrap gap-3">
+                  {planningPriorityOptions.map((option) => {
+                    const selected = values.planningPriorities.includes(option);
+                    const disabled = !selected && values.planningPriorities.length >= 3;
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => updateValues({ planningPriorities: togglePriority(values.planningPriorities, option) })}
+                        className={cn(
+                          "rounded-full border px-4 py-2.5 text-sm font-semibold transition",
+                          selected
+                            ? "border-[#b9ddd6] bg-[#edf8f4] text-[#18544d]"
+                            : disabled
+                              ? "border-slate-200 bg-slate-50 text-slate-300"
+                              : "border-slate-200 bg-white text-slate-600 hover:border-[#c9d8d1]"
+                        )}
+                      >
+                        {option}
+                      </button>
+                    );
+                  })}
+                </div>
+              </FieldGroup>
+            </div>
+          </DefaultsPanel>
+
+          <DefaultsPanel title="Mara style" description="How structured and hands-on planning should feel." className="xl:col-span-2">
+            <div className="grid gap-6 lg:grid-cols-2">
+              <FieldGroup title="Plan feel" description="How structured you want plans to feel.">
+                <div className="grid gap-3">
+                  {planningStyleOptions.map((option) => (
+                    <SelectionTile key={option} selected={values.planningStyle === option} onClick={() => updateValues({ planningStyle: option })}>
+                      {option}
+                    </SelectionTile>
+                  ))}
+                </div>
+              </FieldGroup>
+
+              <FieldGroup title="Help level" description="How much Mara should do by default.">
+                <div className="grid gap-3">
+                  {planningHelpLevelOptions.map((option) => (
+                    <SelectionTile key={option} selected={values.planningHelpLevel === option} onClick={() => updateValues({ planningHelpLevel: option })}>
+                      {option}
+                    </SelectionTile>
+                  ))}
+                </div>
+              </FieldGroup>
+            </div>
+          </DefaultsPanel>
         </div>
       </Card>
 
@@ -408,7 +412,11 @@ export function ProfilePreferencesForm({
 
       <div className="flex flex-col gap-3 rounded-[26px] border border-[var(--card-border)] bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          {message ? <p className="inline-flex items-center gap-2 text-sm font-semibold text-[#18544d]"><CheckCircle2 className="h-4 w-4" /> {message}</p> : null}
+          {message ? (
+            <p className="inline-flex items-center gap-2 text-sm font-semibold text-[#18544d]">
+              <CheckCircle2 className="h-4 w-4" /> {message}
+            </p>
+          ) : null}
           {error ? <p className="text-sm font-semibold text-[#b14b41]">{error}</p> : null}
         </div>
         <Button type="button" size="lg" disabled={isPending || isPreparingImage} onClick={saveProfile}>
@@ -425,6 +433,28 @@ function SectionHeader({ title, description }: { title: string; description: str
     <div>
       <h2 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-semibold tracking-tight text-slate-950">{title}</h2>
       <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-500">{description}</p>
+    </div>
+  );
+}
+
+function DefaultsPanel({
+  title,
+  description,
+  children,
+  className,
+}: {
+  title: string;
+  description: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("rounded-[28px] border border-slate-200 bg-slate-50/70 p-5 sm:p-6", className)}>
+      <div>
+        <p className="text-lg font-semibold text-slate-950">{title}</p>
+        <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
+      </div>
+      <div className="mt-6">{children}</div>
     </div>
   );
 }

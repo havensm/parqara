@@ -346,7 +346,15 @@ function getMissingRequiredFields(values: TripFormValues) {
   return missingFields;
 }
 
-export function TripForm({ catalog, initialTrip }: { catalog: ParkCatalogDto; initialTrip: TripDetailDto }) {
+export function TripForm({
+  catalog,
+  initialTrip,
+  liveNotice,
+}: {
+  catalog: ParkCatalogDto;
+  initialTrip: TripDetailDto;
+  liveNotice?: { href: string; message: string } | null;
+}) {
   const router = useRouter();
   const [isGenerating, startGeneration] = useTransition();
   const startsBlank = useMemo(() => shouldStartWithBlankDetails(initialTrip), [initialTrip]);
@@ -836,17 +844,29 @@ export function TripForm({ catalog, initialTrip }: { catalog: ParkCatalogDto; in
         </div>
       </details>
 
-      <div className="mt-6 flex flex-col gap-3 rounded-[30px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(246,249,253,0.96),rgba(241,246,252,0.94))] shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-5">
-        <p className="text-sm text-slate-500">Mara shapes the plan. These basics stay pinned.</p>
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <Button type="button" variant="secondary" onClick={() => void handleSave()} disabled={saveState === "saving" || isGenerating}>
-            Save now
-          </Button>
-          <Button type="button" onClick={handleGenerate} disabled={isGenerating || saveState === "saving"} data-tour-id="build-plan-action">
-            {isGenerating ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : null}
-            {isGenerating ? "Building plan..." : "Build plan"}
-          </Button>
+      <div className="mt-6 overflow-hidden rounded-[30px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(246,249,253,0.96),rgba(241,246,252,0.94))] shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]">
+        <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-5">
+          <p className="text-sm text-slate-500">Mara shapes the plan. These basics stay pinned.</p>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button type="button" variant="secondary" onClick={() => void handleSave()} disabled={saveState === "saving" || isGenerating}>
+              Save now
+            </Button>
+            <Button type="button" onClick={handleGenerate} disabled={isGenerating || saveState === "saving"} data-tour-id="build-plan-action">
+              {isGenerating ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {isGenerating ? "Building plan..." : "Build plan"}
+            </Button>
+          </div>
         </div>
+        {liveNotice ? (
+          <div className="border-t border-[rgba(244,182,73,0.12)] bg-[linear-gradient(180deg,rgba(255,251,244,0.92),rgba(255,255,255,0.78))] px-4 py-4 sm:px-5 sm:py-5">
+            <div className="flex flex-col gap-2 rounded-[24px] border border-[rgba(244,182,73,0.12)] bg-white/72 px-4 py-3 text-sm text-[var(--amber-700)] shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] sm:flex-row sm:items-center sm:justify-between">
+              <p className="leading-6">{liveNotice.message}</p>
+              <a href={liveNotice.href} className="font-semibold text-[var(--amber-700)] transition hover:text-[#9b640e]">
+                Upgrade
+              </a>
+            </div>
+          </div>
+        ) : null}
       </div>
     </Card>
   );
@@ -927,12 +947,4 @@ function SnapshotCard({
     </div>
   );
 }
-
-
-
-
-
-
-
-
 

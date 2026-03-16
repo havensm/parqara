@@ -147,7 +147,7 @@ export const uiAssetManifest = [
   },
   {
     id: "homepage-date-night",
-    out: "public/generated/homepage/parqara-date-night-scene.png",
+    out: "public/generated/homepage/parqara-date-night-scene-refreshed.png",
     size: "1536x1024",
     quality: "high",
     prompt: [
@@ -250,11 +250,39 @@ export const uiAssetManifest = [
       "Avoid: sterile office setup, overly domestic clutter, childish family iconography"
     ].join("\n")
   }
+,
+  {
+    id: "roadmap-six-month-timeline",
+    out: "public/generated/roadmap/parqara-six-month-roadmap-timeline.png",
+    size: "1536x1024",
+    quality: "high",
+    prompt: [
+      "Use case: infographic-diagram",
+      "Asset type: roadmap timeline image for a customer-facing SaaS roadmap page",
+      "Primary request: a single premium visual showing the next six months of planned Parqara customer releases as one elegant horizontal timeline",
+      "Scene/background: refined editorial planning surface with subtle route lines, atlas texture, map folds, destination color washes, and premium travel-planning atmosphere",
+      "Subject: one clear six-step timeline spanning April 2026 through September 2026 with customer-focused releases for shared trips, smarter daily timelines, calendar sync, a stronger Mara assistant, better live day-of mode, and overall trip-system polish",
+      "Style/medium: polished infographic-style marketing art with clean layout, realistic texture, and subtle illustration detail",
+      "Composition/framing: wide landscape composition with six milestone moments arranged on one easy-to-scan horizontal path, designed for a full-width website section",
+      "Lighting/mood: optimistic, adventurous, premium, clear, trustworthy",
+      "Color palette: sea-glass teal, sky blue, warm sand, sunset coral, soft gold, deep slate",
+      "Materials/textures: atlas paper grain, route ink, stamped travel motifs, layered premium cards, gentle shadow depth",
+      "Text (verbatim): 'April 2026 Shared trips | May 2026 Smarter timelines | June 2026 Calendar sync | July 2026 Mara gets sharper | August 2026 Better live mode | September 2026 Full trip polish'",
+      "Quality: high",
+      "Constraints: one single customer-facing roadmap image, premium and readable, no childish style, no clutter, no enterprise dashboard feel, no fake app screenshot, no watermark",
+      "Avoid: typos, dense interface UI, hard arrows, cheesy startup cliches, harsh neon, overbusy diagram, stock-photo collage"
+    ].join("\n")
+  }
 ];
 
 export function getUiAssetPromptList() {
   return uiAssetManifest.map(({ id, out, prompt }) => ({ id, out, prompt }));
 }
+
+
+
+
+
 
 
 
