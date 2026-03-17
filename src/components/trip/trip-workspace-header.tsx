@@ -62,7 +62,7 @@ export function TripWorkspaceHeader({
   currentTier,
   activeTrip,
   plannerAllowance,
-  createHref = "/trips/new?fresh=1",
+  createHref = "/dashboard?create=1",
   starterMode = false,
   tabs,
   embedded = false,
@@ -227,3 +227,4 @@ function HeaderStat({ label, value, detail }: { label: string; value: string; de
     </div>
   );
 }
+

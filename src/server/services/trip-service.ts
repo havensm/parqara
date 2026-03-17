@@ -449,7 +449,7 @@ function getCurrentLocationMetadata(parkAttractions: AttractionMetadata[], attra
 }
 
 function getTripWorkspaceHrefForStatus(tripId: string, status: "DRAFT" | "PLANNED" | "LIVE" | "COMPLETED") {
-  return status === "DRAFT" ? `/trips/new?tripId=${tripId}` : `/trips/${tripId}`;
+  return status === "DRAFT" ? `/dashboard?tripId=${tripId}` : `/trips/${tripId}`;
 }
 
 function getSummaryReplanCount(summary: Trip["summary"]) {
@@ -1805,6 +1805,7 @@ export async function getTripSummary(userId: string, tripId: string): Promise<Su
     latestPlanSummary: trip.latestPlanSummary,
   };
 }
+
 
 
 

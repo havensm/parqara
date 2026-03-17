@@ -53,6 +53,7 @@ describe("buildMaraInstructions", () => {
     const instructions = buildMaraInstructions(sampleContext);
 
     expect(instructions).toContain("You are Mara, Parqara's Trip Planning Concierge.");
+    expect(instructions).toContain("You should feel like ChatGPT if ChatGPT were a strong travel agent");
     expect(instructions).toContain("Ask one question at a time when possible.");
     expect(instructions).toContain("You should feel like a real travel advisor who already understands the trip");
     expect(instructions).toContain("Focused trip: Spring Break at Aurora Adventure Park on 2026-04-01 (Live)");
@@ -69,6 +70,32 @@ describe("buildFallbackReply", () => {
     expect(reply).toContain("That sounds like a good start.");
     expect(reply).toContain("What matters most for this plan?");
     expect(reply).toContain("Pick the one thing Mara should protect first.");
+  });
+
+  it("acknowledges a short travel-scope answer and moves on", () => {
+    const reply = buildFallbackReply(
+      {
+        ...sampleContext,
+        focusedTrip: {
+          ...sampleContext.focusedTrip,
+          status: "DRAFT",
+          currentStep: 0,
+          itineraryPreview: [],
+          latestPlanSummary: null,
+          startingLocation: null,
+          partySize: 1,
+          kidsAges: [],
+        },
+      },
+      [
+        { role: "user", content: "I want to go to the zoo." },
+        { role: "user", content: "close by" },
+      ]
+    );
+
+    expect(reply).toContain("We'll keep this close to home.");
+    expect(reply).toContain("When is this happening?");
+    expect(reply).not.toContain("Should this stay close to home");
   });
 });
 

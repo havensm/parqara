@@ -33,7 +33,7 @@ export default async function TripItineraryPage({ params }: { params: Promise<{ 
   ]);
 
   if (trip.status === "DRAFT") {
-    redirect(`/trips/new?tripId=${trip.id}`);
+    redirect(`/dashboard?tripId=${trip.id}`);
   }
 
   if (!trip.itinerary.length) {
@@ -80,14 +80,14 @@ export default async function TripItineraryPage({ params }: { params: Promise<{ 
       }
       modules={[
         {
-          label: "Overview",
-          detail: "Return to the core planner workspace",
-          href: `/trips/${trip.id}`,
+          label: "Mara",
+          detail: "Open the chat-first planning workspace",
+          href: `/dashboard?tripId=${trip.id}`,
           tone: "teal",
         },
         {
-          label: "Plan",
-          detail: "Trip summary, signals, and next move",
+          label: "Details",
+          detail: "Trip report, logistics, and snapshot tools",
           href: `/trips/${trip.id}`,
           tone: "sky",
         },
@@ -142,4 +142,9 @@ export default async function TripItineraryPage({ params }: { params: Promise<{ 
     </PlannerWorkspaceShell>
   );
 }
+
+
+
+
+
 

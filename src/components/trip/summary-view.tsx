@@ -46,7 +46,7 @@ export function SummaryView({ summary }: { summary: SummaryDto }) {
               <Link href="/dashboard" className={buttonStyles({ variant: "primary", size: "default" })}>
                 Back to dashboard
               </Link>
-              <Link href="/trips/new?fresh=1" className={buttonStyles({ variant: "secondary", size: "default" })}>
+              <Link href="/dashboard?create=1" className={buttonStyles({ variant: "secondary", size: "default" })}>
                 Plan another trip
               </Link>
             </div>
@@ -156,4 +156,5 @@ function MixTile({ icon, label, value }: { icon: ReactNode; label: string; value
     </div>
   );
 }
+
 

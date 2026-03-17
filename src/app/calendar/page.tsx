@@ -48,7 +48,7 @@ export default async function CalendarPage() {
       eyebrow="Calendar"
       title="See every upcoming trip on one calendar."
       description="Track upcoming Parqara trips, pull in your personal calendar, and jump straight back into the planner from the date that matters."
-      actionHref="/trips/new?fresh=1"
+      actionHref="/dashboard?create=1"
       actionLabel="Start a new trip"
       icon={<CalendarDays className="h-6 w-6" />}
       currentTier={billing.currentTier}
@@ -95,3 +95,4 @@ function CalendarMetricCard({
     </div>
   );
 }
+

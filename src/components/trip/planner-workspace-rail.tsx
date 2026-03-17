@@ -76,7 +76,7 @@ export function PlannerWorkspaceRail({
             {currentTier === "FREE" ? "See Plus" : "Open billing"}
             <ArrowUpRight className="ml-2 h-4 w-4" />
           </Link>
-          <Link href="/trips/new?fresh=1" className={buttonStyles({ variant: "secondary", size: "default" }) + " flex-1 justify-center sm:flex-none"}>
+          <Link href="/dashboard?create=1" className={buttonStyles({ variant: "secondary", size: "default" }) + " flex-1 justify-center sm:flex-none"}>
             <Compass className="mr-2 h-4 w-4" />
             New planner
           </Link>
@@ -160,5 +160,6 @@ function MetricPill({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
 
 

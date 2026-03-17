@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 
 import { isAdminEmail } from "@/lib/admin";
 import { requireCompletedOnboardingUser } from "@/lib/auth/guards";
-import { getApproximateRequestLocation } from "@/lib/request-location";
 import { getUserBillingState } from "@/lib/billing";
 import { buildTripPlannerNeededQuestions, buildTripPlannerTripContext } from "@/lib/trip-planner-agent";
 import { buildTripWorkspaceTabs, isPlannerKickoffDraft, pickDefaultTrip } from "@/lib/trip-workspace";
@@ -21,8 +20,6 @@ import { MaraPlannerFocus } from "@/components/trip/mara-planner-focus";
 import { PlannerEmptyState } from "@/components/trip/planner-empty-state";
 import { PlannerWorkspaceShell } from "@/components/trip/planner-workspace-shell";
 import { PlannerWorkspaceTabs } from "@/components/trip/planner-workspace-tabs";
-import { TripLogisticsBoard } from "@/components/trip/trip-logistics-board";
-import { TripSnapshotHistoryTools } from "@/components/trip/trip-snapshot-history-tools";
 
 type DashboardSearchParams = {
   create?: string;
@@ -63,11 +60,10 @@ export default async function DashboardPage({
   const billing = getUserBillingState(user);
   const adminEnabled = isAdminEmail(user.email);
   const defaultVisitDate = addDays(new Date(), 7).toISOString().slice(0, 10);
-  const [{ tour, tourPreview, tripId, create }, defaultPark, plannerLimitState, approximateLocation] = await Promise.all([
+  const [{ tour, tourPreview, tripId, create }, defaultPark, plannerLimitState] = await Promise.all([
     searchParams,
     getDefaultParkSummary(),
     getPlannerLimitState(user.id),
-    getApproximateRequestLocation(),
   ]);
   const showFirstTimeTour = tour === "1";
   const previewFirstTimeTour = tourPreview === "1";
@@ -155,32 +151,10 @@ export default async function DashboardPage({
             trip={activeTrip}
             tripContext={tripContext}
             questions={questions}
-            approximateLocation={approximateLocation?.label ?? null}
           />
         }
-      >
-        <div className="space-y-4">
-          <section id="trip-logistics-board" data-tour-id="planning-panel">
-            <TripLogisticsBoard tripId={activeTrip.id} />
-          </section>
-          <TripSnapshotHistoryTools tripId={activeTrip.id} />
-        </div>
-      </PlannerWorkspaceShell>
+      />
       <FirstTimePlannerTour enabled={showFirstTimeTour} preview={previewFirstTimeTour} />
     </>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

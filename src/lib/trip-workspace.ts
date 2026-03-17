@@ -51,7 +51,7 @@ export function isPlannerKickoffDraft(
 
 export function getTripWorkspaceHref(trip: Pick<TripWorkspaceTripLike, "id" | "status">) {
   if (trip.status === "DRAFT") {
-    return `/trips/new?tripId=${trip.id}`;
+    return `/dashboard?tripId=${trip.id}`;
   }
 
   return `/trips/${trip.id}`;
@@ -108,3 +108,4 @@ export function getTripWorkspaceStatusDetail(trip: Pick<TripWorkspaceTripLike, "
 export function pickDefaultTrip<T extends TripWorkspaceTripLike>(trips: T[]) {
   return [...trips].sort((left, right) => tripStatusPriority[left.status] - tripStatusPriority[right.status])[0] ?? null;
 }
+

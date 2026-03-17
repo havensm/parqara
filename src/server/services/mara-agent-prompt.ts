@@ -16,6 +16,28 @@ function formatPlannerList(values: string[]) {
   return values.length ? values.map((value) => value.replaceAll("-", " ")).join(", ") : "Not set";
 }
 
+function getLatestUserText(messages: TripPlannerChatMessage[]) {
+  return [...messages].reverse().find((message) => message.role === "user")?.content.trim() ?? "";
+}
+
+function buildShortAnswerAcknowledgement(latestUserText: string) {
+  const normalized = latestUserText.trim().toLowerCase();
+
+  if (/close to home|close by|nearby|near home|local|stay local|not too far/.test(normalized)) {
+    return "Got it. We'll keep this close to home.";
+  }
+
+  if (/willing to travel|open to travel|worth traveling|bigger trip|travel for it/.test(normalized)) {
+    return "Okay. We can open this up to something worth traveling for.";
+  }
+
+  if (/not sure|not sure yet|maybe either|either works/.test(normalized)) {
+    return "No problem. We can keep the distance flexible for now.";
+  }
+
+  return null;
+}
+
 function getLogisticsValues(context: PlannerContext) {
   return {
     plannerAccessRole: context.plannerAccessRole ?? "EDIT",
@@ -88,8 +110,9 @@ export function buildMaraInstructions(context: PlannerContext) {
 
   return [
     `You are ${TRIP_PLANNER_PERSONA.name}, Parqara's ${TRIP_PLANNER_PERSONA.title}.`,
-    "You sound warm, observant, practical, and quietly confident.",
+    "You should feel like ChatGPT if ChatGPT were a strong travel agent: calm, direct, friendly, and useful.",
     "You should feel like a real travel advisor who already understands the trip, not a generic AI assistant, workflow bot, or concierge script.",
+    "Keep the tone natural and plainspoken. Avoid concierge fluff, marketing language, and overly polished service phrasing.",
     "Your job is to help the user plan outings such as theme park days, zoo trips, beach days, city outings, and weekend getaways.",
     "Use the saved profile context below as defaults, but say when you are making an assumption.",
     "If a focused trip is attached, treat that trip as the default subject of the conversation and use its saved details before asking for information already present.",
@@ -101,14 +124,17 @@ export function buildMaraInstructions(context: PlannerContext) {
     "Ask one question at a time when possible. Only ask two together when they are tightly connected and easy to answer in one reply.",
     "When you need a missing detail, prefer crisp questions that fit quick choices or a short typed answer, like close to home vs willing to travel, today vs weekend vs later, solo vs couple vs family vs group, or a starting address.",
     "Default to natural short paragraphs that read like a real travel agent talking to one person.",
+    "Most replies should be 2 to 5 sentences.",
+    "Do not use headings unless the user asks for a structured answer.",
     "Use bullets only when comparing options, listing prep items, or recapping a plan the user can act on.",
+    "If one clear sentence will do, use one clear sentence.",
     "Do not overexplain or narrate your process.",
     "Do not repeat the same trip detail twice in one reply.",
     "Do not restate the trip name, date, or known basics unless it materially helps the next decision.",
     "If you are asking a follow-up question, keep the lead-in to one short sentence at most.",
     "Never invent live park hours, ticket prices, restaurant availability, or reservation windows. If live verification would be needed, say so clearly.",
     "Keep answers concise and actionable, usually under 120 words unless the user asks for more depth.",
-    "If the user is vague, lead with the next best one or two details instead of generic travel tips or a long checklist.",
+    "If the user is vague, lead with the next best detail instead of generic travel tips or a long checklist.",
     "Saved profile context:",
     buildPlannerContextBlock(context),
   ].join("\n");
@@ -117,9 +143,11 @@ export function buildMaraInstructions(context: PlannerContext) {
 function buildFullFallbackReply(context: PlannerContext, messages: TripPlannerChatMessage[]) {
   const logistics = getLogisticsValues(context);
   const userMessages = messages.filter((message) => message.role === "user");
+  const latestUserText = getLatestUserText(messages);
+  const quickReplyAcknowledgement = buildShortAnswerAcknowledgement(latestUserText);
   const interactivePrompt = buildTripPlannerInteractivePrompt(context, messages);
   const followUpQuestion = buildInteractivePromptFallbackLead(interactivePrompt);
-  const defaultSummary = context.summaryItems.length ? context.summaryItems.join(", ") : "no saved planning defaults yet";
+
   if (context.focusedTrip && logistics.logisticsScopedToViewer) {
     if (userMessages.length <= 1) {
       return [
@@ -140,49 +168,46 @@ function buildFullFallbackReply(context: PlannerContext, messages: TripPlannerCh
     return [
       "That sounds like a good start.",
       followUpQuestion,
-      interactivePrompt?.helper ?? "Give me this one detail and I will keep shaping the plan.",
+      interactivePrompt?.helper ?? "Give me this one detail and I'll keep shaping the plan.",
     ].join("\n");
   }
 
   if (context.focusedTrip) {
     if (userMessages.length <= 1) {
       return [
-        context.focusedTrip.latestPlanSummary
-          ? `Current note: ${context.focusedTrip.latestPlanSummary}`
-          : "I can use the trip details you've already saved.",
-        logistics.logisticsTaskSummary.length
-          ? `Shared prep on the board: ${logistics.logisticsTaskSummary.slice(0, 3).join("; ")}.`
-          : "There's no prep pinned yet.",
-        followUpQuestion ?? "Tell me what you want to shape first: trip details, pacing, or prep work.",
+        context.focusedTrip.latestPlanSummary ? `Current note: ${context.focusedTrip.latestPlanSummary}` : "I can work from what's already saved.",
+        logistics.logisticsTaskSummary.length ? `Prep on the board: ${logistics.logisticsTaskSummary.slice(0, 3).join("; ")}.` : "Nothing is pinned yet.",
+        followUpQuestion ?? "What do you want to shape first?",
       ].join("\n");
     }
 
+    if (quickReplyAcknowledgement && followUpQuestion) {
+      return [quickReplyAcknowledgement, followUpQuestion, interactivePrompt?.helper ?? ""].filter(Boolean).join("\n");
+    }
+
     return [
-      logistics.logisticsTaskSummary.length
-        ? `I can see shared prep already on the board: ${logistics.logisticsTaskSummary.slice(0, 3).join("; ")}.`
-        : "Shared prep still needs to be shaped.",
-      defaultSummary !== "no saved planning defaults yet" ? `I'm still keeping your usual planning style in mind: ${defaultSummary}.` : "",
-      followUpQuestion ?? "Tell me what you want to change next.",
+      logistics.logisticsTaskSummary.length ? `On the prep side, I can already see: ${logistics.logisticsTaskSummary.slice(0, 3).join("; ")}.` : "We still need to sort out the prep.",
+      followUpQuestion ?? "What do you want to change next?",
     ].filter(Boolean).join("\n");
   }
 
   if (userMessages.length <= 1) {
     return [
-      `I can help turn this into a usable plan.`,
+      "I can help shape that.",
       followUpQuestion ?? "Start with where you want to go and when it's happening.",
-      defaultSummary !== "no saved planning defaults yet" ? `I'll keep your usual style in mind: ${defaultSummary}.` : "",
     ].filter(Boolean).join("\n");
   }
 
+  if (quickReplyAcknowledgement && followUpQuestion) {
+    return [quickReplyAcknowledgement, followUpQuestion, interactivePrompt?.helper ?? ""].filter(Boolean).join("\n");
+  }
+
   return [
-    "I have enough to start shaping this.",
-    defaultSummary !== "no saved planning defaults yet" ? `I'm keeping your usual planning style in mind: ${defaultSummary}.` : "",
-    followUpQuestion ?? "Send the destination and timing first, and I'll narrow the next detail from there.",
+    "I have enough to shape this.",
+    followUpQuestion ?? "Send the destination and timing first, and I'll take it from there.",
   ].filter(Boolean).join("\n");
 }
 
 export function buildFallbackReply(context: PlannerContext, messages: TripPlannerChatMessage[]) {
   return buildFullFallbackReply(context, messages);
 }
-
-

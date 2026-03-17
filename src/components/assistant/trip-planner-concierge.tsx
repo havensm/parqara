@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircle, RotateCcw, Save, SendHorizontal, X } from "lucide-react";
 
@@ -54,44 +54,6 @@ function resolveInitialMessages(
   return initialMessages.length ? initialMessages : buildInitialMessages(firstName, tripContext, starterMode);
 }
 
-function buildMaraWorkingStatus(lastUserMessage: string, tripContext?: TripPlannerTripContext, starterMode = false) {
-  const normalized = lastUserMessage.toLowerCase();
-
-  if (starterMode) {
-    return "Shaping the first plan.";
-  }
-
-  if (/budget|cheap|affordable|under \$|\$/i.test(normalized)) {
-    return "Keeping budget in view.";
-  }
-
-  if (/food|dinner|lunch|restaurant|snack|dessert/i.test(normalized)) {
-    return "Looking at food and timing.";
-  }
-
-  if (/walk|route|pace|stress|easy|relaxed/i.test(normalized)) {
-    return "Checking pace and route tradeoffs.";
-  }
-
-  if (/kid|family|stroller|baby|child|children/i.test(normalized)) {
-    return "Checking group fit.";
-  }
-
-  if (/start|hotel|home|leave|drive|parking|location/i.test(normalized)) {
-    return "Working through where the day should start.";
-  }
-
-  if (/ride|must-do|priority|show|attraction/i.test(normalized)) {
-    return "Protecting the main must-dos.";
-  }
-
-  if (tripContext) {
-    return "Shaping this trip.";
-  }
-
-  return "Looking for the cleanest next move.";
-}
-
 async function parsePlannerReplyResponse(response: Response) {
   const contentType = response.headers.get("content-type") ?? "";
 
@@ -141,15 +103,6 @@ export function TripPlannerConcierge({
   const threadScrollRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLDivElement | null>(null);
   const activeTripIdRef = useRef(tripId);
-  const latestUserMessage = useMemo(
-    () => [...messages].reverse().find((message) => message.role === "user")?.content ?? "",
-    [messages]
-  );
-  const maraWorkingStatus = useMemo(
-    () => buildMaraWorkingStatus(latestUserMessage, tripContext, starterMode),
-    [latestUserMessage, starterMode, tripContext]
-  );
-
   useEffect(() => {
     if (activeTripIdRef.current === tripId) {
       return;
@@ -423,7 +376,7 @@ export function TripPlannerConcierge({
                     <LoaderCircle className="h-4 w-4 animate-spin" />
                     Working through it...
                   </div>
-                  <p className="text-[var(--foreground)]">{maraWorkingStatus}</p>
+
                 </div>
               </div>
             </div>
@@ -576,3 +529,5 @@ export function TripPlannerConcierge({
     </Card>
   );
 }
+
+
