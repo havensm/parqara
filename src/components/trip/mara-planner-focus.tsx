@@ -20,6 +20,7 @@ export function MaraPlannerFocus({
   trip,
   tripContext,
   questions = [],
+  approximateLocation,
 }: {
   currentTier: SubscriptionTierValue;
   firstName?: string | null;
@@ -27,8 +28,9 @@ export function MaraPlannerFocus({
   trip: TripDetailDto;
   tripContext?: TripPlannerTripContext;
   questions?: string[];
+  approximateLocation?: string | null;
 }) {
-  const [messages, setMessages] = useState<TripPlannerChatMessage[]>([]);
+  const [messages, setMessages] = useState<TripPlannerChatMessage[]>(trip.maraChatHistory);
   const [snapshotRefreshToken, setSnapshotRefreshToken] = useState(0);
   const starterMode = isPlannerKickoffDraft({
     status: trip.status,
@@ -43,6 +45,8 @@ export function MaraPlannerFocus({
         firstName={firstName}
         tripId={tripId}
         tripContext={tripContext}
+        initialMessages={trip.maraChatHistory}
+        canResetConversation={trip.canEdit}
         questions={questions}
         priorityMode
         refreshOnReply
@@ -60,7 +64,14 @@ export function MaraPlannerFocus({
         }
       />
 
-      <TripLiveReport tripId={tripId} trip={trip} messages={messages} starterMode={starterMode} refreshToken={snapshotRefreshToken} />
+      <TripLiveReport
+        tripId={tripId}
+        trip={trip}
+        messages={messages}
+        starterMode={starterMode}
+        refreshToken={snapshotRefreshToken}
+        approximateLocation={approximateLocation}
+      />
     </div>
   );
 }

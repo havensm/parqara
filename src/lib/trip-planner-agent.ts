@@ -40,6 +40,7 @@ export type TripPlannerTripContext = {
 const TRIP_PLANNER_MAX_MESSAGES = 24;
 const TRIP_PLANNER_MAX_MESSAGE_LENGTH = 1_200;
 const TRIP_PLANNER_MAX_TOTAL_CHARS = 4_000;
+const TRIP_PLANNER_PERSISTED_MESSAGES = 18;
 
 function formatTripDate(value: string) {
   const date = new Date(value);
@@ -141,14 +142,14 @@ export function buildTripPlannerNeededQuestions(
   return ["What is still missing?"];
 }
 
+export const tripPlannerChatMessageSchema = z.object({
+  role: z.enum(["assistant", "user"]),
+  content: z.string().trim().min(1).max(TRIP_PLANNER_MAX_MESSAGE_LENGTH),
+});
+
 export const tripPlannerChatRequestSchema = z.object({
   messages: z
-    .array(
-      z.object({
-        role: z.enum(["assistant", "user"]),
-        content: z.string().trim().min(1).max(TRIP_PLANNER_MAX_MESSAGE_LENGTH),
-      })
-    )
+    .array(tripPlannerChatMessageSchema)
     .min(1)
     .max(TRIP_PLANNER_MAX_MESSAGES)
     .superRefine((messages, context) => {
@@ -163,6 +164,33 @@ export const tripPlannerChatRequestSchema = z.object({
     }),
   tripId: z.string().trim().min(1).max(200),
 });
+
+export function normalizeTripPlannerChatHistory(value: unknown): TripPlannerChatMessage[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const messages = value
+    .map((message) => {
+      const parsed = tripPlannerChatMessageSchema.safeParse(message);
+      if (!parsed.success) {
+        return null;
+      }
+
+      return parsed.data;
+    })
+    .filter((message): message is TripPlannerChatMessage => Boolean(message));
+
+  return trimTripPlannerChatHistory(messages);
+}
+
+export function trimTripPlannerChatHistory(messages: TripPlannerChatMessage[], maxMessages = TRIP_PLANNER_PERSISTED_MESSAGES) {
+  if (!messages.length) {
+    return [];
+  }
+
+  return messages.slice(-maxMessages);
+}
 
 export const tripPlannerStarterPrompts = [
   "Help me plan something fun this weekend.",
@@ -202,7 +230,7 @@ export function buildTripPlannerWelcomeMessage(firstName?: string | null, tripCo
     }
 
     return [
-      `${greeting} I'm looking at ${tripContext.name}.`,
+      `${greeting} I'm looking at your trip to ${tripContext.parkName}.`,
       `${tripContext.parkName} · ${tripContext.visitDate}${tripContext.startingLocation ? ` · Start ${tripContext.startingLocation}` : ""}`,
       "Tell me what to change, protect, or figure out next.",
     ].join("\n");

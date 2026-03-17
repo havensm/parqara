@@ -22,6 +22,11 @@ const sampleContext: PlannerContext = {
       latestPlanSummary: "Lunch is anchored before the rush.",
     },
   ],
+  plannerAccessRole: "EDIT",
+  logisticsScopedToViewer: false,
+  logisticsRosterSummary: [],
+  logisticsTaskSummary: [],
+  viewerTaskSummary: [],
   focusedTrip: {
     name: "Spring Break",
     parkName: "Aurora Adventure Park",
@@ -49,6 +54,7 @@ describe("buildMaraInstructions", () => {
 
     expect(instructions).toContain("You are Mara, Parqara's Trip Planning Concierge.");
     expect(instructions).toContain("Ask one question at a time when possible.");
+    expect(instructions).toContain("You should feel like a real travel advisor who already understands the trip");
     expect(instructions).toContain("Focused trip: Spring Break at Aurora Adventure Park on 2026-04-01 (Live)");
     expect(instructions).toContain("Focused trip starting location: Riverside Hotel");
     expect(instructions).toContain("Focused trip itinerary preview: River Run -> Lunch at Harbor Grill");
@@ -57,11 +63,12 @@ describe("buildMaraInstructions", () => {
 });
 
 describe("buildFallbackReply", () => {
-  it("returns the focused-trip fallback structure", () => {
+  it("returns a question-led focused-trip fallback", () => {
     const reply = buildFallbackReply(sampleContext, [{ role: "user", content: "Help me plan this trip." }]);
 
-    expect(reply).toContain("I'm already looking at Spring Break at Aurora Adventure Park on 2026-04-01.");
-    expect(reply).toContain("Tell me which direction you want:");
-    expect(reply).toContain("- fill in missing trip details");
+    expect(reply).toContain("That sounds like a good start.");
+    expect(reply).toContain("What matters most for this plan?");
+    expect(reply).toContain("Pick the one thing Mara should protect first.");
   });
 });
+

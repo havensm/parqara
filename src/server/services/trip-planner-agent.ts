@@ -1,10 +1,12 @@
 import type {
   TripLiveSnapshotProposalDto,
+  TripPlannerInteractivePromptDto,
 } from "@/lib/contracts";
 import type { TripPlannerChatMessage } from "@/lib/trip-planner-agent";
 
 import { getPlannerContext } from "@/server/services/mara-agent-context";
 import { buildFallbackReply } from "@/server/services/mara-agent-prompt";
+import { buildTripPlannerInteractivePrompt } from "@/server/services/trip-planner-interactive-prompt";
 import { buildTripLiveSnapshotProposalState } from "@/server/services/trip-live-snapshot-service";
 import { runMaraAgent } from "@/server/services/mara-agent-sdk";
 
@@ -31,7 +33,7 @@ export async function generateTripPlannerReply(
   userId: string,
   messages: TripPlannerChatMessage[],
   tripId: string
-): Promise<{ reply: string; snapshotProposal: TripLiveSnapshotProposalDto | null }> {
+): Promise<{ reply: string; snapshotProposal: TripLiveSnapshotProposalDto | null; interactivePrompt: TripPlannerInteractivePromptDto | null }> {
   const context = await getPlannerContext(userId, tripId);
 
   let reply = buildFallbackReply(context, messages);
@@ -48,9 +50,11 @@ export async function generateTripPlannerReply(
   }
 
   const snapshotProposal = await buildTripLiveSnapshotProposalState(userId, tripId, messages, reply).catch(() => null);
+  const interactivePrompt = buildTripPlannerInteractivePrompt(context, messages);
 
   return {
     reply,
     snapshotProposal,
+    interactivePrompt,
   };
 }
