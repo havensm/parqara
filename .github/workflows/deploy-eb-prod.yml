@@ -124,9 +124,14 @@ jobs:
               --query 'Environments[0].Health' \
               --output text)
 
-            echo "Attempt ${attempt}: status=${STATUS} health=${HEALTH}"
+            HEALTH_STATUS=$(aws elasticbeanstalk describe-environments \
+              --environment-names "${EB_ENVIRONMENT_NAME}" \
+              --query 'Environments[0].HealthStatus' \
+              --output text)
 
-            if [ "${STATUS}" = "Ready" ]; then
+            echo "Attempt ${attempt}: status=${STATUS} health=${HEALTH} health_status=${HEALTH_STATUS}"
+
+            if [ "${STATUS}" = "Ready" ] && { [ "${HEALTH}" = "Green" ] || [ "${HEALTH_STATUS}" = "Ok" ]; }; then
               exit 0
             fi
 
@@ -134,6 +139,10 @@ jobs:
           done
 
           echo "Timed out waiting for Elastic Beanstalk to finish updating."
+          aws elasticbeanstalk describe-events \
+            --environment-name "${EB_ENVIRONMENT_NAME}" \
+            --max-items 20 \
+            --output table || true
           exit 1
 
       - name: Check deployed health endpoint
@@ -151,9 +160,12 @@ jobs:
 
           echo "Checking ${HEALTHCHECK_URL}"
           curl --fail --silent --show-error \
+            --location \
             --connect-timeout 10 \
-            --max-time 20 \
-            --retry 12 \
+            --max-time 30 \
+            --retry 18 \
             --retry-all-errors \
+            --retry-connrefused \
             --retry-delay 10 \
             "${HEALTHCHECK_URL}"
+
