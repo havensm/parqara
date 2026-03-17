@@ -44,7 +44,7 @@ export function PlannerWorkspaceShell({
   boardTabs,
   leadPanel,
 }: {
-  children: ReactNode;
+  children?: ReactNode;
   currentTier: SubscriptionTierValue;
   adminEnabled?: boolean;
   plannerTabs?: Array<TripWorkspaceTab & { isActive?: boolean }>;
@@ -61,6 +61,7 @@ export function PlannerWorkspaceShell({
   const showsLeadPanel = Boolean(leadPanel);
   const showsMaraRail = Boolean(maraPanel) && !showsLeadPanel;
   const hasModules = modules.length > 0;
+  const hasChildren = children !== undefined && children !== null && children !== false;
   const hasRail = Boolean(rail) || showsMaraRail;
 
   function renderModuleStrip() {
@@ -127,12 +128,12 @@ export function PlannerWorkspaceShell({
 
   function renderWorkspaceBody() {
     if (!hasRail) {
-      return <div className="min-w-0">{children}</div>;
+      return hasChildren ? <div className="min-w-0">{children}</div> : null;
     }
 
     return (
       <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_25rem] 2xl:items-start">
-        <div className="min-w-0 space-y-6">{children}</div>
+        <div className="min-w-0 space-y-6">{hasChildren ? children : null}</div>
 
         <aside
           data-testid="planner-desktop-rail"
@@ -198,4 +199,3 @@ export function PlannerWorkspaceShell({
     </>
   );
 }
-

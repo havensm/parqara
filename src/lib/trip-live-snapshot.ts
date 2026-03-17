@@ -58,12 +58,77 @@ function buildDisplayValue(value: TripLiveSnapshotDto[keyof TripLiveSnapshotDto]
   return String(value);
 }
 
-function getUserText(messages: TripPlannerChatMessage[]) {
-  return trimText(
-    messages
-      .filter((message) => message.role === "user")
-      .map((message) => message.content)
-      .join(" ")
+function getLatestUserText(messages: TripPlannerChatMessage[]) {
+  const latest = [...messages].reverse().find((message) => message.role === "user");
+  return trimText(latest?.content ?? "");
+}
+
+function normalizeSignalText(value: string) {
+  return trimText(value).toLowerCase();
+}
+
+function hasDestinationCue(value: string) {
+  const normalized = normalizeSignalText(value);
+  return /\b(alaska|disney|zoo|beach|nyc|new york city|vegas|las vegas|cabin|trip to|go to|visit|head to|near|nearby|at|in)\b/.test(
+    normalized
+  );
+}
+
+function hasDurationCue(value: string) {
+  const normalized = normalizeSignalText(value);
+  return /\b(\d+\s*(day|days|night|nights|week|weeks)|week[- ]?long|full week|weekend|tonight|today|day trip|single day)\b/.test(
+    normalized
+  );
+}
+
+function hasGroupCue(value: string) {
+  const normalized = normalizeSignalText(value);
+  return /\b(with\s+\d+|for\s+\d+|family|wife|husband|kids|kid|children|friends|guests|travelers|adults|date night|couple|romantic|group|son|daughter)\b/.test(
+    normalized
+  );
+}
+
+function hasTravelCue(value: string) {
+  const normalized = normalizeSignalText(value);
+  return /\b(flight|flying|airport|airfare|drive|driving|road trip|car|cruise|ferry|train)\b/.test(normalized);
+}
+
+function hasLodgingCue(value: string) {
+  const normalized = normalizeSignalText(value);
+  return /\b(hotel|resort|airbnb|cabin|lodge|stay|staying|room|lodging)\b/.test(normalized);
+}
+
+function hasActivityCue(value: string) {
+  const normalized = normalizeSignalText(value);
+  return /\b(zoo|fishing|date night|romantic|family|outing|hike|hiking|beach|museum|food|dinner|lunch|restaurant|show|park|trip|vacation|adventure)\b/.test(
+    normalized
+  );
+}
+
+function hasSuppliesCue(value: string) {
+  const normalized = normalizeSignalText(value);
+  return /\b(passport|real id|gear|packing|pack|bring|supplies|fishing|alaska|cold|winter|beach|sun|sunscreen|kid|family|baby|children|jacket|boots|snacks)\b/.test(
+    normalized
+  );
+}
+
+function hasMapCue(value: string) {
+  return hasDestinationCue(value) || /\b(start|starting point|from|home|hotel|airport|neighborhood|address|near me|nearby)\b/.test(normalizeSignalText(value));
+}
+
+function isGenericPlannerContinuation(value: string) {
+  const normalized = normalizeSignalText(value);
+  if (!normalized) {
+    return true;
+  }
+
+  return (
+    /^(ok|okay|yes|yep|sure|sounds good|that sounds good|that works|works for me|continue|keep going|go on|what next|next)$/i.test(
+      normalized
+    ) ||
+    /^(let'?s )?continue\b/.test(normalized) ||
+    /\bcontinue .* planning\b/.test(normalized) ||
+    /^lets continue /.test(normalized)
   );
 }
 
@@ -132,7 +197,7 @@ function inferGroupSummary(fullText: string, board: TripLogisticsBoardDto | null
   if (/date night|couple|romantic/.test(normalized)) {
     return "2 travelers";
   }
-  if (/family/.test(normalized)) {
+  if (/family|wife|husband|son|daughter|kids|children|baby/.test(normalized)) {
     return "Family trip";
   }
 
@@ -308,8 +373,8 @@ export function buildTripLiveSnapshotProposal(input: {
   reply: string;
   currentSnapshot: TripLiveSnapshotDto | null;
 }): TripLiveSnapshotProposalDto | null {
-  const userText = getUserText(input.messages);
-  if (!userText) {
+  const latestUserText = getLatestUserText(input.messages);
+  if (!latestUserText || isGenericPlannerContinuation(latestUserText)) {
     return null;
   }
 
@@ -342,17 +407,34 @@ export function buildTripLiveSnapshotProposal(input: {
     changes.push({ field, label: SNAPSHOT_FIELD_LABELS[field], nextValue: buildDisplayValue(value) });
   }
 
-  setField("destination", inferDestination(userText));
-  setField("duration", inferDuration(userText));
-  setField("groupSummary", inferGroupSummary(userText, input.board, input.trip));
-  setField("travelSummary", inferTravelSummary(userText, input.board));
-  setField("lodgingSummary", inferLodgingSummary(userText, input.board));
-  setField("activities", inferActivities(userText, input.trip));
-  setField("supplies", inferSupplies(userText, input.board));
-  setField("latestTakeaway", firstSentence(input.reply));
-
-  const nextMapQuery = input.trip.startingLocation || inferDestination(userText) || baseline.mapQuery;
-  setField("mapQuery", nextMapQuery);
+  if (hasDestinationCue(latestUserText)) {
+    setField("destination", inferDestination(latestUserText));
+  }
+  if (hasDurationCue(latestUserText)) {
+    setField("duration", inferDuration(latestUserText));
+  }
+  if (hasGroupCue(latestUserText)) {
+    setField("groupSummary", inferGroupSummary(latestUserText, input.board, input.trip));
+  }
+  if (hasTravelCue(latestUserText)) {
+    setField("travelSummary", inferTravelSummary(latestUserText, input.board));
+  }
+  if (hasLodgingCue(latestUserText)) {
+    setField("lodgingSummary", inferLodgingSummary(latestUserText, input.board));
+  }
+  if (hasActivityCue(latestUserText)) {
+    setField("activities", inferActivities(latestUserText, input.trip));
+  }
+  if (hasSuppliesCue(latestUserText)) {
+    setField("supplies", inferSupplies(latestUserText, input.board));
+  }
+  if (hasMapCue(latestUserText)) {
+    const nextMapQuery = input.trip.startingLocation || inferDestination(latestUserText) || baseline.mapQuery;
+    setField("mapQuery", nextMapQuery);
+  }
+  if (changes.length) {
+    setField("latestTakeaway", firstSentence(input.reply));
+  }
 
   if (!changes.length) {
     return null;

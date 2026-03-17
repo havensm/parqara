@@ -1,17 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { FileText, Radio, Route } from "lucide-react";
 
 import type { SubscriptionTierValue, TripDetailDto } from "@/lib/contracts";
 import {
-  type TripPlannerChatMessage,
   type TripPlannerTripContext,
 } from "@/lib/trip-planner-agent";
 import { isPlannerKickoffDraft } from "@/lib/trip-workspace";
 
 import { TripPlannerConcierge } from "@/components/assistant/trip-planner-concierge";
-import { TripLiveReport } from "@/components/trip/trip-live-report";
 import { TripPlannerSettingsDialog } from "@/components/trip/trip-planner-settings-dialog";
+import { buttonStyles } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 export function MaraPlannerFocus({
   currentTier,
@@ -20,7 +21,6 @@ export function MaraPlannerFocus({
   trip,
   tripContext,
   questions = [],
-  approximateLocation,
 }: {
   currentTier: SubscriptionTierValue;
   firstName?: string | null;
@@ -30,8 +30,6 @@ export function MaraPlannerFocus({
   questions?: string[];
   approximateLocation?: string | null;
 }) {
-  const [messages, setMessages] = useState<TripPlannerChatMessage[]>(trip.maraChatHistory);
-  const [snapshotRefreshToken, setSnapshotRefreshToken] = useState(0);
   const starterMode = isPlannerKickoffDraft({
     status: trip.status,
     currentStep: trip.currentStep,
@@ -50,9 +48,7 @@ export function MaraPlannerFocus({
         questions={questions}
         priorityMode
         refreshOnReply
-        onMessagesChange={setMessages}
         starterMode={starterMode}
-        onSnapshotApproved={() => setSnapshotRefreshToken((value) => value + 1)}
         headerAction={
           <TripPlannerSettingsDialog
             currentTier={currentTier}
@@ -64,14 +60,32 @@ export function MaraPlannerFocus({
         }
       />
 
-      <TripLiveReport
-        tripId={tripId}
-        trip={trip}
-        messages={messages}
-        starterMode={starterMode}
-        refreshToken={snapshotRefreshToken}
-        approximateLocation={approximateLocation}
-      />
+      <Card tone="solid" className="p-4 sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Trip details</p>
+            <p className="mt-1 text-sm text-[var(--muted)]">The live report and logistics update outside the chat.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link href={`/trips/${trip.id}`} className={buttonStyles({ variant: "secondary", size: "sm" })}>
+              <FileText className="mr-2 h-4 w-4" />
+              Trip details
+            </Link>
+            {trip.itinerary.length ? (
+              <Link href={`/trips/${trip.id}/itinerary`} className={buttonStyles({ variant: "ghost", size: "sm" })}>
+                <Route className="mr-2 h-4 w-4" />
+                Itinerary
+              </Link>
+            ) : null}
+            {trip.status !== "DRAFT" ? (
+              <Link href={`/trips/${trip.id}/live`} className={buttonStyles({ variant: "ghost", size: "sm" })}>
+                <Radio className="mr-2 h-4 w-4" />
+                Live mode
+              </Link>
+            ) : null}
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }

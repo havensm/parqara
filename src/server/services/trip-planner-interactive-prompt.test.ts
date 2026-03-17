@@ -49,6 +49,15 @@ describe("buildTripPlannerInteractivePrompt", () => {
     expect(prompt?.prompt).toContain("close to home");
   });
 
+  it("treats close by as a valid travel scope answer and moves to timing", () => {
+    const prompt = buildTripPlannerInteractivePrompt(starterContext, [
+      { role: "user", content: "I want to go to the zoo." },
+      { role: "user", content: "close by" },
+    ]);
+
+    expect(prompt?.id).toBe("timing");
+  });
+
   it("asks for a starting location once the basics are mostly known", () => {
     const prompt = buildTripPlannerInteractivePrompt(starterContext, [
       { role: "user", content: "I want to go to a zoo close to home this weekend with my family." },
@@ -58,4 +67,3 @@ describe("buildTripPlannerInteractivePrompt", () => {
     expect(prompt?.kind).toBe("ADDRESS");
   });
 });
-

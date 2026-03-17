@@ -1,25 +1,20 @@
-import { redirect } from "next/navigation";
+import Link from "next/link";
 
 import { getUserBillingState } from "@/lib/billing";
 import { isAdminEmail } from "@/lib/admin";
 import { requireCompletedOnboardingUser } from "@/lib/auth/guards";
 import { getApproximateRequestLocation } from "@/lib/request-location";
-import {
-  buildTripPlannerNeededQuestions,
-  buildTripPlannerTripContext,
-} from "@/lib/trip-planner-agent";
-import {
-  buildTripWorkspaceTabs,
-  getTripWorkspaceStatusDetail,
-} from "@/lib/trip-workspace";
+import { buildTripWorkspaceTabs, isPlannerKickoffDraft } from "@/lib/trip-workspace";
 import { getPlannerLimitState } from "@/server/services/planner-entitlement-service";
 import { getTripDetail, listDashboardTrips } from "@/server/services/trip-service";
 
-import { ItineraryView } from "@/components/trip/itinerary-view";
-import { MaraPlannerFocus } from "@/components/trip/mara-planner-focus";
-import { PlannerWorkspaceRail } from "@/components/trip/planner-workspace-rail";
 import { PlannerWorkspaceShell } from "@/components/trip/planner-workspace-shell";
-import { TripWorkspaceHeader } from "@/components/trip/trip-workspace-header";
+import { PlannerWorkspaceTabs } from "@/components/trip/planner-workspace-tabs";
+import { TripLiveReport } from "@/components/trip/trip-live-report";
+import { TripLogisticsBoard } from "@/components/trip/trip-logistics-board";
+import { TripSnapshotHistoryTools } from "@/components/trip/trip-snapshot-history-tools";
+import { buttonStyles } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 export default async function TripPage({ params }: { params: Promise<{ tripId: string }> }) {
   const user = await requireCompletedOnboardingUser();
@@ -33,14 +28,17 @@ export default async function TripPage({ params }: { params: Promise<{ tripId: s
     getApproximateRequestLocation(),
   ]);
 
-  if (trip.status === "DRAFT") {
-    redirect(`/trips/new?tripId=${trip.id}`);
-  }
-
-  const tripContext = buildTripPlannerTripContext(trip);
-  const questions = buildTripPlannerNeededQuestions(trip);
-  const tabs = buildTripWorkspaceTabs(trips);
-  const plannerTabs = tabs.map((tab) => ({
+  const starterMode = isPlannerKickoffDraft({
+    status: trip.status,
+    currentStep: trip.currentStep,
+    itineraryCount: trip.itinerary.length,
+  });
+  const createPlannerHref = plannerLimitState.canCreate
+    ? "/dashboard?create=1"
+    : billing.currentTier === "FREE"
+      ? "/pricing"
+      : "/billing";
+  const plannerTabs = buildTripWorkspaceTabs(trips).map((tab) => ({
     ...tab,
     isActive: tab.id === trip.id,
   }));
@@ -50,99 +48,58 @@ export default async function TripPage({ params }: { params: Promise<{ tripId: s
       currentTier={billing.currentTier}
       adminEnabled={adminEnabled}
       plannerTabs={plannerTabs}
-      mobileMaraLabel="Ask Mara about this trip"
-      leadPanel={
-        <MaraPlannerFocus
-          key={trip.id}
-          currentTier={billing.currentTier}
-          tripId={trip.id}
-          firstName={user.firstName ?? user.name ?? null}
-          trip={trip}
-          tripContext={tripContext}
-          questions={questions}
-          approximateLocation={approximateLocation?.label ?? null}
-        />
-      }
-      workspaceHeader={
-        <TripWorkspaceHeader
-          currentTier={billing.currentTier}
-          plannerAllowance={{
-            activeCount: plannerLimitState.activePlannerCount,
-            limit: plannerLimitState.plannerLimit,
-            archivedCount: plannerLimitState.archivedTrips.length,
-          }}
-          embedded
-          showCreateAction={false}
-          showPlannerStack={false}
-          activeTrip={{
-            id: trip.id,
-            name: trip.name,
-            isOwner: trip.isOwner,
-            parkName: trip.park.name,
-            visitDate: trip.visitDate,
-            status: trip.status,
-            statusDetail: getTripWorkspaceStatusDetail({
-              status: trip.status,
-              currentStep: trip.currentStep,
-              itineraryCount: trip.itinerary.length,
-            }),
-          }}
+      boardMode
+      boardTabs={
+        <PlannerWorkspaceTabs
           tabs={plannerTabs}
-        />
-      }
-      modules={[
-        {
-          label: "Overview",
-          detail: "Plan health, signals, and next move",
-          active: true,
-          tone: "teal",
-        },
-        {
-          label: "Plan",
-          detail: "This trip workspace and route posture",
-          href: `/trips/${trip.id}`,
-          tone: "sky",
-        },
-        {
-          label: "Itinerary",
-          detail: "Open the full routed timeline",
-          href: `/trips/${trip.id}/itinerary`,
-          tone: "indigo",
-        },
-        {
-          label: "Live",
-          detail: "Open day-of monitoring and replans",
-          href: `/trips/${trip.id}/live`,
-          tone: "amber",
-        },
-      ]}
-      rail={
-        <PlannerWorkspaceRail
           currentTier={billing.currentTier}
-          plannerLimitState={plannerLimitState}
-          tabs={plannerTabs}
-          activeTrip={{
-            id: trip.id,
-            name: trip.name,
-            status: trip.status,
-            isOwner: trip.isOwner,
-          }}
+          activeCount={plannerLimitState.activePlannerCount}
+          plannerLimit={plannerLimitState.plannerLimit}
+          canCreate={plannerLimitState.canCreate}
+          createHref={createPlannerHref}
         />
       }
     >
-      <ItineraryView currentTier={billing.currentTier} trip={trip} />
+      {/* Keep the details surface separate from the chat-first Mara workspace so the conversation can stay clean. */}
+      <div className="space-y-4">
+        <Card tone="solid" className="p-4 sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Trip details</p>
+              <p className="mt-1 text-sm text-[var(--muted)]">The live report and logistics keep updating here while you work with Mara.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link href={`/dashboard?tripId=${trip.id}`} className={buttonStyles({ variant: "secondary", size: "sm" })}>
+                Open Mara
+              </Link>
+              {trip.itinerary.length ? (
+                <Link href={`/trips/${trip.id}/itinerary`} className={buttonStyles({ variant: "ghost", size: "sm" })}>
+                  Itinerary
+                </Link>
+              ) : null}
+              {trip.status !== "DRAFT" ? (
+                <Link href={`/trips/${trip.id}/live`} className={buttonStyles({ variant: "ghost", size: "sm" })}>
+                  Live mode
+                </Link>
+              ) : null}
+            </div>
+          </div>
+        </Card>
+
+        <TripLiveReport
+          tripId={trip.id}
+          trip={trip}
+          messages={trip.maraChatHistory}
+          starterMode={starterMode}
+          approximateLocation={approximateLocation?.label ?? null}
+        />
+
+        <section id="trip-logistics-board">
+          <TripLogisticsBoard tripId={trip.id} />
+        </section>
+
+        <TripSnapshotHistoryTools tripId={trip.id} />
+      </div>
     </PlannerWorkspaceShell>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

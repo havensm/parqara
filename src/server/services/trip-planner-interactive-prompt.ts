@@ -24,7 +24,7 @@ function isStarterDraft(context: PlannerContext) {
 }
 
 function hasTravelScope(userText: string) {
-  return /close to home|nearby|local|willing to travel|travel for it|road trip|fly|flying|drive a few hours|worth traveling/i.test(userText);
+  return /close to home|close by|nearby|near home|local|stay local|not too far|willing to travel|travel for it|road trip|fly|flying|drive a few hours|worth traveling/i.test(userText);
 }
 
 function hasTiming(userText: string) {
@@ -220,3 +220,4 @@ export function buildInteractivePromptFallbackLead(prompt: TripPlannerInteractiv
 
   return prompt.prompt;
 }
+
