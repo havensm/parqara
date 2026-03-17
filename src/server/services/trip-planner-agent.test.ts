@@ -6,6 +6,7 @@ const mockGetPlannerContext = vi.fn();
 const mockBuildFallbackReply = vi.fn();
 const mockRunMaraAgent = vi.fn();
 const mockBuildTripLiveSnapshotProposalState = vi.fn();
+const mockBuildTripPlannerInteractivePrompt = vi.fn();
 
 vi.mock("@/server/services/mara-agent-context", () => ({
   getPlannerContext: (...args: unknown[]) => mockGetPlannerContext(...args),
@@ -21,6 +22,10 @@ vi.mock("@/server/services/mara-agent-sdk", () => ({
 
 vi.mock("@/server/services/trip-live-snapshot-service", () => ({
   buildTripLiveSnapshotProposalState: (...args: unknown[]) => mockBuildTripLiveSnapshotProposalState(...args),
+}));
+
+vi.mock("@/server/services/trip-planner-interactive-prompt", () => ({
+  buildTripPlannerInteractivePrompt: (...args: unknown[]) => mockBuildTripPlannerInteractivePrompt(...args),
 }));
 
 import { generateTripPlannerReply } from "@/server/services/trip-planner-agent";
@@ -53,6 +58,7 @@ describe("generateTripPlannerReply", () => {
     mockGetPlannerContext.mockResolvedValue(sampleContext);
     mockBuildFallbackReply.mockReturnValue("fallback reply");
     mockBuildTripLiveSnapshotProposalState.mockResolvedValue(null);
+    mockBuildTripPlannerInteractivePrompt.mockReturnValue(null);
   });
 
   afterEach(() => {
@@ -70,11 +76,12 @@ describe("generateTripPlannerReply", () => {
 
     const result = await generateTripPlannerReply("user-1", [...userMessages], "trip-123");
 
-    expect(result).toEqual({ reply: "fallback reply", snapshotProposal: null });
+    expect(result).toEqual({ reply: "fallback reply", snapshotProposal: null, interactivePrompt: null });
     expect(mockRunMaraAgent).not.toHaveBeenCalled();
     expect(mockGetPlannerContext).toHaveBeenCalledWith("user-1", "trip-123");
     expect(mockBuildFallbackReply).toHaveBeenCalledWith(sampleContext, [...userMessages]);
     expect(mockBuildTripLiveSnapshotProposalState).toHaveBeenCalledWith("user-1", "trip-123", [...userMessages], "fallback reply");
+    expect(mockBuildTripPlannerInteractivePrompt).toHaveBeenCalledWith(sampleContext, [...userMessages]);
   });
 
   it("returns the SDK reply when the run succeeds", async () => {
@@ -83,10 +90,11 @@ describe("generateTripPlannerReply", () => {
 
     const result = await generateTripPlannerReply("user-1", [...userMessages], "trip-123");
 
-    expect(result).toEqual({ reply: "sdk reply", snapshotProposal: null });
+    expect(result).toEqual({ reply: "sdk reply", snapshotProposal: null, interactivePrompt: null });
     expect(mockGetPlannerContext).toHaveBeenCalledWith("user-1", "trip-123");
     expect(mockRunMaraAgent).toHaveBeenCalledWith(sampleContext, [...userMessages]);
     expect(mockBuildTripLiveSnapshotProposalState).toHaveBeenCalledWith("user-1", "trip-123", [...userMessages], "sdk reply");
+    expect(mockBuildTripPlannerInteractivePrompt).toHaveBeenCalledWith(sampleContext, [...userMessages]);
   });
 
   it("falls back when the SDK run fails", async () => {
@@ -95,9 +103,10 @@ describe("generateTripPlannerReply", () => {
 
     const result = await generateTripPlannerReply("user-1", [...userMessages], "trip-123");
 
-    expect(result).toEqual({ reply: "fallback reply", snapshotProposal: null });
+    expect(result).toEqual({ reply: "fallback reply", snapshotProposal: null, interactivePrompt: null });
     expect(mockGetPlannerContext).toHaveBeenCalledWith("user-1", "trip-123");
     expect(mockBuildFallbackReply).toHaveBeenCalledWith(sampleContext, [...userMessages]);
     expect(mockBuildTripLiveSnapshotProposalState).toHaveBeenCalledWith("user-1", "trip-123", [...userMessages], "fallback reply");
+    expect(mockBuildTripPlannerInteractivePrompt).toHaveBeenCalledWith(sampleContext, [...userMessages]);
   });
 });

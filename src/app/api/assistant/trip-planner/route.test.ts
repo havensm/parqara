@@ -48,6 +48,7 @@ describe("POST /api/assistant/trip-planner", () => {
     mockGenerateTripPlannerReply.mockResolvedValue({
       reply: "Full planning reply.",
       snapshotProposal: null,
+      interactivePrompt: null,
     });
 
     const response = await POST(
@@ -67,6 +68,7 @@ describe("POST /api/assistant/trip-planner", () => {
     await expect(response.json()).resolves.toEqual({
       reply: "Full planning reply.",
       snapshotProposal: null,
+      interactivePrompt: null,
       fullAccess: true,
     });
     expect(mockGenerateTripPlannerReply).toHaveBeenCalledWith("user-1", [{ role: "user", content: "Help me plan lunch." }], "trip-1");
@@ -87,6 +89,7 @@ describe("POST /api/assistant/trip-planner", () => {
     mockGenerateTripPlannerReply.mockResolvedValue({
       reply: "Full planning reply.",
       snapshotProposal: null,
+      interactivePrompt: null,
     });
 
     const response = await POST(
@@ -106,6 +109,7 @@ describe("POST /api/assistant/trip-planner", () => {
     await expect(response.json()).resolves.toEqual({
       reply: "Full planning reply.",
       snapshotProposal: null,
+      interactivePrompt: null,
       fullAccess: true,
     });
     expect(mockGenerateTripPlannerReply).toHaveBeenCalledWith("user-1", [{ role: "user", content: "Build me a full plan." }], "trip-1");

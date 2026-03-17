@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getUserBillingState } from "@/lib/billing";
 import { isAdminEmail } from "@/lib/admin";
 import { requireCompletedOnboardingUser } from "@/lib/auth/guards";
+import { getApproximateRequestLocation } from "@/lib/request-location";
 import {
   buildTripPlannerNeededQuestions,
   buildTripPlannerTripContext,
@@ -36,7 +37,10 @@ export default async function NewTripPage({ searchParams }: { searchParams: Prom
   const user = await requireCompletedOnboardingUser();
   const billing = getUserBillingState(user);
   const adminEnabled = isAdminEmail(user.email);
-  const plannerLimitState = await getPlannerLimitState(user.id);
+  const [plannerLimitState, approximateLocation] = await Promise.all([
+    getPlannerLimitState(user.id),
+    getApproximateRequestLocation(),
+  ]);
   const defaultVisitDate = addDays(new Date(), 7).toISOString().slice(0, 10);
   const { fresh, tripId } = await searchParams;
   const shouldReuseExistingPlanner = !tripId && fresh !== "1";
@@ -110,12 +114,14 @@ export default async function NewTripPage({ searchParams }: { searchParams: Prom
       mobileMaraLabel="Start with Mara"
       leadPanel={
         <MaraPlannerFocus
+          key={draftTrip.id}
           currentTier={billing.currentTier}
           tripId={draftTrip.id}
           firstName={user.firstName ?? user.name ?? null}
           trip={draftTrip}
           tripContext={tripContext}
           questions={questions}
+          approximateLocation={approximateLocation?.label ?? null}
         />
       }
       workspaceHeader={
@@ -188,3 +194,14 @@ export default async function NewTripPage({ searchParams }: { searchParams: Prom
     </PlannerWorkspaceShell>
   );
 }
+
+
+
+
+
+
+
+
+
+
+

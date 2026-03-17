@@ -110,6 +110,8 @@ export default async function TripItineraryPage({ params }: { params: Promise<{ 
           tripId={trip.id}
           firstName={user.firstName ?? user.name ?? null}
           tripContext={tripContext}
+          initialMessages={trip.maraChatHistory}
+          canResetConversation={trip.canEdit}
           questions={questions}
           headerAction={
             <TripPlannerSettingsDialog
@@ -140,3 +142,4 @@ export default async function TripItineraryPage({ params }: { params: Promise<{ 
     </PlannerWorkspaceShell>
   );
 }
+

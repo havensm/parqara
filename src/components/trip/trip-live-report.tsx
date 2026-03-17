@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { CheckCircle2, Clock3, History, LoaderCircle, MapPinned, Route, RotateCcw, Users, type LucideIcon } from "lucide-react";
+import { CheckCircle2, CircleAlert, Clock3, MapPinned, Route, Users, type LucideIcon } from "lucide-react";
 
 import type {
   TripDetailDto,
@@ -13,7 +13,6 @@ import { buildFallbackTripLiveSnapshot } from "@/lib/trip-live-snapshot";
 import { TRIP_STARTING_LOCATION_EVENT, type TripStartingLocationEventDetail } from "@/lib/trip-starting-location";
 
 import { FinalizePlanDialog } from "@/components/trip/finalize-plan-dialog";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 function formatRelativeDueDate(value: string | null) {
@@ -71,6 +70,101 @@ function getUserText(messages: TripPlannerChatMessage[]) {
     .trim();
 }
 
+function inferTripTheme(userText: string, destination: string | null, activity: string | null) {
+  if (activity?.trim()) {
+    return activity.trim();
+  }
+
+  const normalized = userText.toLowerCase();
+
+  if (/\bzoo\b/.test(normalized)) return "a zoo day";
+  if (/date night|romantic|dinner/.test(normalized)) return "a night out";
+  if (/\bdisney\b/.test(normalized)) return "a Disney trip";
+  if (/\bbeach\b/.test(normalized)) return "a beach day";
+  if (/\balaska\b/.test(normalized)) return "an Alaska trip";
+  if (/weekend/.test(normalized)) return "a weekend trip";
+  if (/vacation|holiday/.test(normalized)) return "a vacation";
+  if (/birthday/.test(normalized)) return "a birthday outing";
+
+  if (destination?.trim()) {
+    return `a trip around ${destination.trim()}`;
+  }
+
+  return "the plan";
+}
+
+function inferGroupSnapshotSummary(userText: string, trip: TripDetailDto, board: TripLogisticsBoardDto | null, snapshotGroupSummary: string | null) {
+  if (snapshotGroupSummary?.trim()) {
+    return snapshotGroupSummary.trim();
+  }
+
+  if (board?.groups.length) {
+    return `${board.groups.length} ${board.groups.length === 1 ? "person" : "people"}`;
+  }
+
+  const normalized = userText.toLowerCase();
+  if (/wife|husband|partner|boyfriend|girlfriend|date night|couple/.test(normalized) && /(son|daughter|kid|child|toddler|family)/.test(normalized)) {
+    return "a small family";
+  }
+  if (/wife|husband|partner|boyfriend|girlfriend|date night|couple/.test(normalized)) {
+    return "two adults";
+  }
+  if (/family|son|daughter|kid|child|children|toddler/.test(normalized)) {
+    return "a family";
+  }
+  if (trip.partyProfile.partySize > 0) {
+    return `${trip.partyProfile.partySize} ${trip.partyProfile.partySize === 1 ? "traveler" : "travelers"}`;
+  }
+
+  return null;
+}
+
+function buildActivitySummary({
+  trip,
+  board,
+  snapshot,
+  messages,
+  shouldStayBlank,
+}: {
+  trip: TripDetailDto;
+  board: TripLogisticsBoardDto | null;
+  snapshot: TripLiveSnapshotStateDto["currentSnapshot"] | ReturnType<typeof buildFallbackTripLiveSnapshot> | null;
+  messages: TripPlannerChatMessage[];
+  shouldStayBlank: boolean;
+}) {
+  if (shouldStayBlank || !snapshot) {
+    return null;
+  }
+
+  const userText = getUserText(messages);
+  const primaryActivity = snapshot.activities[0] ?? null;
+  const theme = inferTripTheme(userText, snapshot.destination, primaryActivity);
+  const groupSummary = inferGroupSnapshotSummary(userText, trip, board, snapshot.groupSummary);
+  const normalizedTheme = theme.replace(/^[Aa]n?\s+/i, "");
+  const closenessHint = /near me|nearby|close to home|local/.test(userText.toLowerCase()) ? "close to home" : null;
+  const sentences: string[] = [];
+
+  let lead = `Planning ${normalizedTheme}`;
+  if (groupSummary) {
+    lead += ` for ${groupSummary.toLowerCase()}`;
+  }
+  if (closenessHint) {
+    lead += `, likely ${closenessHint}`;
+  }
+  sentences.push(`${lead}.`);
+
+  if (snapshot.latestTakeaway?.trim()) {
+    sentences.push(trimCopy(snapshot.latestTakeaway.trim(), 110));
+  } else if (snapshot.travelSummary?.trim() || snapshot.lodgingSummary?.trim()) {
+    const openItems = [snapshot.travelSummary, snapshot.lodgingSummary].filter((value) => value?.trim()).map((value) => value!.trim().toLowerCase());
+    if (openItems.length) {
+      sentences.push(`Still shaping ${openItems.join(" and ")}.`);
+    }
+  }
+
+  return sentences.join(" ");
+}
+
 function getAttendeeSummary(board: TripLogisticsBoardDto | null, trip: TripDetailDto, shouldStayBlank: boolean) {
   if (!board?.groups.length) {
     return {
@@ -104,15 +198,36 @@ function getLogisticsSnapshot(board: TripLogisticsBoardDto | null) {
   };
 }
 
-function SummaryCard({ label, value, detail, icon: Icon }: { label: string; value: string; detail: string; icon: LucideIcon }) {
+function SummaryCard({
+  label,
+  value,
+  detail,
+  icon: Icon,
+  needsInfo = false,
+}: {
+  label: string;
+  value: string;
+  detail: string;
+  icon: LucideIcon;
+  needsInfo?: boolean;
+}) {
   return (
     <div className="rounded-[20px] border border-[var(--card-border)] bg-[var(--surface-muted)] px-4 py-4">
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-white text-[var(--teal-700)] shadow-[0_8px_18px_rgba(12,20,37,0.05)]">
+        <div
+          className={
+            needsInfo
+              ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] border border-[#f4d7aa] bg-[#fff6e9] text-[#d4871c] shadow-[0_8px_18px_rgba(12,20,37,0.04)]"
+              : "flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-white text-[var(--teal-700)] shadow-[0_8px_18px_rgba(12,20,37,0.05)]"
+          }
+        >
           <Icon className="h-4.5 w-4.5" />
         </div>
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">{label}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">{label}</p>
+            {needsInfo ? <CircleAlert className="h-3.5 w-3.5 text-[#d4871c]" aria-hidden="true" /> : null}
+          </div>
           <p className="mt-1 text-sm font-semibold text-[var(--foreground)]">{value}</p>
           <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{detail}</p>
         </div>
@@ -121,17 +236,25 @@ function SummaryCard({ label, value, detail, icon: Icon }: { label: string; valu
   );
 }
 
-function SectionCard({ title, children }: { title: string; children: ReactNode }) {
+function SectionCard({ title, children, needsInfo = false }: { title: string; children: ReactNode; needsInfo?: boolean }) {
   return (
     <div className="rounded-[22px] border border-[var(--card-border)] bg-[var(--surface-muted)] px-4 py-4 sm:px-5 sm:py-5">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">{title}</p>
+      <div className="flex items-center gap-1.5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">{title}</p>
+        {needsInfo ? <CircleAlert className="h-3.5 w-3.5 text-[#d4871c]" aria-hidden="true" /> : null}
+      </div>
       <div className="mt-3">{children}</div>
     </div>
   );
 }
 
-function PlaceholderNote({ copy }: { copy: string }) {
-  return <p className="text-sm leading-6 text-[var(--muted)]">{copy}</p>;
+function PlaceholderNote({ copy, needsInfo = false }: { copy: string; needsInfo?: boolean }) {
+  return (
+    <div className="flex items-start gap-2.5">
+      {needsInfo ? <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-[#d4871c]" aria-hidden="true" /> : null}
+      <p className="text-sm leading-6 text-[var(--muted)]">{copy}</p>
+    </div>
+  );
 }
 
 export function TripLiveReport({
@@ -140,18 +263,19 @@ export function TripLiveReport({
   messages,
   starterMode = false,
   refreshToken = 0,
+  approximateLocation,
 }: {
   tripId: string;
   trip: TripDetailDto;
   messages: TripPlannerChatMessage[];
   starterMode?: boolean;
   refreshToken?: number;
+  approximateLocation?: string | null;
 }) {
   const [board, setBoard] = useState<TripLogisticsBoardDto | null>(null);
   const [snapshotState, setSnapshotState] = useState<TripLiveSnapshotStateDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [pendingRevisionId, setPendingRevisionId] = useState<string | null>(null);
   const [startingLocationPreview, setStartingLocationPreview] = useState<string | null>(trip.startingLocation);
 
   const loadReport = useCallback(async () => {
@@ -212,7 +336,19 @@ export function TripLiveReport({
   const displaySnapshot = snapshotState?.currentSnapshot ?? fallbackSnapshot;
   const attendeeSummary = useMemo(() => getAttendeeSummary(board, trip, shouldStayBlank), [board, shouldStayBlank, trip]);
   const logisticsSnapshot = useMemo(() => getLogisticsSnapshot(board), [board]);
-  const userConversationText = useMemo(() => getUserText(messages), [messages]);
+  const activitySummary = useMemo(
+    () =>
+      buildActivitySummary({
+        trip,
+        board,
+        snapshot: displaySnapshot,
+        messages,
+        shouldStayBlank,
+      }),
+    [board, displaySnapshot, messages, shouldStayBlank, trip]
+  );
+  const approximateStartingLocation = approximateLocation?.trim() || null;
+  const shouldUseApproximateLocation = !startingLocationPreview && starterMode && !snapshotState?.currentSnapshot && Boolean(approximateStartingLocation);
   const openTasks = useMemo(
     () =>
       (board?.groups.flatMap((group) => group.tasks.map((task) => ({ ...task, assigneeName: group.person.name || group.person.email }))) ?? [])
@@ -220,32 +356,7 @@ export function TripLiveReport({
         .slice(0, 6),
     [board]
   );
-  const mapQuery = startingLocationPreview || displaySnapshot.mapQuery || displaySnapshot.destination;
-
-  async function handleRevert(revisionId: string) {
-    if (!snapshotState?.canRevert) {
-      return;
-    }
-
-    setPendingRevisionId(revisionId);
-    setError(null);
-
-    try {
-      const response = await fetch(`/api/trips/${tripId}/live-snapshot/revisions/${revisionId}/revert`, {
-        method: "POST",
-      });
-      const result = (await response.json()) as { error?: string } & Partial<TripLiveSnapshotStateDto>;
-      if (!response.ok || !result.tripId) {
-        throw new Error(result.error || "Unable to revert this snapshot.");
-      }
-
-      setSnapshotState(result as TripLiveSnapshotStateDto);
-    } catch (revertError) {
-      setError(revertError instanceof Error ? revertError.message : "Unable to revert this snapshot.");
-    } finally {
-      setPendingRevisionId(null);
-    }
-  }
+  const mapQuery = shouldUseApproximateLocation ? approximateStartingLocation : startingLocationPreview || displaySnapshot.mapQuery || displaySnapshot.destination;
 
   return (
     <Card tone="solid" className="overflow-hidden p-0 shadow-[0_16px_36px_rgba(12,20,37,0.05)]">
@@ -277,15 +388,15 @@ export function TripLiveReport({
         {error ? <div className="rounded-[20px] border border-[#efc1bc] bg-[#fff0ee] px-4 py-3 text-sm text-[#b14b41]">{error}</div> : null}
 
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <SummaryCard label="Who&apos;s going" value={attendeeSummary.headline} detail={attendeeSummary.detail} icon={Users} />
-          <SummaryCard label="Where" value={displaySnapshot.destination ?? "Not set yet"} detail={shouldStayBlank ? "Tell Mara where the trip is headed." : trip.park.name} icon={MapPinned} />
-          <SummaryCard label="How long" value={displaySnapshot.duration ?? "Not set yet"} detail={shouldStayBlank ? "Tell Mara how long the trip is or what day you are planning for." : displaySnapshot.latestTakeaway ?? "Duration will firm up as the plan gets locked."} icon={Clock3} />
-          <SummaryCard label="Travel" value={displaySnapshot.travelSummary ?? "Not set yet"} detail={displaySnapshot.lodgingSummary ?? "Lodging will show up here once it is pinned."} icon={Route} />
+          <SummaryCard label="Who&apos;s going" value={attendeeSummary.headline} detail={attendeeSummary.detail} icon={Users} needsInfo={!board?.groups.length} />
+          <SummaryCard label="Where" value={displaySnapshot.destination ?? "Not set yet"} detail={shouldStayBlank ? "Tell Mara where the trip is headed." : trip.park.name} icon={MapPinned} needsInfo={!displaySnapshot.destination} />
+          <SummaryCard label="How long" value={displaySnapshot.duration ?? "Not set yet"} detail={shouldStayBlank ? "Tell Mara how long the trip is or what day you are planning for." : displaySnapshot.latestTakeaway ?? "Duration will firm up as the plan gets locked."} icon={Clock3} needsInfo={!displaySnapshot.duration} />
+          <SummaryCard label="Travel" value={displaySnapshot.travelSummary ?? "Not set yet"} detail={displaySnapshot.lodgingSummary ?? "Lodging will show up here once it is pinned."} icon={Route} needsInfo={!displaySnapshot.travelSummary || !displaySnapshot.lodgingSummary} />
         </div>
 
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_22rem]">
           <div className="space-y-4">
-            <SectionCard title="What we&apos;re doing">
+            <SectionCard title="What we&apos;re doing" needsInfo={!displaySnapshot.activities.length}>
               {displaySnapshot.activities.length ? (
                 <>
                   <div className="flex flex-wrap gap-2">
@@ -295,14 +406,14 @@ export function TripLiveReport({
                       </span>
                     ))}
                   </div>
-                  {userConversationText ? <p className="mt-4 text-sm leading-6 text-[var(--muted)]">{trimCopy(userConversationText, 180)}</p> : null}
+                  {activitySummary ? <p className="mt-4 text-sm leading-6 text-[var(--muted)]">{activitySummary}</p> : null}
                 </>
               ) : (
-                <PlaceholderNote copy="Nothing is pinned yet. Tell Mara what kind of trip or outing you want to plan." />
+                <PlaceholderNote copy="Nothing is pinned yet. Tell Mara what kind of trip or outing you want to plan." needsInfo />
               )}
             </SectionCard>
 
-            <SectionCard title="Attendee snapshot">
+            <SectionCard title="Attendee snapshot" needsInfo={!board?.groups.length}>
               <div className="space-y-3">
                 {board?.groups.length ? (
                   board.groups.slice(0, 6).map((group) => (
@@ -315,12 +426,12 @@ export function TripLiveReport({
                     </div>
                   ))
                 ) : (
-                  <PlaceholderNote copy="Add people to the trip and their prep will show up here." />
+                  <PlaceholderNote copy="Add people to the trip and their prep will show up here." needsInfo />
                 )}
               </div>
             </SectionCard>
 
-            <SectionCard title="Bring list">
+            <SectionCard title="Bring list" needsInfo={!displaySnapshot.supplies.length}>
               {displaySnapshot.supplies.length ? (
                 <div className="space-y-2.5">
                   {displaySnapshot.supplies.map((item) => (
@@ -331,13 +442,13 @@ export function TripLiveReport({
                   ))}
                 </div>
               ) : (
-                <PlaceholderNote copy="Supplies and documents will show up here once Mara confirms them into the snapshot." />
+                <PlaceholderNote copy="Supplies and documents will show up here once Mara confirms them into the snapshot." needsInfo />
               )}
             </SectionCard>
           </div>
 
           <div className="space-y-4">
-            <SectionCard title="Location map">
+            <SectionCard title="Location map" needsInfo={!mapQuery}>
               {mapQuery ? (
                 <>
                   <div className="overflow-hidden rounded-[20px] border border-[var(--card-border)] bg-white">
@@ -346,7 +457,7 @@ export function TripLiveReport({
                   <div className="mt-3 flex items-center justify-between gap-3">
                     <div>
                       <p className="text-sm font-semibold text-[var(--foreground)]">{mapQuery}</p>
-                      <p className="mt-1 text-sm text-[var(--muted)]">{startingLocationPreview ? "Starting point pinned" : "Map centered on the trip location"}</p>
+                      <p className="mt-1 text-sm text-[var(--muted)]">{startingLocationPreview ? "Starting point pinned" : shouldUseApproximateLocation ? "Approximate starting area from your current location" : "Map centered on the trip location"}</p>
                     </div>
                     <a href={buildMapHref(mapQuery)} target="_blank" rel="noreferrer" className="text-sm font-semibold text-[var(--teal-700)] transition hover:text-[var(--teal-800)]">
                       Open map
@@ -354,11 +465,11 @@ export function TripLiveReport({
                   </div>
                 </>
               ) : (
-                <PlaceholderNote copy="Tell Mara where you are going or where the trip starts and the map will appear here." />
+                <PlaceholderNote copy="Tell Mara where you are going or where the trip starts and the map will appear here." needsInfo />
               )}
             </SectionCard>
 
-            <SectionCard title="Open prep">
+            <SectionCard title="Open prep" needsInfo={!openTasks.length && logisticsSnapshot.doneCount === 0}>
               {openTasks.length ? (
                 <div className="space-y-2.5">
                   {openTasks.map((task) => (
@@ -375,7 +486,7 @@ export function TripLiveReport({
                   ))}
                 </div>
               ) : (
-                <PlaceholderNote copy="No prep is pinned yet. Ask Mara what the group still needs so you can track it here." />
+                <PlaceholderNote copy="No prep is pinned yet. Ask Mara what the group still needs so you can track it here." needsInfo />
               )}
 
               <div className="mt-4 flex items-center justify-between gap-3 rounded-[18px] border border-[var(--card-border)] bg-white px-4 py-3">
@@ -389,7 +500,7 @@ export function TripLiveReport({
               </div>
             </SectionCard>
 
-            <SectionCard title="Latest from Mara">
+            <SectionCard title="Latest from Mara" needsInfo={!displaySnapshot.latestTakeaway}>
               <p className="text-sm leading-7 text-[var(--foreground)]">{displaySnapshot.latestTakeaway ?? "Mara will fill this in once the trip starts taking shape."}</p>
               {snapshotState?.currentSnapshotUpdatedAt ? (
                 <p className="mt-3 text-xs uppercase tracking-[0.16em] text-[var(--muted)]">Updated {formatTimestamp(snapshotState.currentSnapshotUpdatedAt)}</p>
@@ -397,38 +508,10 @@ export function TripLiveReport({
             </SectionCard>
           </div>
         </div>
-
-        {snapshotState?.canRevert ? (
-          <SectionCard title="Snapshot history">
-            {snapshotState.revisions.length ? (
-              <div className="space-y-2.5">
-                {snapshotState.revisions.map((revision) => (
-                  <div key={revision.id} className="flex flex-col gap-3 rounded-[18px] border border-[var(--card-border)] bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <History className="h-4 w-4 text-[var(--teal-700)]" />
-                        <p className="text-sm font-semibold text-[var(--foreground)]">{revision.label}</p>
-                      </div>
-                      <p className="mt-1 text-sm text-[var(--muted)]">{formatTimestamp(revision.createdAt)} · {revision.createdByName}</p>
-                    </div>
-                    <Button type="button" variant="secondary" size="sm" onClick={() => void handleRevert(revision.id)} disabled={pendingRevisionId === revision.id}>
-                      {pendingRevisionId === revision.id ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
-                      Revert
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <PlaceholderNote copy="No snapshot history yet. Once you approve changes, they will appear here for the planner owner." />
-            )}
-          </SectionCard>
-        ) : null}
       </div>
     </Card>
   );
 }
-
-
 
 
 

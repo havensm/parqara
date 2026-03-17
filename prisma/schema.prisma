@@ -294,6 +294,7 @@ model Trip {
   latestPlanSummary           String?
   summary                     Json?
   liveSnapshot                Json?
+  maraChatHistory             Json?
   liveSnapshotUpdatedAt       DateTime?
   createdAt                   DateTime                @default(now())
   updatedAt                   DateTime                @updatedAt
@@ -566,6 +567,8 @@ model ParkStateSnapshot {
   @@index([tripId, effectiveTime])
   @@index([parkId, effectiveTime])
 }
+
+
 
 
 

@@ -17,6 +17,7 @@ import type {
 import { addMinutesSafe, combineDateAndTime, formatDateTime, formatIsoDate } from "@/lib/date-utils";
 import { db } from "@/lib/db";
 import { normalizeTripLiveSnapshot } from "@/lib/trip-live-snapshot";
+import { normalizeTripPlannerChatHistory, trimTripPlannerChatHistory, type TripPlannerChatMessage } from "@/lib/trip-planner-agent";
 import { HttpError } from "@/lib/http-error";
 import { sendPlannerInviteEmail } from "@/lib/planner-invite-email";
 import { tripSetupSchema, tripUpdateSchema } from "@/lib/validation/trip";
@@ -1218,6 +1219,7 @@ export async function getTripDetail(userId: string, tripId: string): Promise<Tri
     currentStep: trip.currentStep,
     latestPlanSummary: trip.latestPlanSummary,
     liveSnapshot: normalizeTripLiveSnapshot(trip.liveSnapshot),
+    maraChatHistory: normalizeTripPlannerChatHistory(trip.maraChatHistory),
     liveSnapshotUpdatedAt: trip.liveSnapshotUpdatedAt ? trip.liveSnapshotUpdatedAt.toISOString() : null,
     park: {
       id: trip.park.id,
@@ -1232,6 +1234,32 @@ export async function getTripDetail(userId: string, tripId: string): Promise<Tri
     itinerary: trip.itineraryItems.map(serializeItineraryItem),
   };
 }
+
+export async function saveTripMaraChatHistory(userId: string, tripId: string, messages: TripPlannerChatMessage[]) {
+  await getAccessibleTrip(userId, tripId);
+
+  await db.trip.update({
+    where: { id: tripId },
+    data: {
+      maraChatHistory: trimTripPlannerChatHistory(messages),
+    },
+  });
+}
+
+export async function clearTripMaraChatHistory(userId: string, tripId: string) {
+  const access = await getTripAccessContext(userId, tripId);
+  if (!access.canEdit) {
+    throw new HttpError(403, "You do not have edit access to this planner.");
+  }
+
+  await db.trip.update({
+    where: { id: tripId },
+    data: {
+      maraChatHistory: Prisma.JsonNull,
+    },
+  });
+}
+
 export async function getTripCollaboratorState(userId: string, tripId: string): Promise<TripCollaboratorStateDto> {
   const trip = await getAccessibleTripForCollaboration(userId, tripId);
   const people = trip.userId === userId ? await getSavedPeople(userId) : [];
@@ -1777,6 +1805,8 @@ export async function getTripSummary(userId: string, tripId: string): Promise<Su
     latestPlanSummary: trip.latestPlanSummary,
   };
 }
+
+
 
 
 

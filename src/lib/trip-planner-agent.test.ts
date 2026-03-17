@@ -5,6 +5,8 @@ import {
   buildTripPlannerTripContext,
   buildTripPlannerWelcomeMessage,
   getTripPlannerStarterPrompts,
+  normalizeTripPlannerChatHistory,
+  trimTripPlannerChatHistory,
   tripPlannerChatRequestSchema,
 } from "@/lib/trip-planner-agent";
 
@@ -111,7 +113,9 @@ describe("starting location planner context", () => {
     });
 
     expect(context.detailTags).toContain("Start Battery Park City, New York, NY");
-    expect(buildTripPlannerWelcomeMessage("Test", context, false)).toContain("Start Battery Park City, New York, NY");
+    const message = buildTripPlannerWelcomeMessage("Test", context, false);
+    expect(message).toContain("your trip to Central Zoo");
+    expect(message).toContain("Start Battery Park City, New York, NY");
   });
 
   it("asks for a starting location when one is still missing", () => {
@@ -144,5 +148,34 @@ describe("starting location planner context", () => {
         itinerary: [],
       })
     ).toContain("Where are you starting from?");
+  });
+});
+
+describe("persisted planner chat history", () => {
+  it("normalizes only valid persisted messages", () => {
+    expect(
+      normalizeTripPlannerChatHistory([
+        { role: "assistant", content: "hi" },
+        { role: "bad", content: "skip" },
+        { role: "user", content: "plan a zoo trip" },
+        { role: "assistant" },
+      ])
+    ).toEqual([
+      { role: "assistant", content: "hi" },
+      { role: "user", content: "plan a zoo trip" },
+    ]);
+  });
+
+  it("keeps only the last persisted messages", () => {
+    const trimmed = trimTripPlannerChatHistory(
+      Array.from({ length: 20 }, (_, index) => ({
+        role: index % 2 === 0 ? "assistant" : "user",
+        content: `message ${index}`,
+      }))
+    );
+
+    expect(trimmed).toHaveLength(18);
+    expect(trimmed[0]?.content).toBe("message 2");
+    expect(trimmed.at(-1)?.content).toBe("message 19");
   });
 });

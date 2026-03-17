@@ -110,6 +110,27 @@ export type TripLiveSnapshotProposalDto = {
   summary: string;
 };
 
+export type TripPlannerInteractivePromptKindValue = "SINGLE_SELECT" | "SELECT" | "ADDRESS";
+
+export type TripPlannerInteractiveOptionDto = {
+  label: string;
+  value: string;
+  sendAs: string;
+};
+
+export type TripPlannerInteractivePromptDto = {
+  id: string;
+  kind: TripPlannerInteractivePromptKindValue;
+  prompt: string;
+  helper: string | null;
+  field: keyof TripLiveSnapshotDto | "travelDistancePreference" | "startingLocation";
+  placeholder: string | null;
+  submitLabel: string | null;
+  autoComplete: string | null;
+  options: TripPlannerInteractiveOptionDto[];
+  suggestions: string[];
+};
+
 export type TripLiveSnapshotRevisionDto = {
   id: string;
   label: string;
@@ -141,6 +162,7 @@ export type TripDetailDto = {
   currentStep: number;
   latestPlanSummary: string | null;
   liveSnapshot: TripLiveSnapshotDto | null;
+  maraChatHistory: Array<{ role: "assistant" | "user"; content: string }>;
   liveSnapshotUpdatedAt: string | null;
   park: ParkCatalogDto["park"];
   partyProfile: PartyProfileDto;
@@ -353,4 +375,6 @@ export type SummaryDto = {
   highlights: string[];
   latestPlanSummary: string | null;
 };
+
+
 

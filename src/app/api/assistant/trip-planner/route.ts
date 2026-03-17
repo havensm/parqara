@@ -5,6 +5,7 @@ import { getUserBillingState } from "@/lib/billing";
 import { tripPlannerChatRequestSchema } from "@/lib/trip-planner-agent";
 import { reserveMaraUsage } from "@/server/services/mara-rate-limit-service";
 import { generateTripPlannerReply } from "@/server/services/trip-planner-agent";
+import { saveTripMaraChatHistory } from "@/server/services/trip-service";
 
 export async function POST(request: Request) {
   try {
@@ -21,10 +22,14 @@ export async function POST(request: Request) {
     });
 
     const result = await generateTripPlannerReply(user.id, body.messages, body.tripId);
+    const resolvedMessages = [...body.messages, { role: "assistant" as const, content: result.reply }];
+
+    await saveTripMaraChatHistory(user.id, body.tripId, resolvedMessages).catch(() => undefined);
 
     return NextResponse.json({
       reply: result.reply,
       snapshotProposal: result.snapshotProposal,
+      interactivePrompt: result.interactivePrompt,
       fullAccess: true,
     });
   } catch (error) {

@@ -55,6 +55,7 @@ function createProfileIntakeAgent(model: string) {
       [
         "You are Mara's intake specialist.",
         "Turn the latest request into a compact planning brief for downstream specialists.",
+        "Recent conversation context is already attached. Use it to preserve continuity.",
         "Do not answer the user directly.",
         "Output short sections with bullets only: Known, Missing, Constraints, Immediate next step.",
         "If the focused trip already contains a needed detail, treat it as known instead of asking for it again.",
@@ -73,6 +74,7 @@ function createDestinationAgent(model: string) {
       [
         "You are Mara's destination specialist.",
         "Use the planning brief to suggest direction only when destination choice or scope is still open.",
+        "Recent conversation context is already attached. Use it to preserve continuity.",
         "Do not invent live hours, pricing, or reservation details.",
         "Do not write the final user-facing answer.",
         "Output short sections with bullets only: Best fit direction, Why it fits, What still needs confirmation.",
@@ -91,6 +93,7 @@ function createItineraryAgent(model: string) {
       [
         "You are Mara's itinerary specialist.",
         "Focus on pacing, must-dos, route shape, and trip structure.",
+        "Recent conversation context is already attached. Use it to preserve continuity.",
         "Use the focused trip details before proposing changes.",
         "Do not write the final user-facing answer.",
         "Output short sections with bullets only: Route shape, Protected priorities, Risks, Suggested adjustment.",
@@ -111,6 +114,7 @@ function createBudgetAgent(model: string) {
       [
         "You are Mara's budget specialist.",
         "Focus on practical budget framing and tradeoffs, not exact live pricing.",
+        "Recent conversation context is already attached. Use it to preserve continuity.",
         "Do not write the final user-facing answer.",
         "Output short sections with bullets only: Budget range, Biggest cost drivers, Save vs splurge guidance.",
         "Stable planner context:",
@@ -128,8 +132,9 @@ function createSynthesisAgent(model: string) {
       [
         buildMaraInstructions(runContext.context.plannerContext),
         "You are the only user-facing speaker in this workflow.",
-        "Use the specialist notes you receive to produce the final answer in Mara's voice.",
+        "Recent conversation history is already attached. Keep continuity with it and answer like a real travel advisor in an ongoing conversation.",
         "Do not mention internal agents, tools, orchestration, or specialist handoffs.",
+        "Do not default to rigid headings or bullets unless they genuinely help the user make the next decision.",
       ].join("\n\n"),
   });
 }
@@ -190,8 +195,8 @@ function shouldRunBudgetAgent(plannerContext: PlannerContext, latestUserRequest:
   return Boolean(plannerContext.budgetPreference?.trim());
 }
 
-async function runTextAgent(agent: Agent<MaraRunContext>, prompt: string, context: MaraRunContext) {
-  const result = await maraRunner.run(agent, [user(prompt)], {
+async function runTextAgent(agent: Agent<MaraRunContext>, prompt: string, context: MaraRunContext, history: AgentInputItem[] = []) {
+  const result = await maraRunner.run(agent, [...history, user(prompt)], {
     context,
     maxTurns: 1,
   });
@@ -221,6 +226,7 @@ export async function runMaraAgent(plannerContext: PlannerContext, messages: Tri
     conversation,
   };
   const agents = getAgents();
+  const recentConversationItems = mapTripPlannerMessagesToAgentInputItems(messages);
 
   const intakeSummary =
     (await runTextAgent(
@@ -230,7 +236,8 @@ export async function runMaraAgent(plannerContext: PlannerContext, messages: Tri
         `Recent user context:\n${conversation.recentUserContext}`,
         "Summarize the planning brief for the next specialists.",
       ].join("\n\n"),
-      runContext
+      runContext,
+      recentConversationItems
     )) || "Known\n- The user wants help shaping this trip.\nMissing\n- Specific missing fields still need to be clarified.\nConstraints\n- Use saved trip details first.\nImmediate next step\n- Ask for the most important missing detail only if it is required.";
 
   const destinationSummary = shouldRunDestinationAgent(plannerContext, conversation.latestUserRequest)
@@ -241,7 +248,8 @@ export async function runMaraAgent(plannerContext: PlannerContext, messages: Tri
           `Intake summary:\n${intakeSummary}`,
           "Only give destination or scope guidance if it is actually needed.",
         ].join("\n\n"),
-        runContext
+        runContext,
+        recentConversationItems
       )) || "Best fit direction\n- No separate destination guidance is needed."
     : "Best fit direction\n- No separate destination guidance is needed.";
 
@@ -253,7 +261,8 @@ export async function runMaraAgent(plannerContext: PlannerContext, messages: Tri
         `Intake summary:\n${intakeSummary}`,
         "Focus on pacing, priorities, and the next version of the plan.",
       ].join("\n\n"),
-      runContext
+      runContext,
+      recentConversationItems
     )) || "Route shape\n- Keep the plan readable and protect the top priorities first.";
 
   const budgetSummary = shouldRunBudgetAgent(plannerContext, conversation.latestUserRequest)
@@ -264,7 +273,8 @@ export async function runMaraAgent(plannerContext: PlannerContext, messages: Tri
           `Intake summary:\n${intakeSummary}`,
           "Give only practical budget framing. Avoid pretending to know live pricing.",
         ].join("\n\n"),
-        runContext
+        runContext,
+        recentConversationItems
       )) || "Budget range\n- Budget detail is not the main decision in this turn."
     : "Budget range\n- Budget detail is not the main decision in this turn.";
 
@@ -277,8 +287,9 @@ export async function runMaraAgent(plannerContext: PlannerContext, messages: Tri
       `Destination summary:\n${destinationSummary}`,
       `Itinerary summary:\n${itinerarySummary}`,
       `Budget summary:\n${budgetSummary}`,
-      "Write Mara's final answer now.",
+      "Reply naturally in Mara's voice. Ask the next best question if the trip still needs one key detail. If you already have enough to help, make the next step feel clear and specific.",
     ].join("\n\n"),
-    runContext
+    runContext,
+    recentConversationItems
   );
 }
