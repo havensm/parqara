@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 
+import { cn } from "@/lib/utils";
 import { generatedVisuals } from "@/lib/generated-assets";
 
 const marketingRoutes = [
@@ -42,6 +43,7 @@ export function RootChrome({
 }) {
   const pathname = usePathname() ?? "/";
   const marketingRoute = isMarketingRoute(pathname);
+  const maraWorkspaceRoute = pathname === "/dashboard";
 
   if (marketingRoute) {
     return (
@@ -73,11 +75,19 @@ export function RootChrome({
       <div className="relative z-[1] mx-auto grid w-full max-w-[108rem] gap-4 px-3 py-3 sm:px-5 sm:py-5 lg:grid-cols-[18.5rem_minmax(0,1fr)] lg:items-start lg:gap-5 lg:px-6 xl:grid-cols-[20rem_minmax(0,1fr)] xl:gap-6 xl:px-8">
         <aside className="hidden lg:block lg:sticky lg:top-5 lg:self-start">{sidebar}</aside>
         <div className="min-w-0">
-          <main className="relative min-h-[calc(100vh-2rem)] pb-8 sm:pb-12">{children}</main>
-          {footer}
+          <main
+            className={cn(
+              "relative",
+              maraWorkspaceRoute
+                ? "h-[calc(100dvh-1.5rem)] overflow-hidden sm:h-[calc(100dvh-2.5rem)] lg:h-[calc(100dvh-3rem)] xl:h-[calc(100dvh-4rem)]"
+                : "min-h-[calc(100vh-2rem)] pb-8 sm:pb-12"
+            )}
+          >
+            {children}
+          </main>
+          {maraWorkspaceRoute ? null : footer}
         </div>
       </div>
     </div>
   );
 }
-

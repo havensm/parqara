@@ -4,9 +4,7 @@ import Link from "next/link";
 import { FileText, Radio, Route } from "lucide-react";
 
 import type { SubscriptionTierValue, TripDetailDto } from "@/lib/contracts";
-import {
-  type TripPlannerTripContext,
-} from "@/lib/trip-planner-agent";
+import { type TripPlannerTripContext } from "@/lib/trip-planner-agent";
 import { isPlannerKickoffDraft } from "@/lib/trip-workspace";
 
 import { TripPlannerConcierge } from "@/components/assistant/trip-planner-concierge";
@@ -37,7 +35,7 @@ export function MaraPlannerFocus({
   });
 
   return (
-    <div className="space-y-4" data-testid="mara-planner-focus">
+    <div className="flex h-full min-h-0 flex-col gap-4" data-testid="mara-planner-focus">
       <TripPlannerConcierge
         currentTier={currentTier}
         firstName={firstName}
@@ -49,6 +47,7 @@ export function MaraPlannerFocus({
         priorityMode
         refreshOnReply
         starterMode={starterMode}
+        fillAvailableHeight
         headerAction={
           <TripPlannerSettingsDialog
             currentTier={currentTier}
@@ -60,7 +59,10 @@ export function MaraPlannerFocus({
         }
       />
 
-      <Card tone="solid" className="p-4 sm:p-5">
+      <Card
+        tone="solid"
+        className="shrink-0 rounded-[28px] border-[rgba(206,220,241,0.92)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,250,255,0.94))] p-4 shadow-[0_18px_38px_rgba(12,20,37,0.06)] sm:p-5"
+      >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Trip details</p>

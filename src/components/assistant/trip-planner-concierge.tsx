@@ -31,6 +31,7 @@ type TripPlannerConciergeProps = {
   headerAction?: ReactNode;
   starterMode?: boolean;
   onSnapshotApproved?: () => void;
+  fillAvailableHeight?: boolean;
 };
 
 const textareaClassName =
@@ -87,6 +88,7 @@ export function TripPlannerConcierge({
   headerAction,
   starterMode = false,
   onSnapshotApproved,
+  fillAvailableHeight = false,
 }: TripPlannerConciergeProps) {
   const router = useRouter();
   const [messages, setMessages] = useState<TripPlannerChatMessage[]>(() =>
@@ -314,7 +316,8 @@ export function TripPlannerConcierge({
       tone="solid"
       className={cn(
         "overflow-hidden border border-white/74 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(246,250,255,0.96))] shadow-[0_22px_48px_rgba(12,20,37,0.08)]",
-        priorityMode ? "rounded-[32px]" : "rounded-[28px]"
+        priorityMode ? "rounded-[32px]" : "rounded-[28px]",
+        fillAvailableHeight && "flex h-full min-h-0 flex-col"
       )}
     >
       <div className="border-b border-[var(--card-border)] px-5 py-5 sm:px-6 sm:py-6">
@@ -344,10 +347,13 @@ export function TripPlannerConcierge({
         </div>
       </div>
 
-      <div className="p-4 sm:p-5">
+      <div className={cn(fillAvailableHeight ? "flex min-h-0 flex-1 flex-col p-4 sm:p-5" : "p-4 sm:p-5")}>
         <div
           ref={threadScrollRef}
-          className="soft-scrollbar flex min-h-[320px] max-h-[520px] flex-col gap-3 overflow-y-auto rounded-[24px] border border-[var(--card-border)] bg-[var(--surface-muted)] p-4 sm:min-h-[380px] sm:max-h-[620px] sm:p-5"
+          className={cn(
+            "soft-scrollbar flex flex-col gap-3 overflow-y-auto rounded-[24px] border border-[var(--card-border)] bg-[var(--surface-muted)] p-4 sm:p-5",
+            fillAvailableHeight ? "min-h-0 flex-1" : "min-h-[320px] max-h-[520px] sm:min-h-[380px] sm:max-h-[620px]"
+          )}
         >
           {messages.map((message, index) => (
             <div key={`${message.role}-${index}-${message.content.slice(0, 24)}`} className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}>
@@ -503,7 +509,7 @@ export function TripPlannerConcierge({
           </div>
         ) : null}
 
-        <div ref={composerRef} className="mt-4 rounded-[24px] border border-[var(--card-border)] bg-white p-3 sm:p-4">
+        <div ref={composerRef} className={cn("mt-4 rounded-[24px] border border-[var(--card-border)] bg-white p-3 sm:p-4", fillAvailableHeight && "shrink-0")}>
           <textarea
             className={textareaClassName}
             disabled={isPending || isApprovingSnapshot || isResettingHistory}
@@ -529,5 +535,6 @@ export function TripPlannerConcierge({
     </Card>
   );
 }
+
 
 

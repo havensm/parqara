@@ -132,6 +132,7 @@ export default async function DashboardPage({
         plannerTabs={plannerTabs}
         mobileMaraLabel={isStarterDraft ? "Start with Mara" : "Open Mara"}
         boardMode
+        viewportLocked
         boardTabs={
           <PlannerWorkspaceTabs
             tabs={plannerTabs}
@@ -158,3 +159,4 @@ export default async function DashboardPage({
     </>
   );
 }
+

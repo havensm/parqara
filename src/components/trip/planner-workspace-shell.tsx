@@ -43,6 +43,7 @@ export function PlannerWorkspaceShell({
   boardMode = false,
   boardTabs,
   leadPanel,
+  viewportLocked = false,
 }: {
   children?: ReactNode;
   currentTier: SubscriptionTierValue;
@@ -56,6 +57,7 @@ export function PlannerWorkspaceShell({
   boardMode?: boolean;
   boardTabs?: ReactNode;
   leadPanel?: ReactNode;
+  viewportLocked?: boolean;
 }) {
   const [mobileMaraOpen, setMobileMaraOpen] = useState(false);
   const showsLeadPanel = Boolean(leadPanel);
@@ -128,7 +130,7 @@ export function PlannerWorkspaceShell({
 
   function renderWorkspaceBody() {
     if (!hasRail) {
-      return hasChildren ? <div className="min-w-0">{children}</div> : null;
+      return hasChildren ? <div className={cn("min-w-0", viewportLocked && "min-h-0 flex-1")}>{children}</div> : null;
     }
 
     return (
@@ -152,7 +154,11 @@ export function PlannerWorkspaceShell({
   function renderWorkspaceContent() {
     return (
       <>
-        {leadPanel ? <div data-testid="planner-lead-panel">{leadPanel}</div> : null}
+        {leadPanel ? (
+          <div data-testid="planner-lead-panel" className={cn(viewportLocked && "flex min-h-0 flex-1 flex-col")}>
+            {leadPanel}
+          </div>
+        ) : null}
         {workspaceHeader ? workspaceHeader : null}
         {hasModules ? renderModuleStrip() : null}
         {renderWorkspaceBody()}
@@ -160,15 +166,39 @@ export function PlannerWorkspaceShell({
     );
   }
 
-  // Board mode collapses the planner dashboard into one main workspace surface with tabs anchored at the top.
   return (
     <>
-      <AppFrame adminEnabled={adminEnabled} currentTier={currentTier} plannerTabs={plannerTabs}>
-        <div data-testid="planner-workspace-shell" className="space-y-6 lg:space-y-7">
+      <AppFrame
+        adminEnabled={adminEnabled}
+        currentTier={currentTier}
+        plannerTabs={plannerTabs}
+        className={cn(viewportLocked && "h-full overflow-hidden")}
+      >
+        <div
+          data-testid="planner-workspace-shell"
+          className={cn(viewportLocked ? "flex h-full flex-col" : "space-y-6 lg:space-y-7")}
+        >
           {boardMode ? (
-            <section className="overflow-hidden rounded-[34px] border border-[var(--card-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(246,250,255,0.94))] shadow-[0_24px_60px_rgba(12,20,37,0.10)]">
-              {boardTabs ? <div className="border-b border-[var(--card-border)] bg-[linear-gradient(135deg,rgba(255,247,232,0.82),rgba(246,250,255,0.92)_54%,rgba(236,252,247,0.82))] px-4 pt-4 sm:px-5 sm:pt-5 lg:px-6 lg:pt-6">{boardTabs}</div> : null}
-              <div className="space-y-6 bg-transparent p-4 sm:p-5 lg:p-6">{renderWorkspaceContent()}</div>
+            <section
+              className={cn(
+                "overflow-hidden rounded-[34px] border border-[var(--card-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(246,250,255,0.94))] shadow-[0_24px_60px_rgba(12,20,37,0.10)]",
+                viewportLocked && "flex min-h-0 flex-1 flex-col"
+              )}
+            >
+              {boardTabs ? (
+                <div className="border-b border-[var(--card-border)] bg-[linear-gradient(135deg,rgba(255,247,232,0.82),rgba(246,250,255,0.92)_54%,rgba(236,252,247,0.82))] px-4 pt-4 sm:px-5 sm:pt-5 lg:px-6 lg:pt-6">
+                  {boardTabs}
+                </div>
+              ) : null}
+              <div
+                className={cn(
+                  viewportLocked
+                    ? "flex min-h-0 flex-1 flex-col gap-6 bg-transparent p-4 sm:p-5 lg:p-6"
+                    : "space-y-6 bg-transparent p-4 sm:p-5 lg:p-6"
+                )}
+              >
+                {renderWorkspaceContent()}
+              </div>
             </section>
           ) : (
             renderWorkspaceContent()
