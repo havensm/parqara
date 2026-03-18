@@ -99,7 +99,7 @@ export function AuthShell({
               <ArrowRight className="h-4 w-4" />
             </Link>
             <div className="glass-chip inline-flex items-center px-4 py-2 text-sm text-[var(--muted)]">
-              Mara plus manual planning in one workspace
+              Free manual planning, Mara on Plus
             </div>
           </div>
         </div>
@@ -123,3 +123,4 @@ export function AuthShell({
     </div>
   );
 }
+

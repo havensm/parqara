@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockApiError = vi.fn((error: unknown) =>
-  NextResponse.json({ error: error instanceof Error ? error.message : "Unknown error" }, { status: 500 })
+  NextResponse.json(
+    { error: error instanceof Error ? error.message : "Unknown error" },
+    { status: typeof error === "object" && error !== null && "status" in error ? Number((error as { status: number }).status) : 500 }
+  )
 );
 const mockRequireApiUser = vi.fn();
+const mockRequireApiFeatureAccess = vi.fn();
 const mockGetUserBillingState = vi.fn();
 const mockReserveMaraUsage = vi.fn();
 const mockGenerateTripPlannerReply = vi.fn();
@@ -12,6 +16,7 @@ const mockGenerateTripPlannerReply = vi.fn();
 vi.mock("@/app/api/_utils", () => ({
   apiError: (...args: unknown[]) => mockApiError(...args),
   requireApiUser: (...args: unknown[]) => mockRequireApiUser(...args),
+  requireApiFeatureAccess: (...args: unknown[]) => mockRequireApiFeatureAccess(...args),
 }));
 
 vi.mock("@/lib/billing", () => ({
@@ -33,7 +38,7 @@ describe("POST /api/assistant/trip-planner", () => {
     vi.clearAllMocks();
   });
 
-  it("returns the full-access envelope for Free users", async () => {
+  it("blocks Free users without Mara access", async () => {
     mockRequireApiUser.mockResolvedValue({
       id: "user-1",
       subscriptionTier: "FREE",
@@ -41,14 +46,11 @@ describe("POST /api/assistant/trip-planner", () => {
     });
     mockGetUserBillingState.mockReturnValue({
       currentTier: "FREE",
-      featureAccess: { aiConcierge: true },
+      featureAccess: { aiConcierge: false },
       maraStarterPreview: { usedReplies: 0, remainingReplies: 0, replyLimit: 1 },
     });
-    mockReserveMaraUsage.mockResolvedValue(undefined);
-    mockGenerateTripPlannerReply.mockResolvedValue({
-      reply: "Full planning reply.",
-      snapshotProposal: null,
-      interactivePrompt: null,
+    mockRequireApiFeatureAccess.mockImplementation(() => {
+      throw Object.assign(new Error("Upgrade to Plus to unlock mara access."), { status: 402 });
     });
 
     const response = await POST(
@@ -64,14 +66,11 @@ describe("POST /api/assistant/trip-planner", () => {
       })
     );
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(402);
     await expect(response.json()).resolves.toEqual({
-      reply: "Full planning reply.",
-      snapshotProposal: null,
-      interactivePrompt: null,
-      fullAccess: true,
+      error: "Upgrade to Plus to unlock mara access.",
     });
-    expect(mockGenerateTripPlannerReply).toHaveBeenCalledWith("user-1", [{ role: "user", content: "Help me plan lunch." }], "trip-1");
+    expect(mockGenerateTripPlannerReply).not.toHaveBeenCalled();
   });
 
   it("returns the full-access envelope for paid Mara plans", async () => {
@@ -85,6 +84,7 @@ describe("POST /api/assistant/trip-planner", () => {
       featureAccess: { aiConcierge: true },
       maraStarterPreview: { usedReplies: 0, remainingReplies: 0, replyLimit: 1 },
     });
+    mockRequireApiFeatureAccess.mockReturnValue("PLUS");
     mockReserveMaraUsage.mockResolvedValue(undefined);
     mockGenerateTripPlannerReply.mockResolvedValue({
       reply: "Full planning reply.",
@@ -118,14 +118,15 @@ describe("POST /api/assistant/trip-planner", () => {
   it("returns the API error when the full Mara reply fails", async () => {
     mockRequireApiUser.mockResolvedValue({
       id: "user-1",
-      subscriptionTier: "FREE",
-      subscriptionStatus: "INACTIVE",
+      subscriptionTier: "PLUS",
+      subscriptionStatus: "ACTIVE",
     });
     mockGetUserBillingState.mockReturnValue({
-      currentTier: "FREE",
+      currentTier: "PLUS",
       featureAccess: { aiConcierge: true },
       maraStarterPreview: { usedReplies: 0, remainingReplies: 0, replyLimit: 1 },
     });
+    mockRequireApiFeatureAccess.mockReturnValue("PLUS");
     mockReserveMaraUsage.mockResolvedValue(undefined);
     mockGenerateTripPlannerReply.mockRejectedValue(new Error("AI failed"));
 

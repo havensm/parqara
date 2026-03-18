@@ -39,7 +39,7 @@ export default async function BillingPage({
         : "Templates, duplication, and version history are included on Pro."
       : billing.currentTier === "PLUS"
         ? "Live mode, replans, and more room are included."
-        : "Full Mara and planner sharing are included, with room for one active planner.";
+         : "Manual planning, planner sharing, and room for one active planner are included on Free.";
 
   return (
     <AppShell
@@ -83,7 +83,7 @@ export default async function BillingPage({
           </div>
 
           <div className="divide-y divide-[var(--card-border)]">
-            <BillingRow label="Mara access" value="Included" detail="Full planning and revisions are open on every plan." />
+            <BillingRow label="Mara access" value={billing.featureAccess.aiConcierge ? "Included" : "Plus"} detail={billing.featureAccess.aiConcierge ? "Full Mara chat and revisions are open on this plan." : "Free keeps manual planning open. Upgrade to Plus to unlock Mara chat."} />
             <BillingRow label="Active planners" value={`${plannerLimitState.activePlannerCount} / ${plannerLimitState.plannerLimit}`} detail={`${plannerLimitState.archivedTrips.length} archived planners saved outside the active limit.`} />
             <BillingRow label="Workflow tools" value={billing.currentTier === "PRO" ? "Advanced" : billing.currentTier === "PLUS" ? "Core premium" : "Starter"} detail={workflowSummary} />
 
@@ -148,7 +148,7 @@ export default async function BillingPage({
             Compare Free, Plus, and Pro.
           </h2>
           <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-            Choose the amount of planner room and workflow depth you actually need.
+            Choose how much planner room you need and whether you want Mara unlocked.
           </p>
         </div>
 
@@ -191,5 +191,6 @@ function BillingRow({
     </div>
   );
 }
+
 
 

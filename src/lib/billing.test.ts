@@ -25,7 +25,7 @@ describe("billing access", () => {
   it("enforces feature thresholds", () => {
     expect(canAccessBillingFeature("FREE", "liveDashboard")).toBe(false);
     expect(canAccessBillingFeature("PLUS", "liveDashboard")).toBe(true);
-    expect(canAccessBillingFeature("FREE", "aiConcierge")).toBe(true);
+    expect(canAccessBillingFeature("FREE", "aiConcierge")).toBe(false);
     expect(canAccessBillingFeature("PLUS", "aiConcierge")).toBe(true);
     expect(canAccessBillingFeature("PRO", "aiConcierge")).toBe(true);
     expect(canAccessBillingFeature("FREE", "tripCollaboration")).toBe(true);
@@ -63,10 +63,12 @@ describe("billing access", () => {
   });
 
   it("keeps plan copy aligned with shipped tier boundaries", () => {
-    expect(BILLING_PLANS.FREE.features).toContain("Full Mara on 1 active planner");
+    expect(BILLING_PLANS.FREE.features).toContain("1 active planner");
+    expect(BILLING_PLANS.FREE.summary).toMatch(/manual/i);
     expect(BILLING_PLANS.FREE.features.join(" ")).toMatch(/share|collaborator|invite/i);
-    expect(BILLING_PLANS.PLUS.summary).toMatch(/three active planners|live mode/i);
+    expect(BILLING_PLANS.PLUS.summary).toMatch(/Mara|three active planners|live mode/i);
     expect(BILLING_PLANS.PRO.features.join(" ")).not.toMatch(/collaborator|shared planner/i);
+    expect(BILLING_FEATURES.aiConcierge.requiredTier).toBe("PLUS");
     expect(BILLING_FEATURES.tripCollaboration.label).toBe("Shared planner collaboration");
     expect(BILLING_FEATURES.professionalExports.label).toBe("Future export tools");
   });

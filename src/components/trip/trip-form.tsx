@@ -846,7 +846,7 @@ export function TripForm({
 
       <div className="mt-6 overflow-hidden rounded-[30px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(246,249,253,0.96),rgba(241,246,252,0.94))] shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]">
         <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-5">
-          <p className="text-sm text-slate-500">Mara shapes the plan. These basics stay pinned.</p>
+          <p className="text-sm text-slate-500">These basics stay pinned to the planner.</p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button type="button" variant="secondary" onClick={() => void handleSave()} disabled={saveState === "saving" || isGenerating}>
               Save now
@@ -947,4 +947,5 @@ function SnapshotCard({
     </div>
   );
 }
+
 

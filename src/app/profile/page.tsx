@@ -30,7 +30,7 @@ export default async function ProfilePage({
   const notice = getBillingNotice(params.billing, params.tier);
   const nextUpgradeTier = billing.currentTier === "FREE" ? "PLUS" : billing.currentTier === "PLUS" ? "PRO" : null;
   const nextUpgradePlan = nextUpgradeTier ? getPlanByTier(nextUpgradeTier) : null;
-  const maraAccessLabel = "Included";
+  const maraAccessLabel = billing.featureAccess.aiConcierge ? "Included" : "Upgrade to Plus";
 
   return (
     <AppShell
@@ -45,7 +45,7 @@ export default async function ProfilePage({
       adminEnabled={adminEnabled}
       highlights={[
         { icon: <Users className="h-4 w-4" />, label: `${plannerLimitState.activePlannerCount}/${plannerLimitState.plannerLimit} active planners` },
-        { icon: <Sparkles className="h-4 w-4" />, label: "Mara included on every plan" },
+        { icon: <Sparkles className="h-4 w-4" />, label: billing.featureAccess.aiConcierge ? "Mara unlocked" : "Mara unlocks on Plus" },
       ]}
     >
       {notice ? (
@@ -123,4 +123,5 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
 

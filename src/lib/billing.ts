@@ -46,7 +46,7 @@ const tierRank: Record<SubscriptionTierValue, number> = {
 
 const activeStatuses = new Set<SubscriptionStatusValue>(["ACTIVE", "TRIALING"]);
 
-// Legacy preview counter stays in the schema for now, but Mara is included on every plan.
+// Legacy preview counter stays in the schema for now, but Free no longer unlocks Mara chat.
 export const MARA_FREE_PREVIEW_REPLY_LIMIT = 1;
 export const MARA_STARTER_REPLY_LIMIT = MARA_FREE_PREVIEW_REPLY_LIMIT;
 
@@ -56,12 +56,12 @@ export const BILLING_PLANS: Record<SubscriptionTierValue, BillingPlan> = {
     name: "Free",
     monthlyPrice: 0,
     monthlyLabel: "$0",
-    tagline: "Full Mara",
-    summary: "Full Mara, planner sharing, trip setup, itinerary views, calendar access, and one active planner for your current trip or outing.",
+    tagline: "Manual planning",
+    summary: "Manual trip planning, shared logistics, itinerary views, and one active planner so users can explore the app before unlocking Mara.",
     badge: "Best for one active plan",
     activePlannerLimit: 1,
     features: [
-      "Full Mara on 1 active planner",
+      "Manual trip setup and planner editing",
       "Trip setup with dates, group details, must-dos, and dining preferences",
       "Share the planner and invite collaborators",
       "Build and view generated itinerary routes",
@@ -74,13 +74,14 @@ export const BILLING_PLANS: Record<SubscriptionTierValue, BillingPlan> = {
     name: "Plus",
     monthlyPrice: 12,
     monthlyLabel: "$12",
-    tagline: "More room",
-    summary: "Everything in Free, plus live mode, replans, and room for up to three active planners.",
+    tagline: "Mara unlocked",
+    summary: "Everything in Free, plus full Mara chat, live mode, replans, and room for up to three active planners.",
     badge: "Best plan for most people",
     activePlannerLimit: 3,
     features: [
       "Everything in Free",
-      "Full Mara on up to 3 active planners",
+      "Full Mara chat and trip-specific revisions",
+      "Interactive follow-up questions and plan shaping",
       "Live dashboard with next-move guidance",
       "Instant replans and ride-completion controls",
       "3 active planners",
@@ -122,10 +123,10 @@ export const BILLING_FEATURES: Record<BillingFeatureKey, BillingFeatureDefinitio
   },
   aiConcierge: {
     label: "Mara access",
-    requiredTier: "FREE",
-    upgradeTitle: "Mara is included on every plan",
-    upgradeDescription: "Every plan includes full Mara. Upgrade when you need more active planners, live mode, or higher-volume planning tools.",
-    highlights: ["Included on every plan", "Follow-up questions and revisions", "Memory-backed, trip-specific guidance"],
+    requiredTier: "PLUS",
+    upgradeTitle: "Unlock Mara on Plus",
+    upgradeDescription: "Free keeps manual planning open. Upgrade to Plus when you want Mara to ask the right questions, shape the plan, and keep the trip moving.",
+    highlights: ["Natural back-and-forth trip planning", "Interactive follow-up questions", "Trip-specific guidance and revisions"],
   },
   tripCollaboration: {
     label: "Shared planner collaboration",

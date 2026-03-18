@@ -18,7 +18,7 @@ export default async function PricingPage({
   const params = await searchParams;
   const notice = getBillingNotice(params.billing, params.tier);
   const primaryHref = user ? "/dashboard" : "/signup";
-  const primaryLabel = user ? "Open Mara" : "Create free account";
+  const primaryLabel = user ? (billing?.featureAccess.aiConcierge ? "Open Mara" : "Open planner") : "Create free account";
   const secondaryHref = user ? "/billing" : "/login";
   const secondaryLabel = user ? "Manage billing" : "Log in";
 
@@ -30,10 +30,10 @@ export default async function PricingPage({
             Pricing
           </div>
           <h1 className="font-[family-name:var(--font-space-grotesk)] text-4xl font-semibold tracking-[-0.05em] text-slate-950 sm:text-5xl lg:text-[4rem] lg:leading-[0.98]">
-            Simple plans.
+            Start free. Upgrade for Mara.
           </h1>
           <p className="max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-            Mara and sharing are included everywhere. Choose based on how many active planners you need and whether you want live mode.
+            Free keeps manual planning open. Plus unlocks Mara. Pro adds more room and repeat-workflow tools.
           </p>
         </div>
 
@@ -57,14 +57,14 @@ export default async function PricingPage({
 
       <section className="space-y-4">
         <div className="max-w-2xl">
-          <p className="text-sm text-slate-500">Free gives you one active planner. Plus gives you three and live mode. Pro gives you ten plus repeat-workflow tools.</p>
+          <p className="text-sm text-slate-500">Planner limits stay simple: Free gives you 1 active planner, Plus gives you 3, and Pro gives you 10.</p>
         </div>
         <PricingGrid currentTier={billing?.currentTier} signedIn={Boolean(user)} />
       </section>
 
       <section>
         <div className="rounded-[28px] border border-slate-200 bg-white/84 px-5 py-4 text-sm leading-7 text-slate-600 shadow-[0_12px_32px_rgba(15,23,42,0.04)] sm:px-6">
-          All plans include Mara and planner sharing. Upgrade only when you need more room or more workflow power.
+          Free is for manual planning and shared coordination. Upgrade to Plus when you want Mara to drive the conversation and shape the trip with you.
         </div>
       </section>
     </div>

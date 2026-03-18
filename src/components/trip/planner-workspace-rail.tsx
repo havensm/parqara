@@ -54,14 +54,14 @@ export function PlannerWorkspaceRail({
           <h2 className="mt-4 text-2xl font-semibold text-[var(--foreground)]">Workspace access</h2>
           <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
             {currentTier === "FREE"
-              ? "Free keeps Mara open on one active planner at a time."
+              ? "Free keeps manual planning open on one active planner."
               : currentTier === "PLUS"
-                ? "Plus keeps Mara open across three active planners, with live mode and replans included."
+                ? "Plus unlocks Mara across three active planners, with live mode and replans included."
                 : "Pro keeps everything in Plus and adds more room plus stronger organization tools."}
           </p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
             <MetricPill label="Active planners" value={`${plannerLimitState.activePlannerCount}/${plannerLimitState.plannerLimit}`} />
-            <MetricPill label="Mara" value="Included" />
+            <MetricPill label="Mara" value={currentTier === "FREE" ? "Plus" : "Included"} />
           </div>
           <div className="mt-5">
             <div className="flex items-center justify-between gap-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
@@ -160,6 +160,7 @@ function MetricPill({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
 
 
 

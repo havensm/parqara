@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { apiError, requireApiUser } from "@/app/api/_utils";
+import { apiError, requireApiFeatureAccess, requireApiUser } from "@/app/api/_utils";
 import { getUserBillingState } from "@/lib/billing";
 import { tripPlannerChatRequestSchema } from "@/lib/trip-planner-agent";
 import { reserveMaraUsage } from "@/server/services/mara-rate-limit-service";
@@ -13,6 +13,8 @@ export async function POST(request: Request) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    requireApiFeatureAccess(user, "aiConcierge");
 
     const body = tripPlannerChatRequestSchema.parse(await request.json());
     const billing = getUserBillingState(user);

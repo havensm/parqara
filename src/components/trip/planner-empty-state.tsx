@@ -26,7 +26,7 @@ export function PlannerEmptyState({
     <AppShell
       eyebrow="Planner workspace"
       title="Create your first planner."
-      description="Start with one planner and let Mara keep the context clear from the very first message."
+      description="Start with one planner and shape the details manually, then upgrade when you want Mara."
       actionHref={actionHref}
       actionLabel={actionLabel}
       icon={<MessageSquareText className="h-5 w-5" />}
@@ -42,7 +42,7 @@ export function PlannerEmptyState({
               No planners yet.
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">
-              Create one planner for the trip, night out, or weekend you want to shape next. Mara will stay attached to that planner so the context stays in one place.
+              Create one planner for the trip, night out, or weekend you want to shape next. Free keeps the manual planner open, and Plus unlocks Mara when you want help shaping it.
             </p>
             <div className="mt-5 rounded-[22px] border border-[var(--card-border)] bg-[var(--surface-muted)] px-4 py-4 text-sm leading-6 text-[var(--muted)]">
               {plannerLimitState.canCreate
@@ -67,3 +67,4 @@ export function PlannerEmptyState({
     </AppShell>
   );
 }
+

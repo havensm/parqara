@@ -6,8 +6,9 @@ import { requireCompletedOnboardingUser } from "@/lib/auth/guards";
 import { getApproximateRequestLocation } from "@/lib/request-location";
 import { buildTripWorkspaceTabs, isPlannerKickoffDraft } from "@/lib/trip-workspace";
 import { getPlannerLimitState } from "@/server/services/planner-entitlement-service";
-import { getTripDetail, listDashboardTrips } from "@/server/services/trip-service";
+import { getParkCatalog, getTripDetail, listDashboardTrips } from "@/server/services/trip-service";
 
+import { PlannerDashboardDetails } from "@/components/trip/planner-dashboard-details";
 import { PlannerWorkspaceShell } from "@/components/trip/planner-workspace-shell";
 import { PlannerWorkspaceTabs } from "@/components/trip/planner-workspace-tabs";
 import { TripLiveReport } from "@/components/trip/trip-live-report";
@@ -27,6 +28,7 @@ export default async function TripPage({ params }: { params: Promise<{ tripId: s
     getPlannerLimitState(user.id),
     getApproximateRequestLocation(),
   ]);
+  const catalog = trip.canEdit ? await getParkCatalog(trip.park.slug) : null;
 
   const starterMode = isPlannerKickoffDraft({
     status: trip.status,
@@ -60,17 +62,16 @@ export default async function TripPage({ params }: { params: Promise<{ tripId: s
         />
       }
     >
-      {/* Keep the details surface separate from the chat-first Mara workspace so the conversation can stay clean. */}
       <div className="space-y-4">
         <Card tone="solid" className="p-4 sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Trip details</p>
-              <p className="mt-1 text-sm text-[var(--muted)]">The live report and logistics keep updating here while you work with Mara.</p>
+              <p className="mt-1 text-sm text-[var(--muted)]">Manual details, live report, and logistics stay here while Mara stays separate.</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Link href={`/dashboard?tripId=${trip.id}`} className={buttonStyles({ variant: "secondary", size: "sm" })}>
-                Open Mara
+                {billing.featureAccess.aiConcierge ? "Open Mara" : "See Mara plans"}
               </Link>
               {trip.itinerary.length ? (
                 <Link href={`/trips/${trip.id}/itinerary`} className={buttonStyles({ variant: "ghost", size: "sm" })}>
@@ -85,6 +86,8 @@ export default async function TripPage({ params }: { params: Promise<{ tripId: s
             </div>
           </div>
         </Card>
+
+        <PlannerDashboardDetails currentTier={billing.currentTier} trip={trip} catalog={catalog} />
 
         <TripLiveReport
           tripId={trip.id}

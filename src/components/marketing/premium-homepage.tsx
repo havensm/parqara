@@ -22,8 +22,8 @@ type PremiumHomepageProps = {
 
 const featureCards = [
   {
-    title: "Mara shapes the plan",
-    detail: "Bring the rough idea. Mara turns it into a plan you can actually use.",
+    title: "Manual planning stays free",
+    detail: "Start with the planner, trip details, logistics, and sharing before you ever upgrade.",
     icon: Sparkles,
     image: generatedVisuals.planners.studio,
     imageAlt: "AI-led travel planning workspace illustration",
@@ -31,8 +31,8 @@ const featureCards = [
     tone: "bg-[rgba(238,253,249,0.9)] text-[var(--teal-700)]",
   },
   {
-    title: "A live plan for the day",
-    detail: "Keep the day moving with live timing and a clear next step.",
+    title: "Mara asks the next question",
+    detail: "Plus unlocks Mara to shape the trip, tighten the route, and split up prep.",
     icon: CalendarRange,
     image: generatedVisuals.homepage.dayOf,
     imageAlt: "Day-of planning and itinerary scene",
@@ -41,7 +41,7 @@ const featureCards = [
   },
   {
     title: "One plan for everyone",
-    detail: "Keep everyone on the same page with one shared plan and calendar.",
+    detail: "Share the planner, keep the roster together, and track trip prep in one place.",
     icon: Users2,
     image: generatedVisuals.settings.profile,
     imageAlt: "Shared planning and calendar coordination scene",
@@ -111,7 +111,7 @@ export function PremiumHomepage({ currentTier, primaryHref, primaryLabel, second
       </section>
 
       <section id="how-it-works" className="space-y-5 scroll-mt-32">
-        <SectionIntro eyebrow="Core features" title="What Parqara makes easy." />
+        <SectionIntro eyebrow="Core features" title="Start free. Unlock Mara on Plus." />
         <div className="grid gap-4 lg:grid-cols-3">
           {featureCards.map((card) => {
             const Icon = card.icon;
@@ -183,7 +183,7 @@ export function PremiumHomepage({ currentTier, primaryHref, primaryLabel, second
       </section>
 
       <section id="pricing" className="space-y-5 scroll-mt-32">
-        <SectionIntro eyebrow="Pricing" title="Start free. Upgrade when you want more Mara." align="center" />
+        <SectionIntro eyebrow="Pricing" title="Start free. Upgrade for Mara." align="center" />
         <PricingGrid currentTier={currentTier} signedIn={signedIn} density="compact" className="mx-auto max-w-6xl" />
       </section>
 
@@ -198,7 +198,7 @@ export function PremiumHomepage({ currentTier, primaryHref, primaryLabel, second
             <h2 className="font-[family-name:var(--font-display)] text-4xl font-semibold tracking-[-0.05em] text-white sm:text-5xl lg:text-[3.35rem] lg:leading-[0.96] lg:whitespace-nowrap">
               {signedIn ? "Back to planning." : "Create your account and start planning with Mara."}
             </h2>
-            <p className="text-base leading-7 text-slate-300">{signedIn ? "Open Mara and shape the next adventure." : "Start planning in seconds."}</p>
+            <p className="text-base leading-7 text-slate-300">{signedIn ? "Open the planner and keep the trip moving." : "Start manual planning free. Unlock Mara on Plus."}</p>
           </div>
           <div className="flex flex-wrap gap-3">
             <Link href={primaryHref} className={buttonStyles({ variant: "primary", size: "lg" })}>
@@ -214,4 +214,10 @@ export function PremiumHomepage({ currentTier, primaryHref, primaryLabel, second
     </div>
   );
 }
+
+
+
+
+
+
 

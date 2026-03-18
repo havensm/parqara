@@ -15,6 +15,7 @@ import { getPlannerLimitState } from "@/server/services/planner-entitlement-serv
 import { getTripDetail, listDashboardTrips } from "@/server/services/trip-service";
 
 import { TripPlannerConcierge } from "@/components/assistant/trip-planner-concierge";
+import { FeatureUpsellCard } from "@/components/billing/feature-upsell-card";
 import { DetailedItineraryView } from "@/components/trip/detailed-itinerary-view";
 import { PlannerWorkspaceRail } from "@/components/trip/planner-workspace-rail";
 import { PlannerWorkspaceShell } from "@/components/trip/planner-workspace-shell";
@@ -105,24 +106,28 @@ export default async function TripItineraryPage({ params }: { params: Promise<{ 
         },
       ]}
       maraPanel={
-        <TripPlannerConcierge
-          currentTier={billing.currentTier}
-          tripId={trip.id}
-          firstName={user.firstName ?? user.name ?? null}
-          tripContext={tripContext}
-          initialMessages={trip.maraChatHistory}
-          canResetConversation={trip.canEdit}
-          questions={questions}
-          headerAction={
-            <TripPlannerSettingsDialog
-              currentTier={billing.currentTier}
-              tripId={trip.id}
-              tripName={trip.name}
-              isOwner={trip.isOwner}
-              triggerMode="icon"
-            />
-          }
-        />
+        billing.featureAccess.aiConcierge ? (
+          <TripPlannerConcierge
+            currentTier={billing.currentTier}
+            tripId={trip.id}
+            firstName={user.firstName ?? user.name ?? null}
+            tripContext={tripContext}
+            initialMessages={trip.maraChatHistory}
+            canResetConversation={trip.canEdit}
+            questions={questions}
+            headerAction={
+              <TripPlannerSettingsDialog
+                currentTier={billing.currentTier}
+                tripId={trip.id}
+                tripName={trip.name}
+                isOwner={trip.isOwner}
+                triggerMode="icon"
+              />
+            }
+          />
+        ) : (
+          <FeatureUpsellCard feature="aiConcierge" currentTier={billing.currentTier} actionHref="/pricing" />
+        )
       }
       rail={
         <PlannerWorkspaceRail
@@ -142,6 +147,8 @@ export default async function TripItineraryPage({ params }: { params: Promise<{ 
     </PlannerWorkspaceShell>
   );
 }
+
+
 
 
 

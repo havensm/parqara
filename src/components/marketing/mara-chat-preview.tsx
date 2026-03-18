@@ -1,3 +1,7 @@
+import Image from "next/image";
+
+import { generatedVisuals } from "@/lib/generated-assets";
+
 import { MaraPortrait } from "@/components/assistant/mara-portrait";
 import { SectionIntro } from "@/components/ui/section-intro";
 
@@ -35,18 +39,21 @@ const chatMessages: ChatMessage[] = [
   },
 ];
 
-const planUpdates = [
+const maraCapabilities = [
   {
-    label: "Dinner",
-    value: "Laurel Table · 7:15 PM",
+    title: "Ask the next question",
+    image: generatedVisuals.homepage.dayOf,
+    imageAlt: "Mara guiding the next planning question",
   },
   {
-    label: "After",
-    value: "River walk + indoor backup",
+    title: "Shape the route",
+    image: generatedVisuals.planners.studio,
+    imageAlt: "Mara shaping a trip route",
   },
   {
-    label: "Share",
-    value: "Ready to send",
+    title: "Split up prep",
+    image: generatedVisuals.homepage.story,
+    imageAlt: "Shared trip logistics and prep planning",
   },
 ] as const;
 
@@ -55,18 +62,32 @@ export function MaraChatPreview() {
     <section id="mara-workflow" className="surface-shell overflow-hidden rounded-[38px] p-6 scroll-mt-32 sm:p-8 lg:p-10">
       <div className="grid gap-6 xl:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] xl:items-start">
         <div className="space-y-5">
-          <SectionIntro eyebrow="Meet Mara" title="Plan with Mara." />
+          <SectionIntro eyebrow="Mara on Plus" title="What Mara does." />
 
           <div className="rounded-[30px] border border-white/70 bg-white/78 p-5 shadow-[0_16px_34px_rgba(12,20,37,0.08)]">
             <div className="flex items-center gap-4">
               <MaraPortrait size="md" />
               <div>
-                <p className="text-lg font-semibold text-[var(--foreground)]">Feels natural</p>
+                <p className="text-lg font-semibold text-[var(--foreground)]">Simple, direct, useful</p>
                 <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                  Tell Mara the vibe, timing, and guardrails. She shapes the plan from there.
+                  Ask. refine. lock the plan.
                 </p>
               </div>
             </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+            {maraCapabilities.map((item) => (
+              <div key={item.title} className="overflow-hidden rounded-[24px] border border-white/70 bg-white/80 shadow-[0_12px_26px_rgba(12,20,37,0.08)]">
+                <div className="relative h-28">
+                  <Image src={item.image} alt={item.imageAlt} fill sizes="(min-width: 1280px) 18rem, 100vw" className="object-cover object-center" />
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,17,30,0.08)_0%,rgba(8,17,30,0.56)_100%)]" />
+                  <div className="absolute inset-x-0 bottom-0 px-4 py-3">
+                    <p className="text-sm font-semibold text-white">{item.title}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -80,7 +101,7 @@ export function MaraChatPreview() {
             </div>
             <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(28,198,170,0.25)] bg-[rgba(238,253,249,0.9)] px-3 py-1.5 text-sm font-medium text-[var(--teal-700)]">
               <span className="h-2.5 w-2.5 rounded-full bg-[var(--teal-500)] animate-pulse" />
-              Live chat
+              Plus feature
             </div>
           </div>
 
@@ -109,35 +130,9 @@ export function MaraChatPreview() {
                 </div>
               );
             })}
-
-            <div className="flex gap-3">
-              <MaraPortrait size="sm" className="mt-1" />
-              <div className="max-w-[85%] rounded-[24px] rounded-tl-[10px] border border-dashed border-[rgba(28,198,170,0.32)] bg-[rgba(238,253,249,0.72)] px-4 py-3">
-                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--teal-700)]">
-                  <span>Mara</span>
-                  <span className="text-[var(--teal-500)]">/</span>
-                  <span>updating plan</span>
-                </div>
-                <div className="mt-3 flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-[var(--teal-500)] animate-pulse" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-[var(--teal-500)] animate-pulse [animation-delay:120ms]" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-[var(--teal-500)] animate-pulse [animation-delay:240ms]" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-5 grid gap-3 border-t border-slate-200/80 pt-5 md:grid-cols-3">
-            {planUpdates.map((update) => (
-              <div key={update.label} className="rounded-[22px] border border-white/75 bg-white/88 px-4 py-4 shadow-[0_10px_24px_rgba(12,20,37,0.05)]">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--muted-strong)]">{update.label}</p>
-                <p className="mt-2 text-sm font-semibold leading-6 text-[var(--foreground)]">{update.value}</p>
-              </div>
-            ))}
           </div>
         </div>
       </div>
     </section>
   );
 }
-

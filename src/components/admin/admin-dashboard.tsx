@@ -160,10 +160,10 @@ export function AdminDashboard({
               <Badge variant="warning">Internal</Badge>
             </div>
             <h2 className="mt-4 font-[family-name:var(--font-space-grotesk)] text-3xl font-semibold tracking-tight text-slate-950">
-              Control room for metrics and integrations
+              Control room for app metrics, users, and integrations
             </h2>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-              Metrics are pulled from the database. Integration status is derived from the current environment so you can see what is live, what still needs keys, and what should be added next.
+              Metrics are pulled from the database. You can review current users, adjust subscription tiers, and see which integrations are live or still need setup.
             </p>
           </div>
           <div className="grid gap-3 bg-white px-6 py-6 sm:px-7 md:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
@@ -180,7 +180,7 @@ export function AdminDashboard({
             <TabsTrigger value="metrics">Metrics</TabsTrigger>
             <TabsTrigger value="feedback">Feedback</TabsTrigger>
             <TabsTrigger value="integrations">Integrations</TabsTrigger>
-            <TabsTrigger value="testing">Testing</TabsTrigger>
+            <TabsTrigger value="testing">Tools</TabsTrigger>
           </TabsList>
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
             <Badge variant="success">{integrations.summary.configured} configured</Badge>
@@ -343,7 +343,7 @@ function MetricsPanel({
             <Badge variant="neutral">{metrics.recentUsers.length}</Badge>
           </div>
           <div className="mt-5 space-y-3">
-            {metrics.recentUsers.map((user) => (
+            {metrics.recentUsers.slice(0, 6).map((user) => (
               <div key={user.id} className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-semibold text-slate-950">{user.name}</p>
@@ -353,6 +353,7 @@ function MetricsPanel({
                 <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
                   <span>Created {formatDateTimeLabel(user.createdAt)}</span>
                   <span>Status: {user.subscriptionStatus.replaceAll("_", " ")}</span>
+                  <span>{user.activePlannerCount} active planner{user.activePlannerCount === 1 ? "" : "s"}</span>
                 </div>
               </div>
             ))}
@@ -479,17 +480,17 @@ function TestingPanel({
                 <Rocket className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-amber-700/80">Tester access</p>
-                <h3 className="mt-1 text-2xl font-semibold text-slate-950">Grant manual upgrades</h3>
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-amber-700/80">Subscription controls</p>
+                <h3 className="mt-1 text-2xl font-semibold text-slate-950">Update user plans</h3>
               </div>
             </div>
             <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">
-              Upgrade testers to Plus or Pro without sending them through Stripe. Use Free to reset them back to the normal plan.
+              Move specific users between Free, Plus, and Pro without sending them through Stripe. Use this when you need to fix or grant access manually.
             </p>
           </div>
           <div className="flex items-center bg-white px-6 py-6 sm:px-7">
             <div className="w-full rounded-[24px] border border-slate-200 bg-slate-50 px-5 py-5 text-sm text-slate-500">
-              Manual tester access sets the existing billing fields directly and takes effect right away.
+              Subscription changes write the billing fields directly and take effect right away.
             </div>
           </div>
         </div>
@@ -874,6 +875,11 @@ function BreakdownRow({ label, value, badge }: { label: string; value: number; b
     </div>
   );
 }
+
+
+
+
+
 
 
 

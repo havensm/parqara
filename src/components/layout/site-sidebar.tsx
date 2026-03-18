@@ -86,7 +86,7 @@ function MarketingSidebar() {
         <div className="relative rounded-[28px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.84),rgba(247,250,255,0.74))] p-4 shadow-[0_16px_34px_rgba(12,20,37,0.08)]">
           <BrandLogo href="/" size="compact" imageClassName="h-12 w-auto sm:h-14 xl:h-16" />
           <p className="mt-4 text-sm leading-6 text-[var(--muted)]">
-            Mara-led planning for trips, weekends, outings, date nights, and family adventures.
+            Manual planning stays free. Mara unlocks on Plus.
           </p>
 
           <div className="relative mt-4 h-32 overflow-hidden rounded-[22px] border border-white/50 xl:h-36">
@@ -154,3 +154,4 @@ function MarketingSidebar() {
     </div>
   );
 }
+

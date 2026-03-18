@@ -1,6 +1,7 @@
 import {
   AuthProvider,
   OnboardingStatus,
+  PlannerStatus,
   SubscriptionStatus,
   SubscriptionTier,
   TripStatus,
@@ -82,6 +83,7 @@ export type AdminDashboardMetrics = {
     createdAt: string;
     subscriptionTier: SubscriptionTier;
     subscriptionStatus: SubscriptionStatus;
+    activePlannerCount: number;
   }>;
   recentTrips: Array<{
     id: string;
@@ -148,6 +150,7 @@ export async function getAdminDashboardMetrics(): Promise<AdminDashboardMetrics>
     authProviderGroups,
     subscriptionUsers,
     collaboratorGroups,
+    activePlannerGroups,
     recentUsersRaw,
     recentTripsRaw,
   ] = await Promise.all([
@@ -248,8 +251,17 @@ export async function getAdminDashboardMetrics(): Promise<AdminDashboardMetrics>
         _all: true,
       },
     }),
+    db.trip.groupBy({
+      by: ["userId"],
+      where: {
+        plannerStatus: PlannerStatus.ACTIVE,
+      },
+      _count: {
+        _all: true,
+      },
+    }),
     db.user.findMany({
-      take: 6,
+      take: 18,
       orderBy: {
         createdAt: "desc",
       },
@@ -292,6 +304,7 @@ export async function getAdminDashboardMetrics(): Promise<AdminDashboardMetrics>
   const tripStatusMap = new Map(tripStatusGroups.map((group) => [group.status, group._count._all]));
   const onboardingMap = new Map(onboardingGroups.map((group) => [group.onboardingStatus, group._count._all]));
   const authProviderMap = new Map(authProviderGroups.map((group) => [group.authProvider, group._count._all]));
+  const activePlannerMap = new Map(activePlannerGroups.map((group) => [group.userId, group._count._all]));
 
   const subscriptionBreakdown = subscriptionTierOrder.map((tier) => {
     const usersOnTier = subscriptionUsers.filter((user) => user.subscriptionTier === tier);
@@ -370,6 +383,7 @@ export async function getAdminDashboardMetrics(): Promise<AdminDashboardMetrics>
       createdAt: formatDateTime(user.createdAt),
       subscriptionTier: user.subscriptionTier,
       subscriptionStatus: user.subscriptionStatus,
+      activePlannerCount: activePlannerMap.get(user.id) ?? 0,
     })),
     recentTrips: recentTripsRaw.map((trip) => ({
       id: trip.id,
