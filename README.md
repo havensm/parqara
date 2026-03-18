@@ -149,7 +149,7 @@ Parqara is deployable as a single Node.js Elastic Beanstalk environment backed b
    - `PREVIEW_GATE_ENABLED` to disable the temporary lock screen when you are ready
    - `PREVIEW_GATE_PASSWORD` to change the access word
 4. Point the Elastic Beanstalk health check at `/api/health`. That route is now an app-level health check. Use `/api/health/db` when you want to verify database connectivity explicitly.
-5. Upload `dist/parqara-web-eb.zip` through the Elastic Beanstalk UI. The included predeploy hook runs Prisma migrate and seed as separate steps, writes to `/var/log/parqara-predeploy.log`, and respects:
+5. Upload `dist/parqara-web-eb.zip` through the Elastic Beanstalk UI. The included predeploy hook always runs `prisma migrate deploy`, only runs `db:seed` when `RUN_DB_SEED_ON_DEPLOY=true`, writes to `/var/log/parqara-predeploy.log`, and respects:
    - `SKIP_DB_BOOTSTRAP=true` to skip bootstrap entirely
    - `DB_MIGRATE_TIMEOUT_SECONDS`
    - `DB_SEED_TIMEOUT_SECONDS`
@@ -351,6 +351,7 @@ The repository has been validated with:
 ## Known note
 
 On this Windows + OneDrive environment, repeated builds can hit file locking in `.next`. `npm run dev` now clears `.next` before startup automatically, and a fresh production build from a clean state succeeds if you clear `.next` first when needed.
+
 
 
 
